@@ -342,7 +342,7 @@ def map_anomalies(anomaly_ref, data, variable, udata = None, vdata = None, inter
                     transform = bp.ccrs.PlateCarree())
     
     # save path for files
-    save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSL_Climate/poster/'
+    save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/poster_figs'
     save_path  = bp.os.path.join(save_path, save_name)
     
     bp.plt.savefig(save_path, dpi = 400)

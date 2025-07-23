@@ -14,10 +14,10 @@ import base_packages as bp
 bdir = '/uufs/chpc.utah.edu/common/home/u0660911/Documents/projects/gslbip/'
 shapefile_path = bp.os.path.join(bdir,'GSLBIP_shpfiles/MF6_VIC_bounding_box/MF6_VIC_bounding_box.shp')
 
-#VIC boundary coordinates
+# VIC boundary coordinates to overlay red box on map to show study region
 gdf = bp.gpd.read_file(shapefile_path)
 gdf = gdf.to_crs("EPSG:4326")
-min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
+min_lon, min_lat, max_lon, max_lat = gdf.total_bounds 
 
 def convert_lon_to_0_360(lon):
     # Convert longitude from -180-180 to 0-360
@@ -64,7 +64,8 @@ for year in range(1979, 2015):
 combine = bp.xr.concat(GCM_data, dim = 'year')
 GCM_mean = combine.mean(skipna = True, dim = 'year')
 
-#%%
+
+
 #setup pcolormesh
 fig, axs = bp.plt.subplots(1, 2, figsize = (7, 4), subplot_kw = {'projection' : bp.ccrs.PlateCarree()}, constrained_layout = True)
 
@@ -98,7 +99,7 @@ for ax in axs:
 fig.suptitle('KACE-1-0-G Mean Precipitation Over Study Region', fontsize = 20)
 
 #set save path for image
-save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSL_Climate/poster/study_region.png'
+save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/poster_figs/study_region.png'
 bp.plt.savefig(save_path, dpi = 400)
 
 bp.plt.show()
