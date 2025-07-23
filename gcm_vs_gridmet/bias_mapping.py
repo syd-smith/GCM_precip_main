@@ -5,9 +5,8 @@ Created on Tue Jul 15 17:52:25 2025
 
 @author: u1301408
 """
-
 import sys
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSL_Climate/packages/')
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages/')
 import base_packages as bp
 
 # Define the shapefile path (where to find coordinates used by VIC from Maribeth)
