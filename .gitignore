@@ -1,3 +1,4 @@
 *.png
-/CMIP6/
+/CMIP/
+/ScenarioMIP/
 *.nc
