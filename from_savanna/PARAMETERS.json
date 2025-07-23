@@ -1,0 +1,183 @@
+{
+	"REGION_STR": "GSLBIP",
+	"BASE_DIR": "/uufs/chpc.utah.edu/common/home/u1324060/gslbip/",
+	"COARSE_DIR": "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/",
+	"GRIDMET_DIR": "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/",
+	"GCM_DIR": "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/",
+	"RSDS_DIR": "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/",
+	"OUTPUT_DIR": "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/",
+	"CACHE_DIR": "/uufs/chpc.utah.edu/common/home/strong-group9/savanna/cmip6/esgf/",
+	"ESGF_CATALOG_NAME": "merged_catalog_updated",
+
+	"COARSE_LAT_MIN": 26,
+	"COARSE_LAT_MAX": 49,
+	"COARSE_LON_MIN": -124,
+	"COARSE_LON_MAX": -68,
+	"FINE_LAT_TARGET_BOUNDS": [
+		36, 
+		43
+	],
+	"FINE_LON_TARGET_BOUNDS": [
+		-115.1, 
+		-108
+	], 
+
+	"EXPERIEMENTS": {
+		"historical": ["historical"],
+		"SSP": ["ssp119","ssp126","ssp245","ssp370",
+				"ssp434","ssp460","ssp534-over","ssp585"],
+		"ALL": ["historical","ssp119","ssp126","ssp245","ssp370",
+				"ssp434","ssp460","ssp534-over","ssp585"]
+	},
+	"HISTORICAL_YEARS": [1979, 2014],
+	"FUTURE_YEARS": [2015, 2099],
+
+
+	"VARIABLES": {
+		"GCM": 		["pr", "tasmax", "tasmin", "huss", "rsds", "uas", "vas"],
+		"GRIDMET": 	["tmmx",  "tmmn",  "rmax",  "rmin",  "pr","srad","uas","vas","sph"],
+		"MACA":		["tasmax","tasmin","rhsmax","rhsmin","pr","rsds","uas","vas","huss","was"]
+	},
+
+	"GRIDMET_VARIABLES": [
+		"tmmx",  "tmmn",  "rmax",  "rmin",  "pr","srad","uas","vas","sph"
+	],
+	"GRIDMET_VAR_NAMES": [
+		"air_temperature", 
+		"air_temperature",
+		"relative_humidity",
+		"relative_humidity",
+		"precipitation_amount",
+ 		"surface_downwelling_shortwave_flux_in_air",
+		"uas", 
+		"vas",
+    		"specific_humidity" 		
+	],
+	"GRIDMET_VAR_UNITS": {
+		"precipitation_amount": "mm",
+		"air_temperature": "K",
+    		"specific_humidity": "kg/kg",
+		"uas": "m s-1",
+		"vas": "m s-1",
+    		"surface_downwelling_shortwave_flux_in_air": "W m-2",
+		"relative_humidity": "%"
+	},
+
+	"GCM_VARIABLES": [
+		"pr", 
+		"tasmax", 
+		"tasmin", 
+		"huss", 
+		"rsds", 
+		"uas", 
+		"vas"
+	],
+	"GCM_VARIABLE_UNITS": {
+		"tasmax": "K", 
+		"tasmin": "K", 
+		"rsds": "W m-2",
+		"huss": "1",
+		"pr": "kg m-2 s-1",
+		"uas": "m s-1",
+		"vas": "m s-1"
+	},
+
+	"MACA_VARIABLES": [
+		"tasmax",
+		"tasmin",
+		"rhsmax",
+		"rhsmin",
+		"pr",
+		"rsds",
+		"uas",
+		"vas",
+		"huss",
+		"was"
+	],
+	"VAR_OF_PREC": 5,
+	"MACA_VARIABLE_UNITS": {
+		"tasmax": "K",
+		"tasmin": "K",
+		"rhsmax": "%",
+		"rhsmin": "%",
+		"pr": "mm",
+		"rsds": "W m-2",
+		"uas": "m s-1",
+		"vas": "m s-1",
+		"huss": "kg kg-1",
+		"was": "m s-1"
+	},
+	"MACA_VAR_MULTIPLY_OR_ADDITIVE": [
+		0,
+		0,
+		0,
+		0,
+		1,
+		0,
+		0,
+		0,
+		1,
+		0
+	],
+
+	"EA_DAY_WINDOW": 21,
+	"EA_YR_WINDOW": 31,
+
+	"EA_VARIABLES": [
+		1, 
+		1, 
+		0, 
+		0, 
+		1, 
+		1, 
+		1, 
+		1, 
+		1, 
+		1
+	],
+
+	"BC_SEMI_DAY_WINDOW_MULT": 15,
+	"BC_SEMI_DAY_WINDOW_ADD": 15,
+	"BC_MAX_PR_RATIO": 5.0,
+
+	"MACA_SEMI_DAY_WINDOW": 45,
+
+	"MACA_NUM_BEST_MODELS": 10,
+	"ERRORYES": 1,
+
+	"GRID_CHUNK_PTS": 200,
+
+	"CUTOFF": 0.01,
+
+	"DRY_DAY_THRES_COARSE": {
+		"pr": {
+			"CUTOFF": 0.01,
+			"mm": "CUTOFF/5.*25.4",
+			"in": "CUTOFF/5"
+		},
+		"huss": "6.6e-5",
+		"was": "0.01"
+	},
+
+	"DRY_DAY_THRES_FINE": {
+		"pr": {
+			"CUTOFF": 0.01,
+			"mm": "CUTOFF*25.4",
+			"in": "CUTOFF"
+		},
+		"huss": "6.6e-5",
+		"was": "0.01"
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
