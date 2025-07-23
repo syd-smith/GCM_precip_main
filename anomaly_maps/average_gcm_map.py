@@ -62,7 +62,7 @@ def fut_mean(model_name, variable, interpolate = False):
 
     return overall_mean_fut
 
-#%%
+# list of all variables run for fut_mean
 #vas wind vector combine wet model data
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
@@ -73,7 +73,6 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 average_vas = combine.mean(skipna = True, dim = 'model')
 
-#%%
 #uas wind vector combine wet model data
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
@@ -84,7 +83,6 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 average_uas = combine.mean(skipna = True, dim = 'model')
 
-#%%
 #sea level pressure combine wet model data
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
@@ -95,7 +93,6 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 average_psl = combine.mean(skipna = True, dim = 'model')
 
-#%%
 #geopotential height combine wet model data
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
@@ -107,7 +104,8 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 average_zg = combine.mean(skipna = True, dim = 'model')
 
-#%%
+
+
 # function to calculate the change in a variable from 1979-2014 to 2070-2099 as a difference (precipitation is calculated as a percent change)
 def anomaly(model_name, variable, interpolate = False):
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/intake_esgf/ERA5/{variable}/{variable}_Amon_'
@@ -166,7 +164,8 @@ def anomaly(model_name, variable, interpolate = False):
         
     return anomaly
 
-#%%
+# list of all varibales run for anomaly
+# anomaly for precipitation combined across all wet models
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
 for i, model in enumerate(models):
@@ -176,7 +175,7 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 anom_pr = combine.mean(skipna = True, dim = 'model')
 
-#%%
+# anomaly for eastward near surface wind combined across all wet models
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
 for i, model in enumerate(models):
@@ -186,7 +185,7 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 anom_uas = combine.mean(skipna = True, dim = 'model')
 
-#%%
+# anomaly for northward near surface wind combined across all wet models
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
 for i, model in enumerate(models):
@@ -196,7 +195,7 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 anom_vas = combine.mean(skipna = True, dim = 'model')
 
-#%%
+# anomaly for sea level pressure combined across all wet models
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 data = []
 for i, model in enumerate(models):
@@ -206,7 +205,7 @@ for i, model in enumerate(models):
 combine = bp.xr.concat(data, dim = 'model')
 anom_psl = combine.mean(skipna = True, dim = 'model')
 
-#%%
+
 # adjusted function to map anomaly of mean data from averaging over multiple models
 def map_anomalies(anomaly_ref, data, variable, udata = None, vdata = None, interpolate = False, quiver = False, step = 1):
     # data = anomaly_ref(model_name, variable)
@@ -231,12 +230,6 @@ def map_anomalies(anomaly_ref, data, variable, udata = None, vdata = None, inter
                      'cbar_a' : 'Change in 500-hPa Geopotential Height (m)',
                      'cbar_m' : 'Mean 500-hPa Geopotential Height (m)'
                      }
-    # elif variable == 'tos':
-    #     plot_dict = {'cmap_a' : bp.cmap.cmap('cmp_b2r'),
-    #                  'cmap_m' : bp.cmap.cmap('BlAqGrYeOrReVi200'),
-    #                  'title': 'Sea Surface Temperature',
-    #                  'cbar' : 'Degrees C'
-    #                  }
     elif variable == 'vas':
         plot_dict = {'cmap_a' : bp.cmap.cmap('CBR_wet'),
                      'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
