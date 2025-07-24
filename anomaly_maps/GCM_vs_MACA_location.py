@@ -54,7 +54,9 @@ for year in range(1979, 2015):
     MACA_data.append(MACA_summer_precip)
 
 MACA_combine = bp.xr.concat(MACA_data, dim = 'year')
-MACA_mean = MACA_combine.mean(skipna = True, dim = 'year') *30
+
+# calculates daily mean so have to *30 for days in month to get monthly mean
+MACA_mean = MACA_combine.mean(skipna = True, dim = 'year') * 30
 
 
 #open GCM dataset and take mean of summer months
