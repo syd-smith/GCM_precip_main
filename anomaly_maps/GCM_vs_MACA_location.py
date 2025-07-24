@@ -29,6 +29,7 @@ def convert_lon_to_0_360(lon):
 MACA_fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_KACE-1-0-G_ssp585_pr.nc'
 MACA_open = bp.xr.open_dataset(MACA_fpath)
 
+# old mean calculation
 # years = []
 # for year in range(1979, 2015):
 #     months = []
@@ -44,6 +45,7 @@ MACA_open = bp.xr.open_dataset(MACA_fpath)
 # # multiply by days of month to get monthly average
 # MACA_mean = combine_year.mean(skipna = True, dim = 'year') * 30
 
+# mean calculation using same method as GCM data
 MACA_data = []
 for year in range(1979, 2015):
     # Select all JJA months for this year
