@@ -1,3 +1,4 @@
+*.tmp
 *.png
 /CMIP/
 /ScenarioMIP/
