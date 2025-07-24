@@ -44,5 +44,5 @@ warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
 import cmocean
 from bokeh.plotting import figure, output_file, save
 import xesmf as xe
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/intake_esgf/from_savanna/')
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/from_savanna/')
 import nclcmaps as cmap
