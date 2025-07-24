@@ -7,7 +7,7 @@ Created on Thu Jul 17 08:17:43 2025
 """
 
 import sys
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSL_Climate/packages/')
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages/')
 import base_packages as bp
 
 # Define the shapefile path (where to find coordinates used by VIC from Maribeth)
@@ -29,22 +29,37 @@ def convert_lon_to_0_360(lon):
 MACA_fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_KACE-1-0-G_ssp585_pr.nc'
 MACA_open = bp.xr.open_dataset(MACA_fpath)
 
-years = []
-for year in range(1979, 2015):
-    months = []
-    for month in range(6, 9):
-        data = MACA_open['pr'].sel(time = (MACA_open.time.dt.month == month) & (MACA_open.time.dt.year == year))
-        data_mean = data.mean(dim = 'time', skipna = True)
-        months.append(data_mean)
-    combine_months = bp.xr.concat(months, dim = 'month')
-    average_month = combine_months.mean(skipna = True, dim = 'month')
-    years.append(average_month)
+# years = []
+# for year in range(1979, 2015):
+#     months = []
+#     for month in range(6, 9):
+#         data = MACA_open['pr'].sel(time = (MACA_open.time.dt.month == month) & (MACA_open.time.dt.year == year))
+#         data_mean = data.mean(dim = 'time', skipna = True)
+#         months.append(data_mean)
+#     combine_months = bp.xr.concat(months, dim = 'month')
+#     average_month = combine_months.mean(skipna = True, dim = 'month')
+#     years.append(average_month)
     
-combine_year = bp.xr.concat(years, dim = 'year')
-MACA_mean = combine_year.mean(skipna = True, dim = 'year')
+# combine_year = bp.xr.concat(years, dim = 'year')
+# # multiply by days of month to get monthly average
+# MACA_mean = combine_year.mean(skipna = True, dim = 'year') * 3
+
+#%%
+MACA_data = []
+for year in range(1979, 2015):
+    # Select all JJA months for this year
+    # check if this is monthly average
+    MACA_dat = MACA_open['pr'].sel(time=(MACA_open.time.dt.month.isin([6])) & (MACA_open.time.dt.year == year), drop=True)
+    MACA_summer_precip = MACA_dat.mean(dim = 'time')
+
+    MACA_data.append(MACA_summer_precip)
+
+MACA_combine = bp.xr.concat(MACA_data, dim = 'year')
+MACA_mean = MACA_combine.mean(skipna = True, dim = 'year')
+
 
 #open GCM dataset and take mean of summer months
-GCM_fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/intake_esgf/ERA5/pr/pr_Amon_KACE-1-0-G_historical_r1i1p1f1_gr_19500116-20141216.nc'
+GCM_fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/pr/pr_Amon_KACE-1-0-G_historical_r1i1p1f1_gr_19500116-20141216.nc'
 GCM_open = bp.xr.open_dataset(GCM_fpath)
 
 #data still in pr flux -> needs conversion
@@ -55,9 +70,12 @@ for year in range(1979, 2015):
     # Select all JJA months for this year
     GCM_dat = GCM_boundary.sel(time=(GCM_boundary.time.dt.month.isin([6, 7, 8])) & (GCM_boundary.time.dt.year == year), drop=True)
 
+    # currently shows total precip but if /30 then is monthly average?
     days_in_month = GCM_dat.time.dt.days_in_month
     seconds_per_month = days_in_month * 24 * 60 * 60
+    # precip_months_avg = 24 * 60 * 60
     summer_precip = (GCM_dat * seconds_per_month).mean(dim = 'time')
+    # summer_precip = (GCM_dat * precip_months_avg).mean(dim = 'time')
 
     GCM_data.append(summer_precip)
 
@@ -66,20 +84,20 @@ GCM_mean = combine.mean(skipna = True, dim = 'year')
 
 
 
-#setup pcolormesh
+# setup pcolormesh
 fig, axs = bp.plt.subplots(1, 2, figsize = (7, 4), subplot_kw = {'projection' : bp.ccrs.PlateCarree()}, constrained_layout = True)
 
-#setup first map with GCM_mean data
-m1 = axs[0].pcolormesh(GCM_mean['lon'].values, GCM_mean['lat'].values, GCM_mean.values, cmap = bp.cmap.cmap('MPL_YlGnBu'))
+# setup first map with GCM_mean data
+m1 = axs[0].pcolormesh(GCM_mean['lon'].values, GCM_mean['lat'].values, GCM_mean.values, cmap = bp.cmap.cmap('MPL_BrBG'))
 axs[0].set_title('GCM Data - Coarse Resolution')
 axs[0].set_ylim(float(MACA_mean['lat'].min()), float(MACA_mean['lat'].max()))
 axs[0].set_xlim(float(MACA_mean['lon'].min()), float(MACA_mean['lon'].max()))
-fig.colorbar(m1, ax = axs[0], orientation = 'horizontal', label = 'mm', shrink = 0.65)
+fig.colorbar(m1, ax = axs[0], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
 
-#setup second map with MACA_mean data
-m2 = axs[1].pcolormesh(MACA_mean['lon'].values, MACA_mean['lat'].values, MACA_mean.values, cmap = bp.cmap.cmap('MPL_YlGnBu'))
+# setup second map with MACA_mean data
+m2 = axs[1].pcolormesh(MACA_mean['lon'].values, MACA_mean['lat'].values, MACA_mean.values, cmap = bp.cmap.cmap('MPL_BrBG'))
 axs[1].set_title('MACA Data - Fine Resolution')
-fig.colorbar(m2, ax = axs[1], orientation = 'horizontal', label = 'mm', shrink = 0.65)
+fig.colorbar(m2, ax = axs[1], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
 
 for ax in axs:
     ax.set_xlabel('lat')
@@ -92,7 +110,7 @@ for ax in axs:
     ax.add_feature(bp.cfeature.RIVERS, linewidth = 1, zorder = 1)
     
     #add VIC boundaries
-    box = bp.mpatches.Rectangle((min_lon, min_lat), (max_lon - min_lon), (max_lat - min_lat), linewidth = 1.75, edgecolor = 'red', facecolor = 'none', zorder = 5)
+    box = bp.mpatches.Rectangle((min_lon, min_lat), (max_lon - min_lon), (max_lat - min_lat), linewidth = 2.5, edgecolor = 'red', facecolor = 'none', zorder = 5)
     ax.add_patch(box)
 
 #set title for entire figure
