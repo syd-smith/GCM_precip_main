@@ -44,7 +44,6 @@ MACA_open = bp.xr.open_dataset(MACA_fpath)
 # # multiply by days of month to get monthly average
 # MACA_mean = combine_year.mean(skipna = True, dim = 'year') * 3
 
-#%%
 MACA_data = []
 for year in range(1979, 2015):
     # Select all JJA months for this year
