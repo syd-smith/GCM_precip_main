@@ -42,19 +42,19 @@ MACA_open = bp.xr.open_dataset(MACA_fpath)
     
 # combine_year = bp.xr.concat(years, dim = 'year')
 # # multiply by days of month to get monthly average
-# MACA_mean = combine_year.mean(skipna = True, dim = 'year') * 3
+# MACA_mean = combine_year.mean(skipna = True, dim = 'year') * 30
 
 MACA_data = []
 for year in range(1979, 2015):
     # Select all JJA months for this year
     # check if this is monthly average
-    MACA_dat = MACA_open['pr'].sel(time=(MACA_open.time.dt.month.isin([6])) & (MACA_open.time.dt.year == year), drop=True)
+    MACA_dat = MACA_open['pr'].sel(time=(MACA_open.time.dt.month.isin([6, 7, 8])) & (MACA_open.time.dt.year == year), drop=True)
     MACA_summer_precip = MACA_dat.mean(dim = 'time')
 
     MACA_data.append(MACA_summer_precip)
 
 MACA_combine = bp.xr.concat(MACA_data, dim = 'year')
-MACA_mean = MACA_combine.mean(skipna = True, dim = 'year')
+MACA_mean = MACA_combine.mean(skipna = True, dim = 'year') *30
 
 
 #open GCM dataset and take mean of summer months
