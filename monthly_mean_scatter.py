@@ -6,42 +6,36 @@ Created on Mon Jun 23 18:06:49 2025
 @author: u1301408
 """
 
-import numpy as np
-import xarray as xr
-import os
-import glob
-import geopandas as gpd
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from bokeh.plotting import figure, output_file, save
+import sys
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages/')
+import base_packages as bp
 
-#future period: 2070-2099
-#historical period: 1979-2014
-#temp change: future - historical (C)
-#precip ratio: future / historical 
+# future period: 2070-2099
+# historical period: 1979-2014
+# temp change: future - historical (C)
+# precip ratio: future / historical 
 
-
-# Define the shapefile path (where to find coordinates used by VIC from Maribeth)
+# Define the shapefile path (where to find coordinates used by VIC from Maribeth at USBR)
 bdir = '/uufs/chpc.utah.edu/common/home/u0660911/Documents/projects/gslbip/'
-shapefile_path = os.path.join(bdir,'GSLBIP_shpfiles/MF6_VIC_bounding_box/MF6_VIC_bounding_box.shp')
+shapefile_path = bp.os.path.join(bdir,'GSLBIP_shpfiles/MF6_VIC_bounding_box/MF6_VIC_bounding_box.shp')
 
-# Load the shapefile
-gdf = gpd.read_file(shapefile_path)
+# Load the shapefile for VIC boundaries
+gdf = bp.gpd.read_file(shapefile_path)
 gdf = gdf.to_crs("EPSG:4326")
 min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
 
-#output of values in VIC shapefile
+# output of values in VIC shapefile
 # min_lon = -113.69354024533703
 # max_lon = -110.59375
 # min_lat = 39.553038338687124
 # max_lat = 42.84375
 
-#path to access netcdf files containing the data
+# path to access netcdf files containing the data
 strong_group_path = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'
-find_files = sorted(glob.glob(strong_group_path + '*.nc'))
+find_files = sorted(bp.glob.glob(strong_group_path + '*.nc'))
 prefix = strong_group_path
 
-#list of all model names
+# makes list of all model names by editing file paths
 models = []
 for file in find_files:
     no_prefix = file.replace(prefix, '')
@@ -49,19 +43,19 @@ for file in find_files:
     if model not in models:
         models.append(model)
         
- # output of models for loop - models used in the maca downscaling      
- # ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC',
- #  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
- #  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
-        
-#all possible emission scenarios found in models
+# output of models for loop - models used in the maca downscaling      
+# ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC',
+#  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
+#  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+      
+# all possible emission scenarios found in models
 emission_scenarios = ['ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp585']
 
-#define the date ranges for historical and future time periods
+# define the date ranges for historical and future time periods
 hist_years = [year for year in range(1979, 2015)]
 fut_years = [year for year in range(2070, 2100)]
 
-#out of function practice
+# out of function practice
 # model = 'KACE-1-0-G'
 # emission_scenario = 'ssp585'
 # fpath = strong_group_path + model + '_' + emission_scenario + '_pr.nc'
@@ -69,48 +63,48 @@ fut_years = [year for year in range(2070, 2100)]
 # open_ds = open_ds['pr'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon)) 
 # year_dat = open_ds.sel(time = open_ds.time.dt.month.isin([6,7,8]) & (open_ds.time.dt.year == 1979))
 
-#%%
-#returns a list with the model name, emission scenario, and the average precip value for it across historical years and grid points
+
+# returns a list with the model name, emission scenario, and the average precip value for it across historical years and grid points
 def hist_precip():
     hist_precip_data = []
     for model in models:
         for emission_scenario in emission_scenarios:
             fpath = strong_group_path + model + '_' + emission_scenario + '_pr.nc'
-            if not os.path.exists(fpath):
+            if not bp.os.path.exists(fpath):
                 continue
             else:
-                open_ds = xr.open_dataset(fpath)
+                open_ds = bp.xr.open_dataset(fpath)
                 open_ds = open_ds['pr'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
                 years_means = []
                 for year in hist_years:
                     year_dat = open_ds.sel(time = open_ds.time.dt.month.isin([6,7,8]) & (open_ds.time.dt.year == year))
                     mean = year_dat.mean().item()
                     years_means.append(mean)
-                grand_mean = float(np.mean(years_means))
+                grand_mean = float(bp.np.mean(years_means))
                 hist_precip_data.append([model, emission_scenario, grand_mean])
     return hist_precip_data   
 
-#returns a list with the model name, emission scenario, and the average precip value for it across future years and grid points
+# returns a list with the model name, emission scenario, and the average precip value for it across future years and grid points
 def fut_precip():
     fut_precip_data = []
     for model in models:
         for emission_scenario in emission_scenarios:
             fpath = strong_group_path + model + '_' + emission_scenario + '_pr.nc'
-            if not os.path.exists(fpath):
+            if not bp.os.path.exists(fpath):
                 continue
             else:
-                open_ds = xr.open_dataset(fpath)
+                open_ds = bp.xr.open_dataset(fpath)
                 open_ds = open_ds['pr'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
                 years_means = []
                 for year in fut_years:
                     year_dat = open_ds.sel(time = open_ds.time.dt.month.isin([6,7,8]) & (open_ds.time.dt.year == year))
                     mean = year_dat.mean().item()
                     years_means.append(mean)
-                grand_mean = float(np.mean(years_means))
+                grand_mean = float(bp.np.mean(years_means))
                 fut_precip_data.append([model, emission_scenario, grand_mean])
     return fut_precip_data    
 
-#pulls from lists for future and historical precip values to return a new list containing the precip ratio
+# pulls from lists for future and historical precip values to return a new list containing the precip ratio
 def precip_ratio():
     precip_ratio_data = []
     fut_data = fut_precip()
@@ -127,10 +121,10 @@ def hist_temp_year():
     for model in models:
         for emission_scenario in emission_scenarios:
             fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-            if not os.path.exists(fpath_min):
+            if not bp.os.path.exists(fpath_min):
                 continue
             else:
-                open_ds_min = xr.open_dataset(fpath_min)
+                open_ds_min = bp.xr.open_dataset(fpath_min)
                 open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
                 years_means_min = []
                 for year in hist_years:
@@ -138,10 +132,10 @@ def hist_temp_year():
                     mean_min = year_dat_min.mean().item()
                     years_means_min.append(mean_min)
             fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-            if not os.path.exists(fpath_max):
+            if not bp.os.path.exists(fpath_max):
                 continue
             else:
-                open_ds_max = xr.open_dataset(fpath_max)
+                open_ds_max = bp.xr.open_dataset(fpath_max)
                 open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
                 years_means_max = []
                 for year in hist_years:
@@ -149,7 +143,7 @@ def hist_temp_year():
                     mean_max = year_dat_max.mean().item()
                     years_means_max.append(mean_max)    
             all_avg = [(min + max)/2 for min, max in zip(years_means_min, years_means_max)]
-            grand_mean = float(np.mean(all_avg))
+            grand_mean = float(bp.np.mean(all_avg))
             hist_temp_data_year.append([model, emission_scenario, grand_mean])
     return hist_temp_data_year    
 
@@ -158,10 +152,10 @@ def fut_temp_year():
     for model in models:
         for emission_scenario in emission_scenarios:
             fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-            if not os.path.exists(fpath_min):
+            if not bp.os.path.exists(fpath_min):
                 continue
             else:
-                open_ds_min = xr.open_dataset(fpath_min)
+                open_ds_min = bp.xr.open_dataset(fpath_min)
                 open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
                 years_means_min = []
                 for year in fut_years:
@@ -169,10 +163,10 @@ def fut_temp_year():
                     mean_min = year_dat_min.mean().item()
                     years_means_min.append(mean_min)
             fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-            if not os.path.exists(fpath_max):
+            if not bp.os.path.exists(fpath_max):
                 continue
             else:
-                open_ds_max = xr.open_dataset(fpath_max)
+                open_ds_max = bp.xr.open_dataset(fpath_max)
                 open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
                 years_means_max = []
                 for year in fut_years:
@@ -180,10 +174,11 @@ def fut_temp_year():
                     mean_max = year_dat_max.mean().item()
                     years_means_max.append(mean_max)    
             all_avg = [(min + max)/2 for min, max in zip(years_means_min, years_means_max)]
-            grand_mean = float(np.mean(all_avg))
+            grand_mean = float(bp.np.mean(all_avg))
             fut_temp_data_year.append([model, emission_scenario, grand_mean])
     return fut_temp_data_year 
 
+# finds the difference in mean temperature between future and historical periods
 def delta_temp_year():
     delta_temp_data_year = []
     fut_data = fut_temp_year()
@@ -195,95 +190,96 @@ def delta_temp_year():
         delta_temp_data_year.append([fut[0], fut[1], grand_temp])
     return delta_temp_data_year
 
-def hist_temp_month():
-    hist_temp_data_month = []
-    months = [6, 7, 8]
-    for model in models:
-        for emission_scenario in emission_scenarios:
-            fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-            if not os.path.exists(fpath_min):
-                continue
-            else:
-                open_ds_min = xr.open_dataset(fpath_min)
-                open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                months_means_min = []
-                for year in hist_years:
-                    year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.year == year)
-                    for month in months:
-                        each_month_min = year_dat_min.sel(time = year_dat_min.time.dt.month == month)
-                        mean_min = each_month_min.mean().item()
-                        months_means_min.append(mean_min)
-            fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-            if not os.path.exists(fpath_max):
-                continue
-            else:
-                open_ds_max = xr.open_dataset(fpath_max)
-                open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                months_means_max = []
-                for year in hist_years:
-                    year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.year == year)
-                    for month in months:
-                        each_month_max = year_dat_max.sel(time = year_dat_max.time.dt.month == month)
-                        mean_max = each_month_max.mean().item()
-                        months_means_max.append(mean_max)    
-            all_avg = [(min + max)/2 for min, max in zip(months_means_min, months_means_max)]
-            grand_mean = float(np.mean(all_avg))
-            hist_temp_data_month.append([model, emission_scenario, grand_mean])
-    return hist_temp_data_month
+# def hist_temp_month():
+#     hist_temp_data_month = []
+#     months = [6, 7, 8]
+#     for model in models:
+#         for emission_scenario in emission_scenarios:
+#             fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
+#             if not bp.os.path.exists(fpath_min):
+#                 continue
+#             else:
+#                 open_ds_min = bp.xr.open_dataset(fpath_min)
+#                 open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
+#                 months_means_min = []
+#                 for year in hist_years:
+#                     year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.year == year)
+#                     for month in months:
+#                         each_month_min = year_dat_min.sel(time = year_dat_min.time.dt.month == month)
+#                         mean_min = each_month_min.mean().item()
+#                         months_means_min.append(mean_min)
+#             fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
+#             if not bp.os.path.exists(fpath_max):
+#                 continue
+#             else:
+#                 open_ds_max = bp.xr.open_dataset(fpath_max)
+#                 open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
+#                 months_means_max = []
+#                 for year in hist_years:
+#                     year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.year == year)
+#                     for month in months:
+#                         each_month_max = year_dat_max.sel(time = year_dat_max.time.dt.month == month)
+#                         mean_max = each_month_max.mean().item()
+#                         months_means_max.append(mean_max)    
+#             all_avg = [(min + max)/2 for min, max in zip(months_means_min, months_means_max)]
+#             grand_mean = float(bp.np.mean(all_avg))
+#             hist_temp_data_month.append([model, emission_scenario, grand_mean])
+#     return hist_temp_data_month
 
-def fut_temp_month():
-    fut_temp_data_month = []
-    months = [6, 7, 8]
-    for model in models:
-        for emission_scenario in emission_scenarios:
-            fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-            if not os.path.exists(fpath_min):
-                continue
-            else:
-                open_ds_min = xr.open_dataset(fpath_min)
-                open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                months_means_min = []
-                for year in fut_years:
-                    year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.year == year)
-                    for month in months:
-                        each_month_min = year_dat_min.sel(time = year_dat_min.time.dt.month == month)
-                        mean_min = each_month_min.mean().item()
-                        months_means_min.append(mean_min)
-            fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-            if not os.path.exists(fpath_max):
-                continue
-            else:
-                open_ds_max = xr.open_dataset(fpath_max)
-                open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                months_means_max = []
-                for year in fut_years:
-                    year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.year == year)
-                    for month in months:
-                        each_month_max = year_dat_max.sel(time = year_dat_max.time.dt.month == month)
-                        mean_max = each_month_max.mean().item()
-                        months_means_max.append(mean_max)    
-            all_avg = [(min + max)/2 for min, max in zip(months_means_min, months_means_max)]
-            grand_mean = float(np.mean(all_avg))
-            fut_temp_data_month.append([model, emission_scenario, grand_mean])
-    return fut_temp_data_month
+# def fut_temp_month():
+#     fut_temp_data_month = []
+#     months = [6, 7, 8]
+#     for model in models:
+#         for emission_scenario in emission_scenarios:
+#             fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
+#             if not bp.os.path.exists(fpath_min):
+#                 continue
+#             else:
+#                 open_ds_min = bp.xr.open_dataset(fpath_min)
+#                 open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
+#                 months_means_min = []
+#                 for year in fut_years:
+#                     year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.year == year)
+#                     for month in months:
+#                         each_month_min = year_dat_min.sel(time = year_dat_min.time.dt.month == month)
+#                         mean_min = each_month_min.mean().item()
+#                         months_means_min.append(mean_min)
+#             fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
+#             if not bp.os.path.exists(fpath_max):
+#                 continue
+#             else:
+#                 open_ds_max = bp.xr.open_dataset(fpath_max)
+#                 open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
+#                 months_means_max = []
+#                 for year in fut_years:
+#                     year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.year == year)
+#                     for month in months:
+#                         each_month_max = year_dat_max.sel(time = year_dat_max.time.dt.month == month)
+#                         mean_max = each_month_max.mean().item()
+#                         months_means_max.append(mean_max)    
+#             all_avg = [(min + max)/2 for min, max in zip(months_means_min, months_means_max)]
+#             grand_mean = float(bp.np.mean(all_avg))
+#             fut_temp_data_month.append([model, emission_scenario, grand_mean])
+#     return fut_temp_data_month
 
-def delta_temp_month():
-    delta_temp_data_month = []
-    fut_data = fut_temp_month()
-    hist_data = hist_temp_month()
-    for fut, hist in zip(fut_data, hist_data):
-        fut_val = fut[2]
-        hist_val = hist[2]
-        grand_temp = fut_val - hist_val
-        delta_temp_data_month.append([fut[0], fut[1], grand_temp])
-    return delta_temp_data_month
+# def delta_temp_month():
+#     delta_temp_data_month = []
+#     fut_data = fut_temp_month()
+#     hist_data = hist_temp_month()
+#     for fut, hist in zip(fut_data, hist_data):
+#         fut_val = fut[2]
+#         hist_val = hist[2]
+#         grand_temp = fut_val - hist_val
+#         delta_temp_data_month.append([fut[0], fut[1], grand_temp])
+#     return delta_temp_data_month
 
-#pull data points
+# pull data points (see copied below)
 yprecip = precip_ratio()
 xtemp = delta_temp_year()
 # check_temp = delta_temp_month()
 
 #%%
+# copy and pasted data from above code for plotting instead of running all together
 yprecip = [['ACCESS-CM2', 'ssp126', 123.04653885765929],
  ['ACCESS-CM2', 'ssp245', 103.51375689164581],
  ['ACCESS-CM2', 'ssp370', 169.43617593472138],
@@ -488,8 +484,8 @@ xtemp = [['ACCESS-CM2', 'ssp126', 4.035470496283665],
  ['UKESM1-0-LL', 'ssp434', 5.048386467827697],
  ['UKESM1-0-LL', 'ssp585', 8.97464269002279]]
 
-#graph individual datapoints with colors to match  emission scenarios
-fig, ax = plt.subplots()
+# graph individual datapoints with colors to match  emission scenarios
+fig, ax = bp.plt.subplots()
 labels = []
 marker_colors = ['purple', 'indigo', 'steelblue', 'darkcyan', 'seagreen', 'gold']
 for idx, data in enumerate(yprecip):
@@ -510,12 +506,12 @@ for idx, data in enumerate(yprecip):
     labels.append([f"Source: {xtemp[idx][0]}, Scenario: {xtemp[idx][1]}"])
     ax.scatter(temp_data, precip_data, c = marker, s = 25)
     
-#axis ticks and labels
+# axis ticks and labels
 ax.set_yticks([50, 100, 150, 200])
 ax.set_yticklabels([0.5, 1, 1.5, 2])
 ax.set_xticks([0, 5])
 
-#set horizontal and vertical lines
+# set horizontal and vertical lines
 ax.axhline(y = 50, color = 'lightgray', linewidth = 0.7)
 ax.axhline(y = 100, color = 'lightgray', linewidth = 0.7)
 ax.axhline(y = 150, color = 'lightgray', linewidth = 0.7)
@@ -523,30 +519,30 @@ ax.axhline(y = 200, color = 'lightgray', linewidth = 0.7)
 ax.axvline(x = 0, color = 'lightgray', linewidth = 0.7)
 ax.axvline(x = 5, color = 'lightgray', linewidth = 0.7)
 
-#remove the black outlines around the graph
+# remove the black outlines around the graph
 for spine in ax.spines.values():
     spine.set_visible(False)
 ax.tick_params(axis='both', which='both', length=0)
 
-#labels for the graph
+# labels for the graph
 ax.set_xlabel('Temperature Change (K)')
 ax.set_ylabel('Precipitation Ratio')
-#title
+# title
 fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.01)
-#subtitle
+# subtitle
 ax.set_title('1979-2014 vs. 2070-2099', fontsize = 10, pad = 7)
 
-#creating a custom legend for emission scenarios
+# creating a custom legend for emission scenarios
 my_legend = [
-    Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[0], label = emission_scenarios[0]),
-    Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[1], label = emission_scenarios[1]),
-    Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[2], label = emission_scenarios[2]),
-    Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[3], label = emission_scenarios[3]),
-    Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[4], label = emission_scenarios[4]),
-    Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[5], label = emission_scenarios[5])]
+    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[0], label = emission_scenarios[0]),
+    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[1], label = emission_scenarios[1]),
+    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[2], label = emission_scenarios[2]),
+    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[3], label = emission_scenarios[3]),
+    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[4], label = emission_scenarios[4]),
+   bp. Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[5], label = emission_scenarios[5])]
 ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
 
-save_path = os.path.join('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSL_Climate/summer_precip_scatter.html')
+save_path = bp.os.path.join('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/summer_precip_scatter.png')
 fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
 
 #%%
@@ -604,6 +600,8 @@ fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
 #                 'MPI-ESM1-2-LR','MRI-ESM2-0','NorESM2-LM']
 
 #%%
+# output of data points used on scatter plot
+
 ysorted_data = sorted(yprecip, key=lambda x: x[2])
 [['MPI-ESM1-2-LR', 'ssp585', 54.04509071810081],
  ['MPI-ESM1-2-LR', 'ssp245', 62.72868031100225],
