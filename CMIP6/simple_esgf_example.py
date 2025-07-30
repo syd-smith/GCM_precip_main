@@ -27,7 +27,7 @@ cat = intake_esgf.ESGFCatalog()
 # some variables that can be used
 # variables_to_check = ['tas', 'huss', 'ps', 'psl', 'vas', 'uas', 'ts', 'mrsos', 'tsl','hus', 'ta', 'va', 'ua', 'zg', 'mrsol']
 # currently looking for precipitation
-variables_to_check  = ['pr']
+variables_to_check  = ['ts']
 
 # used to look at multiple emission scenarios
 # set ssp = ssps
@@ -39,17 +39,18 @@ ssp = 'ssp585'
 
 cat=cat.search(
     source_id='CanESM5',
-    # activity_id=['ScenarioMIP'],
-    activity_id = ['CMIP'], 
-    # experiment_id=[ssp],
-    experiment_id=['historical'], # xu18_ssp, 
-    # member_id='r1i1p1f2',
+    activity_id=['ScenarioMIP'],
+    # activity_id = ['CMIP'], 
+    experiment_id=[ssp],
+    # experiment_id=['historical'], # xu18_ssp, 
+    member_id='r1i1p1f1',
     # table_id=["6hrPlevPt","6hrPlev","3hr"],
-    # table_id='day',
-    table_id = 'Omon',
+    # table_id='month',
+    table_id = 'Amon',
     variable_id= variables_to_check
     # grid_label='gr1'
     )
+
 #%%
 # cat=cat.search(
 #     source_id='MPI-ESM1-2-HR',

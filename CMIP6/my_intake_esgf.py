@@ -13,13 +13,13 @@ from intake_esgf import ESGFCatalog
 
 cat = ESGFCatalog()
 looking = cat.search(
-    variable_id = 'pr', 
-    experiment_id = 'historical', 
+    variable_id = 'huss', 
+    experiment_id = 'ssp585', 
     table_id = 'Amon', 
     mip_era = 'CMIP6', 
-    source_id = 'UKESM1-0-LL', 
+    source_id = 'CanESM5', 
     # member_id = 'r1i1p1f1', 
-    activity_drs = ['CMIP', 'ScenarioMIP']
+    activity_drs = ['ScenarioMIP']
     )
 
 dsd = cat.to_dataset_dict()
