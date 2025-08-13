@@ -80,9 +80,11 @@ def hist_mean(model_name, variable):
     overall_mean_hist = combine_means_hist.mean(dim = 'year')
     
     if variable == 'psl':
-        overall_mean_hist = overall_mean_hist * 0.01 # convert from Pa to hPa
-    else:
-        overall_mean_hist = overall_mean_hist
+        overall_mean_hist *= 0.01 # convert from Pa to hPa
+    elif variable == 'huss':
+        overall_mean_hist *= 1000 # convert from kg/kg to g/kg
+    # else:
+    #     overall_mean_hist = overall_mean_hist
 
     return overall_mean_hist
 
@@ -116,9 +118,11 @@ def fut_mean(model_name, variable, interpolate = False):
     overall_mean_fut = combine_means_fut.mean(dim = 'year')
     
     if variable == 'psl':
-        overall_mean_fut = overall_mean_fut * 0.01 # convert from Pa to hPa
-    else:
-        overall_mean_fut = overall_mean_fut
+        overall_mean_fut *= 0.01 # convert from Pa to hPa
+    elif variable == 'huss':
+        overall_mean_fut *= 1000 # convert from kg/kg to g/kg
+    # else:
+    #     overall_mean_fut = overall_mean_fut
 
     return overall_mean_fut
 
@@ -156,10 +160,17 @@ def anomaly(model_name, variable):
     combine_means_fut = bp.xr.concat(means_fut, dim = 'year')
     overall_mean_fut = combine_means_fut.mean(dim = 'year')
    
+    # Sets up all variables as a difference between time periods except for precipitation as a percent change
     if variable == 'pr':
         anomaly = ((overall_mean_fut - overall_mean_hist) / overall_mean_hist) * 100
     else:
         anomaly = overall_mean_fut - overall_mean_hist
+        
+    # conversions for some variables
+    if variable == 'psl':
+        anomaly *= 0.01 # convert from Pa to hPa
+    elif variable == 'huss':
+        anomaly *= 1000 # convert from kg/kg to g/kg
 
     return anomaly
 
@@ -219,7 +230,7 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'cbar_m' : 'Mean Surface Temperature (K)' 
                      }
     elif variable == 'huss':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
+        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_viridis'),
                      'cmap_m' : bp.cmap.cmap('GMT_drywet'),
                      'title': 'Near Surface Specific Humidity',
                      'cbar_a' : 'Change in Near Surface Specific Humidity (g/kg)', # xr dataset says units are 1 but I think g/kg?
@@ -352,7 +363,7 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
 
 
 # DATA FOR NEW MODEL GROUPS
-map_anomalies(hist_mean, H_models[-1], 'psl') 
+# map_anomalies(hist_mean, H_models[-1], 'psl') 
 
 # loop over new H_models
 # for model in H_models:
@@ -375,3 +386,56 @@ map_anomalies(hist_mean, H_models[-1], 'psl')
     
 # complete list of models analyzed
 # models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G', 'MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
+
+#%%
+# finding min and max across datasets for each variable
+
+models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
+def min_max (variable):
+    saved_min = 0
+    saved_max = 0
+    for model in models:
+        open = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
+        open = open.sel(lat = slice(15, 53), lon = slice(215, 295))
+        open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
+        data_min = float(open[variable].min())
+        data_max = float(open[variable].max())
+        # GCM pr data is in precipitation flux so the time unit has to be taken out
+        if variable == 'pr':
+            days_in_month = open.time.dt.days_in_month
+            seconds_per_month = days_in_month * 24 * 60 * 60
+            mean_hist = (year_hist * seconds_per_month).mean(dim = 'time')
+        elif variable == 'psl':
+            data_min *= 0.01 # convert from Pa to hPa
+            data_max *= 0.01
+        elif variable == 'huss':
+            data_min *= 1000 # convert from kg/kg to g/kg
+            data_max *= 1000
+        if data_min <= saved_min:
+                saved_min = data_min
+        else:
+            saved_min = saved_min
+        if data_max >= saved_max:
+                saved_max = data_max
+        else:
+            continue #if i say continue does it skip to the next model
+            
+
+    
+    return f'Min for {variable}: {saved_min} & Max for {variable}: {saved_max}'
+        
+min_max('pr')
+        
+#%%
+variable = 'pr'
+model = 'CanESM5'
+open = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
+open = open.sel(lat = slice(15, 53), lon = slice(215, 295))
+open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
+days_in_month = open.time.dt.days_in_month
+
+
+
+
+
+    
