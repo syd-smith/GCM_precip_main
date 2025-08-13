@@ -37,15 +37,23 @@ def convert_lon_360_to_180(lon):
     lon_180 = ((lon + 180) % 360) - 180
     return lon_180
 
-# wet models from the scatter plot (high precip ratio)
-H_models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
+# MODELS USED FOR LATEST GROUPING -> HIGH, MODERATE, LOW
+# listed in order from highest to lowest
+H_models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL']
+M_models = ['HadGEM3-GC31-MM']
+L_models = ['MPI-ESM1-2-LR']
 
-# dry models (low precip ratio)
-L_models = ['MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
+
+# MODELS USED FOR INITIAL GROUPING OF HIGH AND LOW
+# wet models from monthly_mean_scatter.py (high precip ratio)
+# H_models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
+
+# dry models from monthly_mean_scatter.py (low precip ratio)
+# L_models = ['MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
 # function to calculate the mean for each gridpoint across the historical period (1979-2014)
-def hist_mean(model_name, variable, time): 
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/intake_esgf/ERA5/{variable}/{variable}_Amon_'
+def hist_mean(model_name, variable): 
+    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
     
     # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
@@ -81,7 +89,7 @@ def hist_mean(model_name, variable, time):
 # function to calculate the mean for each gridpoint across the future period (2070-2099)
 # probably should be combined with hist_mean
 def fut_mean(model_name, variable, interpolate = False):
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/intake_esgf/ERA5/{variable}/{variable}_Amon_'
+    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     open_fut = bp.xr.open_mfdataset(fpath + model_name + '_ssp*.nc', engine = 'netcdf4')
 
     # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
@@ -116,7 +124,7 @@ def fut_mean(model_name, variable, interpolate = False):
 
 # function to calculate the change in a variable from 1979-2014 to 2070-2099 as a difference (precipitation is calculated as a percent change)
 def anomaly(model_name, variable):
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/intake_esgf/ERA5/{variable}/{variable}_Amon_'
+    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     # open both datasets for future and historical periods
     open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
     open_fut = bp.xr.open_mfdataset(fpath + model_name + '_ssp*.nc', engine = 'netcdf4')
@@ -203,6 +211,20 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'cbar_a' : 'Change in Eastward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
                      'cbar_m' : 'Mean Eastward Near Surface Wind (m s\u207B\u00B9)' # m s^-1
                      }
+    elif variable == 'ts':
+        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
+                     'cmap_m' : bp.cmap.cmap('BlAqGrYeOrRe'),
+                     'title': 'Surface Temperature',
+                     'cbar_a' : 'Change in Surface Temperature (K)',
+                     'cbar_m' : 'Mean Surface Temperature (K)' 
+                     }
+    elif variable == 'huss':
+        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
+                     'cmap_m' : bp.cmap.cmap('GMT_drywet'),
+                     'title': 'Near Surface Specific Humidity',
+                     'cbar_a' : 'Change in Near Surface Specific Humidity (g/kg)', # xr dataset says units are 1 but I think g/kg?
+                     'cbar_m' : 'Mean Near Surface Specific Humidity (g/kg)'
+                     }
         
     # format and function of dictionary explained
     else:
@@ -232,12 +254,12 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\nMean {plot_dict['title']}\n2070-2099', fontsize = 18)
         cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85)
-        cbar.set_label(plot_dict['cbar'], fontsize = 10)
+        cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
     elif anomaly_ref.__name__ == 'hist_mean':
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name}\nMean {plot_dict['title']}\n1985-2014', fontsize = 18)
         cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85)
-        cbar.set_label(plot_dict['cbar'], fontsize = 10)
+        cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
     else:
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_a'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\n{plot_dict['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
@@ -245,7 +267,7 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
         if variable == 'vas' or variable == 'uas':
             cbar.set_label('m s-1', fontsize = 10)
         else:
-            cbar.set_label('% Change', fontsize = 10)
+            cbar.set_label(plot_dict['cbar_a'], fontsize = 10)
         cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
     ax.set_ylim(20, 51.25)
     ax.set_xlim(-143, -67.5)
@@ -261,10 +283,10 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     # ax.add_feature(bp.cfeature.RIVERS)
     
     # add quiver to overlay wind vectors on another variable
-    save_name = model_name + '.png'
+    save_name = f'{model_name}_{variable}.png'
     if quiver == True:
         #activate my_quiver function
-        save_name = model_name + '_quiver.png'
+        save_name = f'{model_name}_{variable}_quiver.png'
         
         # slice uas and vas data
         u = anomaly_ref(model_name, 'uas')
@@ -308,7 +330,7 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     
     # save path for files
     # all PNGs stored to anomaly_maps directory but ignored in Git
-    save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/intake_esgf/anomaly_maps/{variable}_maps/{variable}_'
+    save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{variable}_maps/{variable}_'
     if anomaly_ref.__name__ == 'fut_mean':
         save_path = save_path  + 'fut/'
     elif anomaly_ref.__name__ == 'hist_mean':
@@ -317,8 +339,8 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
         save_path = save_path  + 'anom/'
     if model_name in H_models:
         save_path = bp.os.path.join(save_path + 'H_models', save_name)
-    elif model_name in L_models:
-        save_path = bp.os.path.join(save_path + 'L_models', save_name)
+    # elif model_name in L_models:
+    #     save_path = bp.os.path.join(save_path + 'L_models', save_name)
     else:
         save_path  = bp.os.path.join(save_path, save_name)
     
@@ -327,11 +349,26 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     
     return fig, ax
 
+
+
+# DATA FOR NEW MODEL GROUPS
+map_anomalies(hist_mean, H_models[-1], 'psl') 
+
+# loop over new H_models
+# for model in H_models:
+#     map_anomalies(fut_mean, model, 'ts')
+#     bp.plt.show()
     
+# map_anomalies(fut_mean, M_models[0], 'ts') 
+
+# map_anomalies(fut_mean, L_models[0], 'ts') 
+
+
+# EXAMPLES FOR OLD MODEL GROUPS
 # loop over multiple models for one variable
-for model in L_models:
-    map_anomalies(hist_mean, model, 'zg')
-    bp.plt.show()
+# for model in L_models:
+#     map_anomalies(hist_mean, model, 'zg')
+#     bp.plt.show()
 
 # run one test model for one variable
 # test = map_anomalies(fut_mean, 'KACE-1-0-G', 'zg') 
