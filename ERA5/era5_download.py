@@ -60,12 +60,13 @@ def download_hist(model, variable):
     client = cdsapi.Client()
     client.retrieve(dataset, request).download(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/hist_{model}_{variable}.zip')
 
-# for variable in variables_25:
+# for variable in variables_25[3:]:
 #     download_hist(models[5], variable)
     
+download_hist(models[5], variables_25[2])
 
 # job failed -> check esgf
-download_hist(models[5], variables_25[2])
+download_hist(models[5], variables_25[3])
 #%%
 
 def download_fut(model, variable):
@@ -107,6 +108,15 @@ def download_fut(model, variable):
 
 # for model in models[3:]:
 #     download_fut(model, variables[1])
+
+# for variable in variables_25[3:]:
+#     download_fut(models[5], variable)
     
-# two caused issues -> try independently
-download_fut(models[2], variables[1])
+# two caused issues -> try independently (needs to be run on esgf not working here)
+# download_fut(models[2], variables[1])
+
+# deleted file needs redownloaded
+# multiple .nc files -> issues unzipping
+# download_fut(models[5], variables_25[3])
+
+download_fut(models[4], variables_25[2])
