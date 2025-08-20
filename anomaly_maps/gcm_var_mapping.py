@@ -192,49 +192,63 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
                      'title': 'Sea Level Pressure', 
                      'cbar_a' : 'Change in Sea Level Pressure (hPa)',
-                     'cbar_m' : 'Mean Sea Level Pressure (hPa)'
+                     'cbar_m' : 'Mean Sea Level Pressure (hPa)',
+                     'min' : 0,
+                     'max' : 1025.757734375
                      }
     elif variable == 'pr':
         plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_BrBG'),
                      'cmap_m' : bp.cmap.cmap('MPL_BrBG'),
                      'title': 'Precipitation',
                      'cbar_a' : 'Change in Precipitation (%)',
-                     'cbar_m' : 'Mean Precipitation (mm)'
+                     'cbar_m' : 'Mean Precipitation (mm)',
+                     'min' : 0,
+                     'max' : 356.39461531536654
                      }
     elif variable == 'zg':
         plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
                      'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
                      'title': 'Geopotential Height',
                      'cbar_a' : 'Change in 500-hPa Geopotential Height (m)',
-                     'cbar_m' : 'Mean 500-hPa Geopotential Height (m)'
+                     'cbar_m' : 'Mean 500-hPa Geopotential Height (m)',
+                     'min' : 0,
+                     'max' : 6026.05859375
                      }
     elif variable == 'vas':
         plot_dict = {'cmap_a' : bp.cmap.cmap('CBR_wet'),
                      'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
                      'title': 'Northward Near Surface Wind',
                      'cbar_a' : 'Change in Northward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'cbar_m' : 'Mean Northward Near Surface Wind (m s\u207B\u00B9)' # m s^-1
+                     'cbar_m' : 'Mean Northward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
+                     'min' : -7.548502445220947,
+                     'max' : 7.408854007720947
                      }
     elif variable == 'uas':
         plot_dict = {'cmap_a' : bp.cmap.cmap('CBR_wet'),
                      'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
                      'title': 'Easthward Near Surface Wind',
                      'cbar_a' : 'Change in Eastward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'cbar_m' : 'Mean Eastward Near Surface Wind (m s\u207B\u00B9)' # m s^-1
+                     'cbar_m' : 'Mean Eastward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
+                     'min' : -11.716796875,
+                     'max' : 5.820638179779053
                      }
     elif variable == 'ts':
         plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
                      'cmap_m' : bp.cmap.cmap('BlAqGrYeOrRe'),
                      'title': 'Surface Temperature',
                      'cbar_a' : 'Change in Surface Temperature (K)',
-                     'cbar_m' : 'Mean Surface Temperature (K)' 
+                     'cbar_m' : 'Mean Surface Temperature (K)',
+                     'min' : 0,
+                     'max' : 315.297119140625
                      }
     elif variable == 'huss':
         plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_viridis'),
                      'cmap_m' : bp.cmap.cmap('GMT_drywet'),
                      'title': 'Near Surface Specific Humidity',
                      'cbar_a' : 'Change in Near Surface Specific Humidity (g/kg)', # xr dataset says units are 1 but I think g/kg?
-                     'cbar_m' : 'Mean Near Surface Specific Humidity (g/kg)'
+                     'cbar_m' : 'Mean Near Surface Specific Humidity (g/kg)',
+                     'min' : 0,
+                     'max' :25.42159892618656
                      }
         
     # format and function of dictionary explained
@@ -243,7 +257,9 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'cmap_m' : 'color map for hist/fut means',
                      'title': 'Test Map Title',
                      'cbar_a' : 'Default Measurement for anomaly colorbar',
-                     'cbar_m' : 'Default Measurement for hist/fut mean colorbar'
+                     'cbar_m' : 'Default Measurement for hist/fut mean colorbar',
+                     'min' : 0,
+                     'max' : 100
                      }
         
     #setup map
@@ -251,8 +267,8 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
     
     # set the color transition to happen at 0
-    data_min = data.values.min()
-    data_max = data.values.max()
+    data_min = plot_dict['min']
+    data_max = plot_dict['max']
 
     # defualts norm if 0 can't be at the center
     if data_min < 0.00 < data_max:
@@ -391,21 +407,28 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
 # finding min and max across datasets for each variable
 
 models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
+
 def min_max (variable):
     saved_min = 0
     saved_max = 0
     for model in models:
         open = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
-        open = open.sel(lat = slice(15, 53), lon = slice(215, 295))
+        open = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
         open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
-        data_min = float(open[variable].min())
-        data_max = float(open[variable].max())
-        # GCM pr data is in precipitation flux so the time unit has to be taken out
-        if variable == 'pr':
-            days_in_month = open.time.dt.days_in_month
-            seconds_per_month = days_in_month * 24 * 60 * 60
-            mean_hist = (year_hist * seconds_per_month).mean(dim = 'time')
-        elif variable == 'psl':
+        years = range(1985, 2099)
+        means = []
+        for year in years:
+            one_year = open.sel(time = open.time.dt.year == year)
+            # GCM pr data is in precipitation flux so the time unit has to be taken out
+            if variable == 'pr':
+                days_in_month = open.time.dt.days_in_month
+                seconds_per_month = days_in_month * 24 * 60 * 60
+                mean = (one_year * seconds_per_month).mean(dim = 'time')
+            else:
+                mean = one_year.mean(dim = 'time')
+        data_max = float(mean.max())
+        data_min = float(mean.min())
+        if variable == 'psl':
             data_min *= 0.01 # convert from Pa to hPa
             data_max *= 0.01
         elif variable == 'huss':
@@ -418,24 +441,53 @@ def min_max (variable):
         if data_max >= saved_max:
                 saved_max = data_max
         else:
-            continue #if i say continue does it skip to the next model
-            
-
-    
-    return f'Min for {variable}: {saved_min} & Max for {variable}: {saved_max}'
+            saved_max = saved_max
+        result = f'Min for {variable}: {saved_min}\nMax for {variable}: {saved_max}'
+    return result
         
-min_max('pr')
+print(min_max('zg'))
+
+#MIN AND MAX VALUES FOR HIST AND FUT MEANS
+# Min for pr: 0
+# Max for pr: 909.7929873503745
+
+# Min for psl: 0
+# Max for psl: 1026.528359375
+
+# Min for huss: 0
+# Max for huss: 31.829196959733963
+
+# Min for ts: 0
+# Max for ts: 321.9630432128906
+
+#ERROR IN FILES
+# Min for zg: 0
+# Max for zg: 6026.05859375
+
+# Min for vas: -7.548502445220947
+# Max for vas: 7.408854007720947
+
+# Min for uas: -11.716796875
+# Max for uas: 5.820638179779053
         
 #%%
 variable = 'pr'
 model = 'CanESM5'
 open = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
-open = open.sel(lat = slice(15, 53), lon = slice(215, 295))
+open = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
 open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
-days_in_month = open.time.dt.days_in_month
-
-
-
-
+years = range(1985, 2099)
+means = []
+for year in years:
+    one_year = open.sel(time = open.time.dt.year == year)
+    # GCM pr data is in precipitation flux so the time unit has to be taken out
+    if variable == 'pr':
+        days_in_month = open.time.dt.days_in_month
+        seconds_per_month = days_in_month * 24 * 60 * 60
+        mean = (one_year * seconds_per_month).mean(dim = 'time')
+    else:
+        mean = one_year.mean(dim = 'time')
+data_max = float(mean.max())
+data_min = float(mean.min())
 
     
