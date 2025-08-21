@@ -405,7 +405,6 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
 
 #%%
 # finding min and max across datasets for each variable
-
 models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
 def min_max (variable):
@@ -445,7 +444,7 @@ def min_max (variable):
         result = f'Min for {variable}: {saved_min}\nMax for {variable}: {saved_max}'
     return result
         
-print(min_max('zg'))
+# print(min_max('zg'))
 
 #MIN AND MAX VALUES FOR HIST AND FUT MEANS
 # Min for pr: 0
@@ -469,7 +468,75 @@ print(min_max('zg'))
 
 # Min for uas: -11.716796875
 # Max for uas: 5.820638179779053
+
+def anom_min_max(variable):
+    saved_min = 0
+    saved_max = 0
+    for model in models:
+        open_hist = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_hist*.nc')
+        open_fut = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_ssp*.nc')
+     
+        open_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+        open_hist = open_hist.sel(time = open_hist.time.dt.month.isin([6, 7, 8]))
         
+        open_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+        open_fut = open_fut.sel(time = open_fut.time.dt.month.isin([6, 7, 8]))
+    
+        # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
+        if variable == 'zg':
+            open_hist = open_hist.sel(plev = 50000, method = 'nearest')
+            open_fut = open_fut.sel(plev = 50000, method = 'nearest')
+            
+        years_hist = range(1985, 2015)
+        means_hist = []
+        for year in years_hist:
+            year_hist = open_hist.sel(time = open_hist.time.dt.year == year)
+            mean_hist = year_hist.mean(dim = 'time')
+            means_hist.append(mean_hist)        
+        combine_means_hist = bp.xr.concat(means_hist, dim = 'year')
+        overall_mean_hist = combine_means_hist.mean(dim = 'year')
+
+        years_fut = range(2070, 2100)
+        means_fut = []
+        for year in years_fut:
+            year_fut = open_fut.sel(time = open_fut.time.dt.year == year)
+            mean_fut = year_fut.mean(dim = 'time', skipna = True)
+            means_fut.append(mean_fut)
+        combine_means_fut = bp.xr.concat(means_fut, dim = 'year')
+        overall_mean_fut = combine_means_fut.mean(dim = 'year')
+       
+        # Sets up all variables as a difference between time periods except for precipitation as a percent change
+        if variable == 'pr':
+            anomaly = ((overall_mean_fut - overall_mean_hist) / overall_mean_hist) * 100
+        else:
+            anomaly = overall_mean_fut - overall_mean_hist
+        
+        # conversions for some variables
+        if variable == 'psl':
+            anomaly *= 0.01 # convert from Pa to hPa
+        elif variable == 'huss':
+            anomaly *= 1000 # convert from kg/kg to g/kg
+            
+        # find min and max of all returned anomalies
+        data_max = float(anomaly.max())
+        data_min = float(anomaly.min())
+        
+        # save the highest and lowest from all of the models
+        if data_min <= saved_min:
+                saved_min = data_min
+        else:
+            saved_min = saved_min
+        if data_max >= saved_max:
+                saved_max = data_max
+        else:
+            saved_max = saved_max
+        result = f'Anom min for {variable}: {saved_min}\nAnom max for {variable}: {saved_max}'
+        
+    return result
+
+print(anom_min_max('pr'))
+    
+    
 #%%
 variable = 'pr'
 model = 'CanESM5'
