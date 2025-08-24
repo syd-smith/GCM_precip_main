@@ -193,17 +193,21 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'title': 'Sea Level Pressure', 
                      'cbar_a' : 'Change in Sea Level Pressure (hPa)',
                      'cbar_m' : 'Mean Sea Level Pressure (hPa)',
-                     'min' : 0,
-                     'max' : 1025.757734375
+                     'min_m' : 1002.8295312500001,
+                     'max_m' : 1027.75984375,
+                     'min_a' : -2.1117968559265137,
+                     'max_a' : 3.2
                      }
     elif variable == 'pr':
         plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_BrBG'),
-                     'cmap_m' : bp.cmap.cmap('MPL_BrBG'),
+                     'cmap_m' : bp.cmap.cmap('cmocean_haline', revBool = True),
                      'title': 'Precipitation',
                      'cbar_a' : 'Change in Precipitation (%)',
                      'cbar_m' : 'Mean Precipitation (mm)',
-                     'min' : 0,
-                     'max' : 356.39461531536654
+                     'min_m' : 0.21196805760707713,
+                     'max_m' : 360,
+                     'min_a' : -75,
+                     'max_a' : 300
                      }
     elif variable == 'zg':
         plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
@@ -211,8 +215,10 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'title': 'Geopotential Height',
                      'cbar_a' : 'Change in 500-hPa Geopotential Height (m)',
                      'cbar_m' : 'Mean 500-hPa Geopotential Height (m)',
-                     'min' : 0,
-                     'max' : 6026.05859375
+                     'min_m' : 5676.18017578125,
+                     'max_m' : 5978.65869140625,
+                     'min_a' : 100,
+                     'max_a' : 200
                      }
     elif variable == 'vas':
         plot_dict = {'cmap_a' : bp.cmap.cmap('CBR_wet'),
@@ -220,8 +226,10 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'title': 'Northward Near Surface Wind',
                      'cbar_a' : 'Change in Northward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
                      'cbar_m' : 'Mean Northward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'min' : -7.548502445220947,
-                     'max' : 7.408854007720947
+                     'min_m' : -9.491390228271484,
+                     'max_m' : 6.107685565948486,
+                     'min_a' : -1.862033486366272,
+                     'max_a' : 3.81015682220459
                      }
     elif variable == 'uas':
         plot_dict = {'cmap_a' : bp.cmap.cmap('CBR_wet'),
@@ -229,26 +237,32 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'title': 'Easthward Near Surface Wind',
                      'cbar_a' : 'Change in Eastward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
                      'cbar_m' : 'Mean Eastward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'min' : -11.716796875,
-                     'max' : 5.820638179779053
+                     'min_m' : -11.079482078552246,
+                     'max_m' : 5.9408488273620605,
+                     'min_a' : -3.5138015747070312,
+                     'max_a' : 2.595974922180176
                      }
     elif variable == 'ts':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
-                     'cmap_m' : bp.cmap.cmap('BlAqGrYeOrRe'),
+        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_YlOrRd'),
+                     'cmap_m' : bp.cmap.cmap('MPL_YlOrRd'),
                      'title': 'Surface Temperature',
                      'cbar_a' : 'Change in Surface Temperature (K)',
                      'cbar_m' : 'Mean Surface Temperature (K)',
-                     'min' : 0,
-                     'max' : 315.297119140625
+                     'min_m' : 281.8443298339844,
+                     'max_m' : 318.0555114746094,
+                     'min_a' : 0.475433349609375,
+                     'max_a' : 15.549346923828125
                      }
     elif variable == 'huss':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_viridis'),
-                     'cmap_m' : bp.cmap.cmap('GMT_drywet'),
+        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_YlGnBu'),
+                     'cmap_m' : bp.cmap.cmap('cmocean_haline', revBool = True),
                      'title': 'Near Surface Specific Humidity',
                      'cbar_a' : 'Change in Near Surface Specific Humidity (g/kg)', # xr dataset says units are 1 but I think g/kg?
                      'cbar_m' : 'Mean Near Surface Specific Humidity (g/kg)',
-                     'min' : 0,
-                     'max' :25.42159892618656
+                     'min_m' : 4.40641213208437,
+                     'max_m' : 27.03595533967018,
+                     'min_a' : 0,
+                     'max_a' : 7.801617622375488
                      }
         
     # format and function of dictionary explained
@@ -258,8 +272,10 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'title': 'Test Map Title',
                      'cbar_a' : 'Default Measurement for anomaly colorbar',
                      'cbar_m' : 'Default Measurement for hist/fut mean colorbar',
-                     'min' : 0,
-                     'max' : 100
+                     'min_m' : 0,
+                     'max_m' : 100,
+                     'min_a' : 0,
+                     'max_a' : 100
                      }
         
     #setup map
@@ -267,8 +283,12 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
     
     # set the color transition to happen at 0
-    data_min = plot_dict['min']
-    data_max = plot_dict['max']
+    if anomaly_ref.__name__ == 'anomaly':
+        data_min = plot_dict['min_a']
+        data_max = plot_dict['max_a']
+    else:
+        data_min = plot_dict['min_m']
+        data_max = plot_dict['max_m']
 
     # defualts norm if 0 can't be at the center
     if data_min < 0.00 < data_max:
@@ -280,22 +300,24 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     if anomaly_ref.__name__ == 'fut_mean':
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\nMean {plot_dict['title']}\n2070-2099', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85)
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85, extend = 'both')
         cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
+        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     elif anomaly_ref.__name__ == 'hist_mean':
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name}\nMean {plot_dict['title']}\n1985-2014', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85)
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85, extend = 'both')
         cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
+        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     else:
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_a'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\n{plot_dict['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85)
-        if variable == 'vas' or variable == 'uas':
-            cbar.set_label('m s-1', fontsize = 10)
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85, extend = 'both')
+        cbar.set_label(plot_dict['cbar_a'], fontsize = 10)
+        if variable == 'pr' or variable == 'ts' or variable == 'zg':
+            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
         else:
-            cbar.set_label(plot_dict['cbar_a'], fontsize = 10)
-        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
+            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
     ax.set_ylim(20, 51.25)
     ax.set_xlim(-143, -67.5)
     
@@ -325,20 +347,19 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
         else: 
             scale = 175
         
-        # interpolate data to fit same grid if needed
-        if interpolate == True:
-            ds_out = bp.xr.Dataset(
-                {
-                    "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
-                    "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
-                }
-            )
+        # interpolate data to fit same grid
+        ds_out = bp.xr.Dataset(
+            {
+                "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
+                "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
+            }
+        )
 
-            regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
-            regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
-            u = regridder_u(u)
-            v = regridder_v(v)
-       
+        regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
+        regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
+        u = regridder_u(u)
+        v = regridder_v(v)
+   
         # allow to skip values
         lat = u['lat'][::step]
         lon = u['lon'][::step]
@@ -377,18 +398,17 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     return fig, ax
 
 
-
 # DATA FOR NEW MODEL GROUPS
 # map_anomalies(hist_mean, H_models[-1], 'psl') 
 
 # loop over new H_models
-# for model in H_models:
-#     map_anomalies(fut_mean, model, 'ts')
-#     bp.plt.show()
+for model in H_models:
+    map_anomalies(anomaly, model, 'zg')
+    bp.plt.show()
     
-# map_anomalies(fut_mean, M_models[0], 'ts') 
+map_anomalies(anomaly, M_models[0], 'zg') 
 
-# map_anomalies(fut_mean, L_models[0], 'ts') 
+map_anomalies(anomaly, L_models[0], 'zg') 
 
 
 # EXAMPLES FOR OLD MODEL GROUPS
@@ -403,18 +423,21 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
 # complete list of models analyzed
 # models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G', 'MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
+
 #%%
 # finding min and max across datasets for each variable
 models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
 def min_max (variable):
-    saved_min = 0
-    saved_max = 0
+    all_mins = []
+    all_maxs = []
     for model in models:
         open = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
         open = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
         open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
         years = range(1985, 2099)
+        if variable == 'zg':
+            open = open.sel(plev = 50000, method = 'nearest')
         means = []
         for year in years:
             one_year = open.sel(time = open.time.dt.year == year)
@@ -425,53 +448,56 @@ def min_max (variable):
                 mean = (one_year * seconds_per_month).mean(dim = 'time')
             else:
                 mean = one_year.mean(dim = 'time')
-        data_max = float(mean.max())
-        data_min = float(mean.min())
+            means.append(mean)
+        combine = bp.xr.concat(means, dim = 'year')
+        total_mean = combine.mean(dim = 'year')
+        data_min = float(total_mean.min())
+        data_max = float(total_mean.max())
+            
         if variable == 'psl':
             data_min *= 0.01 # convert from Pa to hPa
             data_max *= 0.01
         elif variable == 'huss':
             data_min *= 1000 # convert from kg/kg to g/kg
             data_max *= 1000
-        if data_min <= saved_min:
-                saved_min = data_min
-        else:
-            saved_min = saved_min
-        if data_max >= saved_max:
-                saved_max = data_max
-        else:
-            saved_max = saved_max
-        result = f'Min for {variable}: {saved_min}\nMax for {variable}: {saved_max}'
+                
+        all_mins.append(data_min)
+        all_maxs.append(data_max)
+            
+    final_min = min(all_mins)
+    final_max = max(all_maxs)
+    
+    result = f'Min for {variable}: {final_min}\nMax for {variable}: {final_max}'
     return result
         
-# print(min_max('zg'))
+print(min_max('uas'))
 
 #MIN AND MAX VALUES FOR HIST AND FUT MEANS
-# Min for pr: 0
-# Max for pr: 909.7929873503745
+# Min for pr: 0.21196805760707713
+# Max for pr: 783.1986581526485
 
-# Min for psl: 0
-# Max for psl: 1026.528359375
+# Min for psl: 1002.8295312500001
+# Max for psl: 1027.75984375
 
-# Min for huss: 0
-# Max for huss: 31.829196959733963
+# Min for huss: 4.40641213208437
+# Max for huss: 27.03595533967018
 
-# Min for ts: 0
-# Max for ts: 321.9630432128906
+# Min for ts: 281.8443298339844
+# Max for ts: 318.0555114746094
 
-#ERROR IN FILES
-# Min for zg: 0
-# Max for zg: 6026.05859375
+# Min for zg: 5676.18017578125
+# Max for zg: 5978.65869140625
 
-# Min for vas: -7.548502445220947
-# Max for vas: 7.408854007720947
+# Min for vas: -9.491390228271484
+# Max for vas: 6.107685565948486
 
-# Min for uas: -11.716796875
-# Max for uas: 5.820638179779053
+# Min for uas: -11.079482078552246
+# Max for uas: 5.9408488273620605
 
+#%%
 def anom_min_max(variable):
-    saved_min = 0
-    saved_max = 0
+    all_mins = []
+    all_maxs = []
     for model in models:
         open_hist = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_hist*.nc')
         open_fut = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_ssp*.nc')
@@ -521,22 +547,40 @@ def anom_min_max(variable):
         data_max = float(anomaly.max())
         data_min = float(anomaly.min())
         
-        # save the highest and lowest from all of the models
-        if data_min <= saved_min:
-                saved_min = data_min
-        else:
-            saved_min = saved_min
-        if data_max >= saved_max:
-                saved_max = data_max
-        else:
-            saved_max = saved_max
-        result = f'Anom min for {variable}: {saved_min}\nAnom max for {variable}: {saved_max}'
+        all_mins.append(data_min)
+        all_maxs.append(data_max)
+    
+    total_min = min(all_mins)
+    total_max = max(all_maxs)
+    result = f'Anom min for {variable}: {total_min}\nAnom max for {variable}: {total_max}'
         
     return result
 
-print(anom_min_max('pr'))
+print(anom_min_max('zg'))
     
-    
+# MIN AND MAX VALUES FOR ANOMALIES 
+# Anom min for pr: -84.02847290039062
+# Anom max for pr: 362.8335266113281
+
+# Anom min for psl: -2.1117968559265137
+# Anom max for psl: 4.881171703338623
+
+# Anom min for huss: -0.7689297199249268
+# Anom max for huss: 7.801617622375488
+
+# Anom min for ts: 0.475433349609375
+# Anom max for ts: 15.549346923828125
+
+# Anom min for uas: -3.5138015747070312
+# Anom max for uas: 2.595974922180176
+
+# Anom min for vas: -1.862033486366272
+# Anom max for vas: 3.81015682220459
+
+# Anom min for zg: 69.8876953125
+# Anom max for zg: 210.7177734375
+
+
 #%%
 variable = 'pr'
 model = 'CanESM5'
