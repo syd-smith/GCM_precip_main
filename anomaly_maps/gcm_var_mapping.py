@@ -52,7 +52,7 @@ L_models = ['MPI-ESM1-2-LR']
 # L_models = ['MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
 # function to calculate the mean for each gridpoint across the historical period (1979-2014)
-def hist_mean(model_name, variable): 
+def hist_mean(model_name, variable, zoom_out = False): 
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
     
@@ -61,7 +61,10 @@ def hist_mean(model_name, variable):
         open_hist = open_hist.sel(plev = 50000, method = 'nearest')
     
     years_hist = range(1985, 2015)
-    location_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+    if zoom_out == True:
+        location_hist = open_hist[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
+    else: 
+        location_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
     JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin([6, 7, 8]))
     means_hist = []
     for year in years_hist:
@@ -90,7 +93,7 @@ def hist_mean(model_name, variable):
 
 # function to calculate the mean for each gridpoint across the future period (2070-2099)
 # probably should be combined with hist_mean
-def fut_mean(model_name, variable, interpolate = False):
+def fut_mean(model_name, variable, interpolate = False, zoom_out = False):
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     open_fut = bp.xr.open_mfdataset(fpath + model_name + '_ssp*.nc', engine = 'netcdf4')
 
@@ -99,7 +102,10 @@ def fut_mean(model_name, variable, interpolate = False):
         open_fut = open_fut.sel(plev = 50000, method = 'nearest')
         
     years_fut = range(2070, 2100)
-    location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+    if  zoom_out == True:
+        location_fut = open_fut[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
+    else:
+        location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
     JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin([6, 7, 8]))
     means_fut = []
     for year in years_fut:
@@ -127,7 +133,7 @@ def fut_mean(model_name, variable, interpolate = False):
     return overall_mean_fut
 
 # function to calculate the change in a variable from 1979-2014 to 2070-2099 as a difference (precipitation is calculated as a percent change)
-def anomaly(model_name, variable):
+def anomaly(model_name, variable, zoom_out = False):
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     # open both datasets for future and historical periods
     open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
@@ -139,7 +145,10 @@ def anomaly(model_name, variable):
         open_fut = open_fut.sel(plev = 50000, method = 'nearest')
         
     years_hist = range(1985, 2015)
-    location_hist = open_hist[variable].sel(lat = slice(15.5, 53), lon = slice(215, 294))
+    if zoom_out == True:
+        location_hist = open_hist[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
+    else: 
+        location_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
     JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin([6, 7, 8]))
     means_hist = []
     for year in years_hist:
@@ -150,7 +159,10 @@ def anomaly(model_name, variable):
     overall_mean_hist = combine_means_hist.mean(dim = 'year')
 
     years_fut = range(2070, 2100)
-    location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+    if zoom_out == True:
+        location_fut = open_fut[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
+    else:
+        location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
     JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin([6, 7, 8]))
     means_fut = []
     for year in years_fut:
@@ -182,9 +194,14 @@ def anomaly(model_name, variable):
 
 
 # maps xarray.DataArray from one of the above functions 
-def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver = False, step = 1):
+def map_anomalies(anomaly_ref, model_name, variable, quiver = False, step = 1, zoom_out = False):
     # specified what function to use and calls it to get xarray.DataArray
-    data = anomaly_ref(model_name, variable)
+    if zoom_out == True:
+        data = anomaly_ref(model_name, variable, zoom_out = True)
+        shrink = 0.6
+    else:
+        data = anomaly_ref(model_name, variable)
+        shrink = 0.85
     
     # defines a dictionary that stores formatting information for each variable -> see else: for more information
     if variable == 'psl': 
@@ -210,14 +227,14 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
                      'max_a' : 300
                      }
     elif variable == 'zg':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
+        plot_dict = {'cmap_a' : bp.cmap.cmap('BlAqGrYeOrReVi200'),
                      'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
                      'title': 'Geopotential Height',
                      'cbar_a' : 'Change in 500-hPa Geopotential Height (m)',
                      'cbar_m' : 'Mean 500-hPa Geopotential Height (m)',
                      'min_m' : 5676.18017578125,
                      'max_m' : 5978.65869140625,
-                     'min_a' : 100,
+                     'min_a' : 75,
                      'max_a' : 200
                      }
     elif variable == 'vas':
@@ -300,26 +317,30 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     if anomaly_ref.__name__ == 'fut_mean':
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\nMean {plot_dict['title']}\n2070-2099', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85, extend = 'both')
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
         cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
         cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     elif anomaly_ref.__name__ == 'hist_mean':
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name}\nMean {plot_dict['title']}\n1985-2014', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85, extend = 'both')
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
         cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
         cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     else:
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_a'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\n{plot_dict['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = 0.85, extend = 'both')
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
         cbar.set_label(plot_dict['cbar_a'], fontsize = 10)
         if variable == 'pr' or variable == 'ts' or variable == 'zg':
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
         else:
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
-    ax.set_ylim(20, 51.25)
-    ax.set_xlim(-143, -67.5)
+    if zoom_out == True:
+        ax.set_ylim(1.25, 63)
+        ax.set_xlim(-157.75, -61.5)
+    else:
+        ax.set_ylim(20, 51.25)
+        ax.set_xlim(-143, -67.5)
     
     # add features to the map
     ax.coastlines(linewidth=0.5,color = 'k')
@@ -332,14 +353,21 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
     # ax.add_feature(bp.cfeature.RIVERS)
     
     # add quiver to overlay wind vectors on another variable
-    save_name = f'{model_name}_{variable}.png'
-    if quiver == True:
-        #activate my_quiver function
-        save_name = f'{model_name}_{variable}_quiver.png'
+    if zoom_out == True:
+        save_name = f'ZOOOMED_{model_name}_{variable}.png'
+        # slice uas and vas data
+        u = anomaly_ref(model_name, 'uas', zoom_out = True)
+        v = anomaly_ref(model_name, 'vas', zoom_out = True)
         
+    else:
+        save_name = f'{model_name}_{variable}.png'
         # slice uas and vas data
         u = anomaly_ref(model_name, 'uas')
         v = anomaly_ref(model_name, 'vas')
+
+    if quiver == True:
+        #activate my_quiver function
+        save_name = f'{model_name}_{variable}_quiver.png'
         
         # set scale to adjust based on being an anomaly or fut/hist mean
         if anomaly_ref.__name__ == 'anomaly':
@@ -348,13 +376,21 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
             scale = 175
         
         # interpolate data to fit same grid
-        ds_out = bp.xr.Dataset(
-            {
-                "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
-                "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
-            }
-        )
-
+        if zoom_out == True:
+            ds_out = bp.xr.Dataset(
+                {
+                    "lat": (["lat"], bp.np.arange(1.25, 63, 3)),
+                    "lon": (["lon"], bp.np.arange(200, 300, 3)),
+                }
+            )
+        else:
+            ds_out = bp.xr.Dataset(
+                {
+                    "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
+                    "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
+                }
+            )
+        
         regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
         regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
         u = regridder_u(u)
@@ -403,12 +439,12 @@ def map_anomalies(anomaly_ref, model_name, variable, interpolate = False, quiver
 
 # loop over new H_models
 for model in H_models:
-    map_anomalies(anomaly, model, 'zg')
+    map_anomalies(hist_mean, model, 'ts', zoom_out = True)
     bp.plt.show()
     
-map_anomalies(anomaly, M_models[0], 'zg') 
+map_anomalies(hist_mean, M_models[0], 'ts', zoom_out = True) 
 
-map_anomalies(anomaly, L_models[0], 'zg') 
+map_anomalies(hist_mean, L_models[0], 'ts', zoom_out = True) 
 
 
 # EXAMPLES FOR OLD MODEL GROUPS
