@@ -43,7 +43,6 @@ H_models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-
 M_models = ['HadGEM3-GC31-MM']
 L_models = ['MPI-ESM1-2-LR']
 
-
 # MODELS USED FOR INITIAL GROUPING OF HIGH AND LOW
 # wet models from monthly_mean_scatter.py (high precip ratio)
 # H_models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
@@ -52,7 +51,7 @@ L_models = ['MPI-ESM1-2-LR']
 # L_models = ['MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
 # function to calculate the mean for each gridpoint across the historical period (1979-2014)
-def hist_mean(model_name, variable, zoom_out = False): 
+def hist_mean(model_name, variable, start_month, stop_month, zoom_out = False): 
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
     
@@ -65,7 +64,7 @@ def hist_mean(model_name, variable, zoom_out = False):
         location_hist = open_hist[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
     else: 
         location_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin([6, 7, 8]))
+    JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin(range(start_month, stop_month + 1)))
     means_hist = []
     for year in years_hist:
         year_hist = JJA_hist.sel(time = JJA_hist.time.dt.year == year)
@@ -93,7 +92,7 @@ def hist_mean(model_name, variable, zoom_out = False):
 
 # function to calculate the mean for each gridpoint across the future period (2070-2099)
 # probably should be combined with hist_mean
-def fut_mean(model_name, variable, interpolate = False, zoom_out = False):
+def fut_mean(model_name, variable, start_month, stop_month, interpolate = False, zoom_out = False):
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     open_fut = bp.xr.open_mfdataset(fpath + model_name + '_ssp*.nc', engine = 'netcdf4')
 
@@ -106,7 +105,7 @@ def fut_mean(model_name, variable, interpolate = False, zoom_out = False):
         location_fut = open_fut[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
     else:
         location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin([6, 7, 8]))
+    JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin(range(start_month, stop_month + 1)))
     means_fut = []
     for year in years_fut:
         year_fut = JJA_fut.sel(time = JJA_fut.time.dt.year == year)
@@ -133,7 +132,7 @@ def fut_mean(model_name, variable, interpolate = False, zoom_out = False):
     return overall_mean_fut
 
 # function to calculate the change in a variable from 1979-2014 to 2070-2099 as a difference (precipitation is calculated as a percent change)
-def anomaly(model_name, variable, zoom_out = False):
+def anomaly(model_name, variable, start_month, stop_month, zoom_out = False):
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     # open both datasets for future and historical periods
     open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
@@ -149,7 +148,7 @@ def anomaly(model_name, variable, zoom_out = False):
         location_hist = open_hist[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
     else: 
         location_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin([6, 7, 8]))
+    JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin(range(start_month, stop_month + 1)))
     means_hist = []
     for year in years_hist:
         year_hist = JJA_hist.sel(time = JJA_hist.time.dt.year == year)
@@ -163,7 +162,7 @@ def anomaly(model_name, variable, zoom_out = False):
         location_fut = open_fut[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
     else:
         location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin([6, 7, 8]))
+    JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin(range(start_month, stop_month + 1)))
     means_fut = []
     for year in years_fut:
         year_fut = JJA_fut.sel(time = JJA_fut.time.dt.year == year)
@@ -194,13 +193,13 @@ def anomaly(model_name, variable, zoom_out = False):
 
 
 # maps xarray.DataArray from one of the above functions 
-def map_anomalies(anomaly_ref, model_name, variable, quiver = False, step = 1, zoom_out = False):
+def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, quiver = False, step = 1, zoom_out = False):
     # specified what function to use and calls it to get xarray.DataArray
     if zoom_out == True:
-        data = anomaly_ref(model_name, variable, zoom_out = True)
+        data = anomaly_ref(model_name, variable, start_month, stop_month, zoom_out = True)
         shrink = 0.6
     else:
-        data = anomaly_ref(model_name, variable)
+        data = anomaly_ref(model_name, variable, start_month, stop_month)
         shrink = 0.85
     
     # defines a dictionary that stores formatting information for each variable -> see else: for more information
@@ -354,21 +353,24 @@ def map_anomalies(anomaly_ref, model_name, variable, quiver = False, step = 1, z
     
     # add quiver to overlay wind vectors on another variable
     if zoom_out == True:
-        save_name = f'ZOOOMED_{model_name}_{variable}.png'
+        save_name = f'ZOOOMED_{anomaly_ref}_{model_name}_{variable}.png'
         # slice uas and vas data
         u = anomaly_ref(model_name, 'uas', zoom_out = True)
         v = anomaly_ref(model_name, 'vas', zoom_out = True)
         
     else:
-        save_name = f'{model_name}_{variable}.png'
+        save_name = f'{anomaly_ref}_{model_name}_{variable}.png'
         # slice uas and vas data
         u = anomaly_ref(model_name, 'uas')
         v = anomaly_ref(model_name, 'vas')
 
+    # activate my_quiver function
     if quiver == True:
-        #activate my_quiver function
-        save_name = f'{model_name}_{variable}_quiver.png'
-        
+        if zoom_out == True:
+            save_name = f'ZOOMED_{anomaly_ref}_{model_name}_{variable}_quiver.png'
+        else:
+            save_name = f'{anomaly_ref}_{model_name}_{variable}_quiver.png'
+            
         # set scale to adjust based on being an anomaly or fut/hist mean
         if anomaly_ref.__name__ == 'anomaly':
             scale = 20
@@ -414,17 +416,10 @@ def map_anomalies(anomaly_ref, model_name, variable, quiver = False, step = 1, z
     
     # save path for files
     # all PNGs stored to anomaly_maps directory but ignored in Git
-    save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{variable}_maps/{variable}_'
-    if anomaly_ref.__name__ == 'fut_mean':
-        save_path = save_path  + 'fut/'
-    elif anomaly_ref.__name__ == 'hist_mean':
-        save_path = save_path  + 'hist/'
-    else:
-        save_path = save_path  + 'anom/'
-    if model_name in H_models:
-        save_path = bp.os.path.join(save_path + 'H_models', save_name)
-    # elif model_name in L_models:
-    #     save_path = bp.os.path.join(save_path + 'L_models', save_name)
+    save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}'
+    if start_month == 6 and stop_month == 8:
+        save_path += '/JJA'
+        save_path = bp.os.path.join(save_path, save_name)
     else:
         save_path  = bp.os.path.join(save_path, save_name)
     
@@ -438,13 +433,15 @@ def map_anomalies(anomaly_ref, model_name, variable, quiver = False, step = 1, z
 # map_anomalies(hist_mean, H_models[-1], 'psl') 
 
 # loop over new H_models
-for model in H_models:
-    map_anomalies(hist_mean, model, 'ts', zoom_out = True)
-    bp.plt.show()
+# for model in H_models:
+#     map_anomalies(hist_mean, model, 6, 8, 'pr')
+#     bp.plt.show()
     
-map_anomalies(hist_mean, M_models[0], 'ts', zoom_out = True) 
+map_anomalies(hist_mean, 'KACE-1-0-G', 6, 8, 'pr') 
 
-map_anomalies(hist_mean, L_models[0], 'ts', zoom_out = True) 
+# map_anomalies(hist_mean, M_models[0], 6, 8, 'pr') 
+
+# map_anomalies(hist_mean, L_models[0], 6, 8, 'pr') 
 
 
 # EXAMPLES FOR OLD MODEL GROUPS
