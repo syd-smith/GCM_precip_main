@@ -42,6 +42,7 @@ def convert_lon_360_to_180(lon):
 H_models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL']
 M_models = ['HadGEM3-GC31-MM']
 L_models = ['MPI-ESM1-2-LR']
+models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
 # MODELS USED FOR INITIAL GROUPING OF HIGH AND LOW
 # wet models from monthly_mean_scatter.py (high precip ratio)
@@ -53,7 +54,7 @@ L_models = ['MPI-ESM1-2-LR']
 # function to calculate the mean for each gridpoint across the historical period (1979-2014)
 def hist_mean(model_name, variable, start_month, stop_month, zoom_out = False): 
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
-    open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
+    open_hist = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_hist*.nc'))
     
     # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
     if variable == 'zg':
@@ -94,7 +95,7 @@ def hist_mean(model_name, variable, start_month, stop_month, zoom_out = False):
 # probably should be combined with hist_mean
 def fut_mean(model_name, variable, start_month, stop_month, interpolate = False, zoom_out = False):
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
-    open_fut = bp.xr.open_mfdataset(fpath + model_name + '_ssp*.nc', engine = 'netcdf4')
+    open_fut = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_ssp*.nc'))
 
     # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
     if variable == 'zg':
@@ -135,8 +136,8 @@ def fut_mean(model_name, variable, start_month, stop_month, interpolate = False,
 def anomaly(model_name, variable, start_month, stop_month, zoom_out = False):
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
     # open both datasets for future and historical periods
-    open_hist = bp.xr.open_mfdataset(fpath + model_name + '_hist*.nc', engine = 'netcdf4')
-    open_fut = bp.xr.open_mfdataset(fpath + model_name + '_ssp*.nc', engine = 'netcdf4')
+    open_hist = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_hist*.nc'))
+    open_fut = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_ssp*.nc'))
     
     # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
     if variable == 'zg':
@@ -353,23 +354,23 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, qu
     
     # add quiver to overlay wind vectors on another variable
     if zoom_out == True:
-        save_name = f'ZOOOMED_{anomaly_ref}_{model_name}_{variable}.png'
+        save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
         # slice uas and vas data
-        u = anomaly_ref(model_name, 'uas', zoom_out = True)
-        v = anomaly_ref(model_name, 'vas', zoom_out = True)
+        u = anomaly_ref(model_name, 'uas', start_month, stop_month, zoom_out = True)
+        v = anomaly_ref(model_name, 'vas', start_month, stop_month, zoom_out = True)
         
     else:
-        save_name = f'{anomaly_ref}_{model_name}_{variable}.png'
+        save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
         # slice uas and vas data
-        u = anomaly_ref(model_name, 'uas')
-        v = anomaly_ref(model_name, 'vas')
+        u = anomaly_ref(model_name, 'uas', start_month, stop_month,)
+        v = anomaly_ref(model_name, 'vas', start_month, stop_month,)
 
     # activate my_quiver function
     if quiver == True:
         if zoom_out == True:
-            save_name = f'ZOOMED_{anomaly_ref}_{model_name}_{variable}_quiver.png'
+            save_name = f'ZOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
         else:
-            save_name = f'{anomaly_ref}_{model_name}_{variable}_quiver.png'
+            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
             
         # set scale to adjust based on being an anomaly or fut/hist mean
         if anomaly_ref.__name__ == 'anomaly':
@@ -416,12 +417,15 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, qu
     
     # save path for files
     # all PNGs stored to anomaly_maps directory but ignored in Git
-    save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}'
+    save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}/'
     if start_month == 6 and stop_month == 8:
-        save_path += '/JJA'
-        save_path = bp.os.path.join(save_path, save_name)
+        save_path = bp.os.path.join(save_path, 'JJA/' + save_name)
+    elif start_month == 7 and stop_month == 8:
+        save_path = bp.os.path.join(save_path, 'JA/' + save_name)
+    elif start_month == 7 and stop_month == 9:
+        save_path = bp.os.path.join(save_path, 'JAS/' + save_name)
     else:
-        save_path  = bp.os.path.join(save_path, save_name)
+        save_path = bp.os.path.join(save_path)
     
     bp.plt.savefig(save_path, dpi = 400)
     bp.plt.show()   
@@ -429,20 +433,20 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, qu
     return fig, ax
 
 
+# run more at once
+variables = ['pr', 'psl', 'zg', 'ts', 'huss']
+refs = [hist_mean, fut_mean, anomaly]
+
+for ref in refs:
+    for variable in variables:
+        for model in models:
+            map_anomalies(ref, model, variable, 7, 9)
+            bp.plt.show()
+            print(model, variable, ref.__name__)
+
+
 # DATA FOR NEW MODEL GROUPS
 # map_anomalies(hist_mean, H_models[-1], 'psl') 
-
-# loop over new H_models
-# for model in H_models:
-#     map_anomalies(hist_mean, model, 6, 8, 'pr')
-#     bp.plt.show()
-    
-map_anomalies(hist_mean, 'KACE-1-0-G', 6, 8, 'pr') 
-
-# map_anomalies(hist_mean, M_models[0], 6, 8, 'pr') 
-
-# map_anomalies(hist_mean, L_models[0], 6, 8, 'pr') 
-
 
 # EXAMPLES FOR OLD MODEL GROUPS
 # loop over multiple models for one variable
@@ -455,6 +459,16 @@ map_anomalies(hist_mean, 'KACE-1-0-G', 6, 8, 'pr')
     
 # complete list of models analyzed
 # models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G', 'MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
+
+                  #%%
+variable = 'pr'
+model_name = 'KACE-1-0-G'
+fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
+files = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '*.nc'))
+
+# file = files[0]
+# ds = bp.xr.open_dataset(file)
+# print(ds)
 
 
 #%%
