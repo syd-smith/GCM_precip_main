@@ -14,10 +14,10 @@ Created on Fri May 31 11:13:47 2024
 """
 import intake_esgf
 
-intake_esgf.conf.set(all_indices=False) #if true then searches all servers
-intake_esgf.conf.set(indices={"esg-dn1.nsc.liu.se": False})
+intake_esgf.conf.set(all_indices = False) #if true then searches all servers
+intake_esgf.conf.set(indices={"esg-dn1.nsc.liu.se": False}) 
 intake_esgf.conf.set(indices={"esgf-data.dkrz.de": False})
-intake_esgf.conf.set(indices={"esgf-node.ipsl.upmc.fr": False})
+intake_esgf.conf.set(indices={"esgf-node.ipsl.upmc.fr": False}) 
 intake_esgf.conf.set(indices={"esgf-node.llnl.gov": False})
 intake_esgf.conf.set(indices={"esgf-node.ornl.gov": False})
 intake_esgf.conf.set(indices={"esgf.ceda.ac.uk": False})
@@ -27,7 +27,7 @@ cat = intake_esgf.ESGFCatalog()
 # some variables that can be used
 # variables_to_check = ['tas', 'huss', 'ps', 'psl', 'vas', 'uas', 'ts', 'mrsos', 'tsl','hus', 'ta', 'va', 'ua', 'zg', 'mrsol']
 # currently looking for precipitation
-variables_to_check  = ['ts']
+variables_to_check  = ['zg']
 
 # used to look at multiple emission scenarios
 # set ssp = ssps
@@ -38,16 +38,16 @@ ssp = 'ssp585'
 
 
 cat=cat.search(
-    source_id='CanESM5',
-    activity_id=['ScenarioMIP'],
+    source_id = 'HadGEM3-GC31-MM',
+    activity_id = ['ScenarioMIP'],
     # activity_id = ['CMIP'], 
-    experiment_id=[ssp],
+    experiment_id = [ssp],
     # experiment_id=['historical'], # xu18_ssp, 
-    member_id='r1i1p1f1',
+    member_id = 'r1i1p1f3',
     # table_id=["6hrPlevPt","6hrPlev","3hr"],
     # table_id='month',
     table_id = 'Amon',
-    variable_id= variables_to_check
+    variable_id = variables_to_check
     # grid_label='gr1'
     )
 

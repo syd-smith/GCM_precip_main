@@ -46,3 +46,7 @@ from bokeh.plotting import figure, output_file, save
 import xesmf as xe
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/from_savanna/')
 import nclcmaps as cmap
+import rioxarray 
+from shapely.geometry import mapping
+
+

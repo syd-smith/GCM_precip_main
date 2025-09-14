@@ -18,8 +18,14 @@ looking = cat.search(
     table_id = 'Amon', 
     mip_era = 'CMIP6', 
     source_id = 'CanESM5', 
-    # member_id = 'r1i1p1f1', 
+    member_id = 'r1i1p1f1', 
     activity_drs = ['ScenarioMIP']
     )
 
 dsd = cat.to_dataset_dict()
+
+# https://aims2.llnl.gov/search 
+# used this website for download when downloads took too long
+# website downloads wget -> follow commands below for .nc
+# chmod 744 wget***.sh
+# ./wget***.sh
