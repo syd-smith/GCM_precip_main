@@ -36,6 +36,11 @@ def mask(fDATA):
     return ds
 
 
+mask('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_ACCESS-CM2_ssp585_pr.nc')
+
+
+
+#%%
 # path to access netcdf files containing the data
 strong_group_path = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'
 find_files = sorted(bp.glob.glob(strong_group_path + '*.nc'))
@@ -79,19 +84,7 @@ def hist_precip():
             if not bp.os.path.exists(fpath):
                 continue
             else:
-                time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
-
-                # Load in the shape file that contains the boundaries for the GSLB
-                TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
-                gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
-                gslb = gslb[gslb["huc4"] == "1602"]
-
-                # Loads in the MACA file I want and set its mapping projection
-                ds = bp.xr.open_dataset(fpath, engine = "netcdf4", decode_times = time_coder)
-                ds = ds.rio.write_crs("EPSG:4326")
-
-                # Clips out the GSLB
-                ds = ds.rio.clip(gslb.geometry.apply(bp.mapping), gslb.crs, drop=False)
+                ds = mask(fpath)
                 
                 years_means = []
                 for year in hist_years:
@@ -111,19 +104,7 @@ def fut_precip():
             if not bp.os.path.exists(fpath):
                 continue
             else:
-                time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
-
-                # Load in the shape file that contains the boundaries for the GSLB
-                TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
-                gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
-                gslb = gslb[gslb["huc4"] == "1602"]
-
-                # Loads in the MACA file I want and set its mapping projection
-                ds = bp.xr.open_dataset(fpath, engine = "netcdf4", decode_times = time_coder)
-                ds = ds.rio.write_crs("EPSG:4326")
-
-                # Clips out the GSLB
-                ds = ds.rio.clip(gslb.geometry.apply(bp.mapping), gslb.crs, drop=False)
+                ds = mask(fpath)
                 
                 years_means = []
                 for year in fut_years:

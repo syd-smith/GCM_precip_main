@@ -41,6 +41,8 @@ ds_regridded = ds_regridded.sortby('lon')
 
 # sets data to known grid that matches the mask
 ds = ds_regridded.rio.write_crs("EPSG:4326")
+
+# note that GCM data required that the variable you wish to look at is specified
 ds = ds['pr'].rio.set_spatial_dims(x_dim = 'lon', y_dim = 'lat', inplace = False)
 
 # clis out the GSLB (everything outside the mask returns NAN)
