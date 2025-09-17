@@ -14,6 +14,27 @@ import base_packages as bp
 # historical period: 1979-2014
 # temp change: future - historical (C)
 # precip ratio: future / historical 
+# APPLY MASK TO MACA DATA
+
+# function that applies the limits of the GSLB region to the data
+def mask(fDATA):
+    # decodes time information follownig the Climate and Weather metadata connvention
+    time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
+
+    # Load in the shape file that contains the boundaries for the GSLB
+    TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
+    gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
+    gslb = gslb[gslb["huc4"] == "1602"]
+
+    # Loads in the MACA file I want and set its mapping projection
+    ds = bp.xr.open_dataset(fDATA, engine = "netcdf4", decode_times = time_coder)
+    ds = ds.rio.write_crs("EPSG:4326")
+
+    # Clips out the GSLB
+    ds = ds.rio.clip(gslb.geometry.apply(bp.mapping), gslb.crs, drop=False)
+    
+    return ds
+
 
 # path to access netcdf files containing the data
 strong_group_path = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'

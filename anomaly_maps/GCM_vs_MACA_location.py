@@ -10,6 +10,7 @@ import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages/')
 import base_packages as bp
 
+# OLD BOUNDARY
 # Define the shapefile path (where to find coordinates used by VIC from Maribeth)
 bdir = '/uufs/chpc.utah.edu/common/home/u0660911/Documents/projects/gslbip/'
 shapefile_path = bp.os.path.join(bdir,'GSLBIP_shpfiles/MF6_VIC_bounding_box/MF6_VIC_bounding_box.shp')
@@ -18,6 +19,11 @@ shapefile_path = bp.os.path.join(bdir,'GSLBIP_shpfiles/MF6_VIC_bounding_box/MF6_
 gdf = bp.gpd.read_file(shapefile_path)
 gdf = gdf.to_crs("EPSG:4326")
 min_lon, min_lat, max_lon, max_lat = gdf.total_bounds 
+
+# Load in the shape file that contains the new boundaries for the GSLB
+TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
+gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
+gslb = gslb[gslb["huc4"] == "1602"]
 
 def convert_lon_to_0_360(lon):
     # Convert longitude from -180-180 to 0-360
@@ -93,13 +99,15 @@ fig, axs = bp.plt.subplots(1, 2, figsize = (7, 4), subplot_kw = {'projection' : 
 # setup first map with GCM_mean data
 m1 = axs[0].pcolormesh(GCM_mean['lon'].values, GCM_mean['lat'].values, GCM_mean.values, cmap = bp.cmap.cmap('MPL_BrBG'))
 axs[0].set_title('GCM Data - Coarse Resolution')
-axs[0].set_ylim(float(MACA_mean['lat'].min()), float(MACA_mean['lat'].max()))
-axs[0].set_xlim(float(MACA_mean['lon'].min()), float(MACA_mean['lon'].max()))
+axs[0].set_ylim(36.5, 42.5)
+axs[0].set_xlim(-115, -108.5)
 fig.colorbar(m1, ax = axs[0], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
 
 # setup second map with MACA_mean data
 m2 = axs[1].pcolormesh(MACA_mean['lon'].values, MACA_mean['lat'].values, MACA_mean.values, cmap = bp.cmap.cmap('MPL_BrBG'))
 axs[1].set_title('MACA Data - Fine Resolution')
+axs[1].set_ylim(36.5, 42.5)
+axs[1].set_xlim(-115, -108.5)
 fig.colorbar(m2, ax = axs[1], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
 
 for ax in axs:
@@ -115,12 +123,14 @@ for ax in axs:
     #add VIC boundaries
     box = bp.mpatches.Rectangle((min_lon, min_lat), (max_lon - min_lon), (max_lat - min_lat), linewidth = 2.5, edgecolor = 'red', facecolor = 'none', zorder = 5)
     ax.add_patch(box)
+    # gslb.boundary.plot(ax = ax, color = 'red', linewidth = 3)
+
 
 #set title for entire figure
 fig.suptitle('KACE-1-0-G Mean Precipitation Over Study Region', fontsize = 20)
 
 #set save path for image
-save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/poster_figs/study_region.png'
+save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/poster_figs/study_region_OLD.png'
 bp.plt.savefig(save_path, dpi = 400)
 
 bp.plt.show()
