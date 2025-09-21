@@ -11,10 +11,18 @@ Created on Tue Jul  1 09:20:07 2025
 variables_25 = ['precipitation', 'northward_near_surface_wind', 'easthward_near_surface_wind', 'geopotential_height', 'sea_level_pressure', 'near_surface_air_temperature']
 models_25 = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G', 'MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
-
 # data download for continued analysis 7/29/2025
 variables = ['surface_temperature', 'near_surface_specific_humidity'] # note: suraface temperature and near surface air temp are not the same
 models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR'] # sorted as wet, moderate, dry
+
+# more monsoonal variables to look at 500 hPa level 9/2025
+variables_huss = ['specific_humidity', 'eastward_wind', 'northward_wind']
+
+# needed models for analysis of historical accuracy for precip (based on what models were downscaled for MACA)
+MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC',
+ 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
+ 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
 
 import cdsapi
 
@@ -24,6 +32,13 @@ def download_hist(model, variable):
         "temporal_resolution": "monthly",
         "experiment": "historical",
         "variable": variable, 
+        # "level": [
+        #     "500",
+        #     "600",
+        #     "700",
+        #     "800",
+        #     "900",
+        #     "1000"],
         "model": model, 
         "month": [
             "01", "02", "03",
@@ -60,13 +75,23 @@ def download_hist(model, variable):
     client = cdsapi.Client()
     client.retrieve(dataset, request).download(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/hist_{model}_{variable}.zip')
 
-# for variable in variables_25[3:]:
-#     download_hist(models[5], variable)
-    
-download_hist(models[5], variables_25[2])
+# download precip data for all models downscaled to MACA
+# 10, 11, -8 failed
+for model in MACA_models[-7:]:
+    download_hist(model, variables_25[0])
+
+# come back to for finished downloadd
+# for model in models[4:]:
+#     for variable in variables_huss[1:]:
+#         download_hist(model, variable)
+        
+# Had-LL through specific humidity
+
+# no wind components for CanESM5
+# download_hist(models[2], variables_huss[2])
 
 # job failed -> check esgf
-download_hist(models[5], variables_25[3])
+# download_hist(models[5], variables_25[3])
 #%%
 
 def download_fut(model, variable):
@@ -119,4 +144,6 @@ def download_fut(model, variable):
 # multiple .nc files -> issues unzipping
 # download_fut(models[5], variables_25[3])
 
-download_fut(models[4], variables_25[2])
+for model in models:
+    for variable in variables_huss:
+        download_fut(model, variable)

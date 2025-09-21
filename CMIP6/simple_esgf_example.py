@@ -14,7 +14,7 @@ Created on Fri May 31 11:13:47 2024
 """
 import intake_esgf
 
-intake_esgf.conf.set(all_indices = False) #if true then searches all servers
+intake_esgf.conf.set(all_indices = True) #if true then searches all servers
 intake_esgf.conf.set(indices={"esg-dn1.nsc.liu.se": False}) 
 intake_esgf.conf.set(indices={"esgf-data.dkrz.de": False})
 intake_esgf.conf.set(indices={"esgf-node.ipsl.upmc.fr": False}) 
