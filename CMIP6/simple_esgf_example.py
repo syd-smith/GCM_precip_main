@@ -27,7 +27,7 @@ cat = intake_esgf.ESGFCatalog()
 # some variables that can be used
 # variables_to_check = ['tas', 'huss', 'ps', 'psl', 'vas', 'uas', 'ts', 'mrsos', 'tsl','hus', 'ta', 'va', 'ua', 'zg', 'mrsol']
 # currently looking for precipitation
-variables_to_check  = ['zg']
+variables_to_check  = ['pr']
 
 # used to look at multiple emission scenarios
 # set ssp = ssps
@@ -36,14 +36,15 @@ variables_to_check  = ['zg']
 # single emission scenario as used in data analysis
 ssp = 'ssp585'
 
+# 'GFDL-CM4'
 
 cat=cat.search(
-    source_id = 'HadGEM3-GC31-MM',
-    activity_id = ['ScenarioMIP'],
-    # activity_id = ['CMIP'], 
-    experiment_id = [ssp],
-    # experiment_id=['historical'], # xu18_ssp, 
-    member_id = 'r1i1p1f3',
+    source_id = 'EC-Earth3',
+    # activity_id = ['ScenarioMIP'],
+    activity_id = ['CMIP'], 
+    # experiment_id = [ssp],
+    experiment_id=['historical'], # xu18_ssp, 
+    member_id = 'r1i1p1f1',
     # table_id=["6hrPlevPt","6hrPlev","3hr"],
     # table_id='month',
     table_id = 'Amon',

@@ -76,7 +76,7 @@ def download_hist(model, variable):
     client.retrieve(dataset, request).download(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/hist_{model}_{variable}.zip')
 
 # download precip data for all models downscaled to MACA
-# 10, 11, -8 failed
+# 10, 11, -8 failed (doownload these with ESGF)
 for model in MACA_models[-7:]:
     download_hist(model, variables_25[0])
 
