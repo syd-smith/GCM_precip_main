@@ -16,27 +16,70 @@ import base_packages as bp
 # precip ratio: future / historical 
 # APPLY MASK TO MACA DATA
 
-# function that applies the limits of the GSLB region to the data
-def mask(fDATA):
-    # decodes time information follownig the Climate and Weather metadata connvention
-    time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
+# all possible emission scenarios found in models
+emission_scenarios = ['ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp585']
 
+# all possible models included in ddownscaling
+models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC',
+ 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
+ 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+    
+
+
+def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_month = 8, start_year = 1979, stop_year = 2014, save = False):
+    """
+    This function applies the boundaries of the GSLB to a given dataset through setting everything
+    outside the boundaries to NAN. Default values return a NETCDF file with data for JJA over the 
+    historical period. 
+    
+    Note: For this research, the historical period is defined as 1979 - 2014 and the future period 
+          as 2070 - 2099.
+    """
+    
     # Load in the shape file that contains the boundaries for the GSLB
     TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
     gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
     gslb = gslb[gslb["huc4"] == "1602"]
+    
+    # decodes time information follownig the Climate and Weather metadata connvention
+    time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
+    
+    # load file path for data
+    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model_name}_{emission_scenario}_{variable}.nc'
 
-    # Loads in the MACA file I want and set its mapping projection
-    ds = bp.xr.open_dataset(fDATA, engine = "netcdf4", decode_times = time_coder)
-    ds = ds.rio.write_crs("EPSG:4326")
+    # open data for specified model and raise error for requests that are not within the scope of the dataset
+    ds_open = bp.xr.open_mfdataset(fpath, engine = "netcdf4", decode_times = time_coder)
+    if not bp.os.path.exists(fpath):
+        raise FileNotFoundError(f'{model_name}_{emission_scenario}_{variable} was not downscaled in the MACA process.')
+    
+    # slice to focus on specified months and years
+    ds_years = ds_open[variable].sel(time = ds_open.time.dt.year.isin(range(start_year, stop_year + 1)))
+    ds_slice = ds_years.sel(time = ds_years.time.dt.month.isin(range(start_month, stop_month + 1)))
 
-    # Clips out the GSLB
+    # applied data to standard coordinate system (not regridding)
+    ds = ds_slice.rio.write_crs("EPSG:4326")
+
+    # clips out the GSLB
     ds = ds.rio.clip(gslb.geometry.apply(bp.mapping), gslb.crs, drop=False)
+    
+    # saved masked dataset to directory
+    if save == True:
+        output_dir = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/'
+        output_name = f'MACA_{model_name}_{emission_scenario}_{start_month}-{stop_month}/{start_year}-{stop_year}_masked.nc'
+        output_path = f'{output_dir}{output_name}'
+        
+        ds.to_netcdf(output_path)
     
     return ds
 
+for model in models:
+     for emission_scenario in emission_scenarios:
+         try: 
+             mask_MACA(model, emission_scenario, 'pr', save = True)
+         except FileNotFoundError:
+             print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
+             continue
 
-mask('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_ACCESS-CM2_ssp585_pr.nc')
 
 
 
@@ -59,8 +102,7 @@ for file in find_files:
 #  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
 #  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
       
-# all possible emission scenarios found in models
-emission_scenarios = ['ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp585']
+
 
 # define the date ranges for historical and future time periods
 hist_years = [year for year in range(1979, 2015)]
@@ -201,93 +243,12 @@ def delta_temp_year():
         delta_temp_data_year.append([fut[0], fut[1], grand_temp])
     return delta_temp_data_year
 
-# def hist_temp_month():
-#     hist_temp_data_month = []
-#     months = [6, 7, 8]
-#     for model in models:
-#         for emission_scenario in emission_scenarios:
-#             fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-#             if not bp.os.path.exists(fpath_min):
-#                 continue
-#             else:
-#                 open_ds_min = bp.xr.open_dataset(fpath_min)
-#                 open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-#                 months_means_min = []
-#                 for year in hist_years:
-#                     year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.year == year)
-#                     for month in months:
-#                         each_month_min = year_dat_min.sel(time = year_dat_min.time.dt.month == month)
-#                         mean_min = each_month_min.mean().item()
-#                         months_means_min.append(mean_min)
-#             fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-#             if not bp.os.path.exists(fpath_max):
-#                 continue
-#             else:
-#                 open_ds_max = bp.xr.open_dataset(fpath_max)
-#                 open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-#                 months_means_max = []
-#                 for year in hist_years:
-#                     year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.year == year)
-#                     for month in months:
-#                         each_month_max = year_dat_max.sel(time = year_dat_max.time.dt.month == month)
-#                         mean_max = each_month_max.mean().item()
-#                         months_means_max.append(mean_max)    
-#             all_avg = [(min + max)/2 for min, max in zip(months_means_min, months_means_max)]
-#             grand_mean = float(bp.np.mean(all_avg))
-#             hist_temp_data_month.append([model, emission_scenario, grand_mean])
-#     return hist_temp_data_month
-
-# def fut_temp_month():
-#     fut_temp_data_month = []
-#     months = [6, 7, 8]
-#     for model in models:
-#         for emission_scenario in emission_scenarios:
-#             fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-#             if not bp.os.path.exists(fpath_min):
-#                 continue
-#             else:
-#                 open_ds_min = bp.xr.open_dataset(fpath_min)
-#                 open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-#                 months_means_min = []
-#                 for year in fut_years:
-#                     year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.year == year)
-#                     for month in months:
-#                         each_month_min = year_dat_min.sel(time = year_dat_min.time.dt.month == month)
-#                         mean_min = each_month_min.mean().item()
-#                         months_means_min.append(mean_min)
-#             fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-#             if not bp.os.path.exists(fpath_max):
-#                 continue
-#             else:
-#                 open_ds_max = bp.xr.open_dataset(fpath_max)
-#                 open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-#                 months_means_max = []
-#                 for year in fut_years:
-#                     year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.year == year)
-#                     for month in months:
-#                         each_month_max = year_dat_max.sel(time = year_dat_max.time.dt.month == month)
-#                         mean_max = each_month_max.mean().item()
-#                         months_means_max.append(mean_max)    
-#             all_avg = [(min + max)/2 for min, max in zip(months_means_min, months_means_max)]
-#             grand_mean = float(bp.np.mean(all_avg))
-#             fut_temp_data_month.append([model, emission_scenario, grand_mean])
-#     return fut_temp_data_month
-
-# def delta_temp_month():
-#     delta_temp_data_month = []
-#     fut_data = fut_temp_month()
-#     hist_data = hist_temp_month()
-#     for fut, hist in zip(fut_data, hist_data):
-#         fut_val = fut[2]
-#         hist_val = hist[2]
-#         grand_temp = fut_val - hist_val
-#         delta_temp_data_month.append([fut[0], fut[1], grand_temp])
-#     return delta_temp_data_month
 
 # pull data points (see copied below)
 yprecip = precip_ratio()
 xtemp = delta_temp_year()
-# check_temp = delta_temp_month()
+
+
 
 #%%
 # copy and pasted data from above code for plotting instead of running all together
