@@ -11,7 +11,7 @@ sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analy
 import base_packages as bp
 
 # set boundaries to run as old or new
-old_boundary = True
+old_boundary = False
 if old_boundary == True:
     save_name = 'study_region_OLD.png'
 else: 
@@ -29,8 +29,11 @@ min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
 
 # Load in the shape file that contains the new boundaries for the GSLB
 TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
-gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
-gslb = gslb[gslb["huc4"] == "1602"]
+shp  = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
+gsl  = shp[shp["huc4"] == "1602"]
+br   = shp[shp["huc4"] == "1601"]
+gslb = bp.gpd.GeoDataFrame(geometry=[gsl.geometry.unary_union.union(br.geometry.unary_union)], crs=shp.crs)
+
 
 def convert_lon_to_0_360(lon):
     # Convert longitude from -180-180 to 0-360
@@ -102,24 +105,29 @@ GCM_mean = combine.mean(skipna = True, dim = 'year')
 
 # setup pcolormesh
 fig, axs = bp.plt.subplots(1, 2, figsize = (7, 4), subplot_kw = {'projection' : bp.ccrs.PlateCarree()}, constrained_layout = True)
+labels = ['a.', 'b.']
 
 # setup first map with GCM_mean data
 m1 = axs[0].pcolormesh(GCM_mean['lon'].values, GCM_mean['lat'].values, GCM_mean.values, cmap = bp.cmap.cmap('MPL_GnBu'))
-axs[0].set_title('GCM Data - Coarse Resolution')
+# axs[0].set_title('GCM Data - Coarse Resolution')
 axs[0].set_ylim(36.5, 43)
 axs[0].set_xlim(-115, -108.5)
 fig.colorbar(m1, ax = axs[0], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
 
 # setup second map with MACA_mean data
 m2 = axs[1].pcolormesh(MACA_mean['lon'].values, MACA_mean['lat'].values, MACA_mean.values, cmap = bp.cmap.cmap('MPL_GnBu'))
-axs[1].set_title('MACA Data - Fine Resolution')
+# axs[1].set_title('MACA Data - Fine Resolution')
 axs[1].set_ylim(36.5, 43)
 axs[1].set_xlim(-115, -108.5)
 fig.colorbar(m2, ax = axs[1], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
 
-for ax in axs:
+for ax, label in zip(axs, labels):
     ax.set_xlabel('lat')
     ax.set_ylabel('lon')
+    ax.text(0.01, 0.01, label,
+            transform=ax.transAxes,
+            fontsize=14,
+            va='bottom', ha='left')
     
     #add features to the map
     states = bp.cfeature.NaturalEarthFeature(category = 'cultural', name = 'admin_1_states_provinces_lines', scale = '50m', facecolor = 'none', edgecolor = 'k', zorder = 4)
