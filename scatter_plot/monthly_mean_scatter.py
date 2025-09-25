@@ -72,6 +72,48 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     
     return ds
 
+
+def mask_MACA(model_name, start_month, stop_month, save = False):
+    
+    # Load in the shape file that contains the boundaries for the GSLB
+    TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
+    gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
+    gslb = gslb[gslb["huc4"] == "1602"]
+
+    # load file path for data
+    fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'
+    
+    # decodes time information follownig the Climate and Weather metadata connvention
+    time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
+
+    # open data for specifiedd model and slice to focus on specified months in the historical period
+    ds_open = bp.xr.open_mfdataset(fpath + model_name + '*ssp585_pr.nc', engine = "netcdf4", decode_times = time_coder)
+    ds_years = ds_open['pr'].sel(time = ds_open.time.dt.year.isin(range(1979, 2015)))
+    ds_slice = ds_years.sel(time = ds_years.time.dt.month.isin(range(start_month, stop_month + 1)))
+
+    # applied data to standard coordinate system (not regridding)
+    ds = ds_slice.rio.write_crs("EPSG:4326")
+
+    # Clips out the GSLB
+    ds = ds.rio.clip(gslb.geometry.apply(bp.mapping), gslb.crs, drop=False)
+    
+    # saved masked dataset to directory
+    if save == True:
+        output_dir = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/masked/'
+        output_name = f'st_dev_{model_name}_MACA_{start_month}-{stop_month}_masked.nc'
+        output_path = f'{output_dir}/{output_name}'
+        
+        ds.to_netcdf(output_path)
+
+
+
+
+
+
+
+
+
+
 for model in models:
      for emission_scenario in emission_scenarios:
          try: 

@@ -14,11 +14,11 @@ Created on Fri May 31 11:13:47 2024
 """
 import intake_esgf
 
-intake_esgf.conf.set(all_indices = True) #if true then searches all servers
+intake_esgf.conf.set(all_indices = False) #if true then searches all servers
 intake_esgf.conf.set(indices={"esg-dn1.nsc.liu.se": False}) 
 intake_esgf.conf.set(indices={"esgf-data.dkrz.de": False})
 intake_esgf.conf.set(indices={"esgf-node.ipsl.upmc.fr": False}) 
-intake_esgf.conf.set(indices={"esgf-node.llnl.gov": False})
+intake_esgf.conf.set(indices={"esgf-node.llnl.gov": True})
 intake_esgf.conf.set(indices={"esgf-node.ornl.gov": False})
 intake_esgf.conf.set(indices={"esgf.ceda.ac.uk": False})
 intake_esgf.conf.set(indices={"esgf.nci.org.au": False})
@@ -41,7 +41,7 @@ ssp = 'ssp585'
 cat=cat.search(
     source_id = 'EC-Earth3',
     # activity_id = ['ScenarioMIP'],
-    activity_id = ['CMIP'], 
+    # activity_id = ['CMIP'], 
     # experiment_id = [ssp],
     experiment_id=['historical'], # xu18_ssp, 
     member_id = 'r1i1p1f1',

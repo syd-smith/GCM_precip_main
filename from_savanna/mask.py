@@ -17,9 +17,11 @@ time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
 
 # Load in the shape file that contains the boundaries for the GSLB
 TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
-gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
-gslb = gslb[gslb["huc4"] == "1602"]
-gslb = gslb.to_crs("EPSG:4326")
+shp  = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
+gsl  = shp[shp["huc4"] == "1602"]
+br   = shp[shp["huc4"] == "1601"]
+gslb = bp.gpd.GeoDataFrame(geometry=[gsl.geometry.unary_union.union(br.geometry.unary_union)], crs=shp.crs)
+# gslb = gslb.to_crs("EPSG:4326")
 
 # Then I'll load in the file I want and set its mapping projection
 ds = bp.xr.open_dataset(fGCM, engine = "netcdf4", decode_times = time_coder)
@@ -60,8 +62,10 @@ time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
 
 # Load in the shape file that contains the boundaries for the GSLB
 TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
-gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
-gslb = gslb[gslb["huc4"] == "1602"]
+shp  = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
+gsl  = shp[shp["huc4"] == "1602"]
+br   = shp[shp["huc4"] == "1601"]
+gslb = bp.gpd.GeoDataFrame(geometry=[gsl.geometry.unary_union.union(br.geometry.unary_union)], crs=shp.crs)
 
 # Loads in the MACA file I want and set its mapping projection
 ds = bp.xr.open_dataset(fGCM, engine = "netcdf4", decode_times = time_coder)
