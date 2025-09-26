@@ -16,6 +16,12 @@ import base_packages as bp
 # precip ratio: future / historical 
 # APPLY MASK TO MACA DATA
 
+fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_ACCESS-CM2_ssp126_6-8_1979-2014_masked.nc'
+
+ds = bp.xr.open_dataset(fpath)
+
+
+#%%
 # all possible emission scenarios found in models
 emission_scenarios = ['ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp585']
 
@@ -38,22 +44,24 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     
     # Load in the shape file that contains the boundaries for the GSLB
     TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
-    gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
-    gslb = gslb[gslb["huc4"] == "1602"]
+    shp  = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
+    gsl  = shp[shp["huc4"] == "1602"]
+    br   = shp[shp["huc4"] == "1601"]
+    gslb = bp.gpd.GeoDataFrame(geometry=[gsl.geometry.union_all().union(br.geometry.union_all())], crs=shp.crs)
     
     # decodes time information follownig the Climate and Weather metadata connvention
     time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
     
     # load file path for data
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model_name}_{emission_scenario}_{variable}.nc'
-
+    if not bp.os.path.exists(fpath):
+        raise OSError(f'{fpath} was not downscaled in the MACA process.')
+        
     # open data for specified model and raise error for requests that are not within the scope of the dataset
     ds_open = bp.xr.open_mfdataset(fpath, engine = "netcdf4", decode_times = time_coder)
-    if not bp.os.path.exists(fpath):
-        raise FileNotFoundError(f'{model_name}_{emission_scenario}_{variable} was not downscaled in the MACA process.')
     
     # slice to focus on specified months and years
-    ds_years = ds_open[variable].sel(time = ds_open.time.dt.year.isin(range(start_year, stop_year + 1)))
+    ds_years = ds_open.sel(time = ds_open.time.dt.year.isin(range(start_year, stop_year + 1)))
     ds_slice = ds_years.sel(time = ds_years.time.dt.month.isin(range(start_month, stop_month + 1)))
 
     # applied data to standard coordinate system (not regridding)
@@ -65,65 +73,25 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     # saved masked dataset to directory
     if save == True:
         output_dir = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/'
-        output_name = f'MACA_{model_name}_{emission_scenario}_{start_month}-{stop_month}/{start_year}-{stop_year}_masked.nc'
+        output_name = f'MACA_{model_name}_{emission_scenario}_{start_month}-{stop_month}_{start_year}-{stop_year}_{variable}_masked.nc'
         output_path = f'{output_dir}{output_name}'
         
         ds.to_netcdf(output_path)
+        print(f'Saved: {output_path}')
+        return ds    
     
     return ds
 
 
-def mask_MACA(model_name, start_month, stop_month, save = False):
-    
-    # Load in the shape file that contains the boundaries for the GSLB
-    TOPO_DIR = "/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/"
-    gslb = bp.gpd.read_file(TOPO_DIR + "WBD_16_HU2_Shape/Shape/WBDHU4.shp")
-    gslb = gslb[gslb["huc4"] == "1602"]
+# for model in models:
+#      for emission_scenario in emission_scenarios:
+#          try: 
+#              mask_MACA(model, 'pr', emission_scenario, save = True)
+#          except OSError:
+#              print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
+#              continue
 
-    # load file path for data
-    fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'
-    
-    # decodes time information follownig the Climate and Weather metadata connvention
-    time_coder = bp.xr.coders.CFDatetimeCoder(use_cftime = True)
-
-    # open data for specifiedd model and slice to focus on specified months in the historical period
-    ds_open = bp.xr.open_mfdataset(fpath + model_name + '*ssp585_pr.nc', engine = "netcdf4", decode_times = time_coder)
-    ds_years = ds_open['pr'].sel(time = ds_open.time.dt.year.isin(range(1979, 2015)))
-    ds_slice = ds_years.sel(time = ds_years.time.dt.month.isin(range(start_month, stop_month + 1)))
-
-    # applied data to standard coordinate system (not regridding)
-    ds = ds_slice.rio.write_crs("EPSG:4326")
-
-    # Clips out the GSLB
-    ds = ds.rio.clip(gslb.geometry.apply(bp.mapping), gslb.crs, drop=False)
-    
-    # saved masked dataset to directory
-    if save == True:
-        output_dir = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/masked/'
-        output_name = f'st_dev_{model_name}_MACA_{start_month}-{stop_month}_masked.nc'
-        output_path = f'{output_dir}/{output_name}'
-        
-        ds.to_netcdf(output_path)
-
-
-
-
-
-
-
-
-
-
-for model in models:
-     for emission_scenario in emission_scenarios:
-         try: 
-             mask_MACA(model, emission_scenario, 'pr', save = True)
-         except FileNotFoundError:
-             print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
-             continue
-
-
-
+mask_MACA(models[0], 'pr', emission_scenarios[1], save = True)
 
 #%%
 # path to access netcdf files containing the data
@@ -159,12 +127,16 @@ fut_years = [year for year in range(2070, 2100)]
 # year_dat = open_ds.sel(time = open_ds.time.dt.month.isin([6,7,8]) & (open_ds.time.dt.year == 1979))
 
 
-# returns a list with the model name, emission scenario, and the average precip value for it across historical years and grid points
 def hist_precip():
+    """
+    Returns a list with the model name, emission scenario, and the average 
+    precip value across the historical period and all grid points.
+    """
+    
     hist_precip_data = []
     for model in models:
         for emission_scenario in emission_scenarios:
-            fpath = strong_group_path + model + '_' + emission_scenario + '_pr.nc'
+            fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_{start_year}-{stop_year}_{variable}_masked.nc'
             if not bp.os.path.exists(fpath):
                 continue
             else:
