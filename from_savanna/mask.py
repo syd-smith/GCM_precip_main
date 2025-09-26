@@ -74,3 +74,6 @@ ds = ds.rio.write_crs("EPSG:4326")
 # Clips out the GSLB
 ds = ds.rio.clip(gslb.geometry.apply(bp.mapping), gslb.crs, drop=False)
 
+ds['pr'].isel(time=0).plot()
+bp.plt.title("Precipitation for First Time Slice")
+bp.plt.show()

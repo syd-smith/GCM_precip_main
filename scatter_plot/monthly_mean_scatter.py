@@ -16,12 +16,7 @@ import base_packages as bp
 # precip ratio: future / historical 
 # APPLY MASK TO MACA DATA
 
-fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_ACCESS-CM2_ssp126_6-8_1979-2014_masked.nc'
 
-ds = bp.xr.open_dataset(fpath)
-
-
-#%%
 # all possible emission scenarios found in models
 emission_scenarios = ['ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp585']
 
@@ -61,7 +56,7 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     ds_open = bp.xr.open_mfdataset(fpath, engine = "netcdf4", decode_times = time_coder)
     
     # slice to focus on specified months and years
-    ds_years = ds_open.sel(time = ds_open.time.dt.year.isin(range(start_year, stop_year + 1)))
+    ds_years = ds_open['pr'].sel(time = ds_open.time.dt.year.isin(range(start_year, stop_year + 1)))
     ds_slice = ds_years.sel(time = ds_years.time.dt.month.isin(range(start_month, stop_month + 1)))
 
     # applied data to standard coordinate system (not regridding)
@@ -83,15 +78,24 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     return ds
 
 
-# for model in models:
-#      for emission_scenario in emission_scenarios:
-#          try: 
-#              mask_MACA(model, 'pr', emission_scenario, save = True)
-#          except OSError:
-#              print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
-#              continue
+for model in models:
+     for emission_scenario in emission_scenarios:
+         try: 
+             mask_MACA(model, 'pr', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
+         except OSError:
+             print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
+             continue
 
-mask_MACA(models[0], 'pr', emission_scenarios[1], save = True)
+
+# apply the model to one test then open and map it to see if it worked (sucessful!)
+# mask_MACA(models[0], 'pr', emission_scenarios[1], save = True)
+
+# fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_ACCESS-CM2_ssp126_6-8_1979-2014_pr_masked.nc'
+# ds = bp.xr.open_dataset(fpath)
+
+# ds['pr'].isel(time=0).plot()
+# bp.plt.title("Precipitation for First Time Slice")
+# bp.plt.show()
 
 #%%
 # path to access netcdf files containing the data
