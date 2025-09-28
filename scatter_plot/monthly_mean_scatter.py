@@ -10,10 +10,13 @@ import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages/')
 import base_packages as bp
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/')
-import reference_data
-print(dir(reference_data))
-# from reference_data import scatter_data_sept_26
-#%%
+from reference_data import scatter_data_sept_26
+
+# check for variables stored in reference_data
+# import reference_data
+# print(dir(reference_data))
+
+
 # Future Period: 2070-2099
 # Historical Period: 1979-2014
 # Temp Change: future - historical (C)
@@ -84,7 +87,8 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
 for model in models[6:]:
      for emission_scenario in emission_scenarios:
          try: 
-             mask_MACA(model, 'tasmin', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
+             mask_MACA(model, 'tasmin', emission_scenario, save = True)
+             mask_MACA(model, 'tasmax', emission_scenario, save = True)
          except OSError:
              print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
              continue
@@ -98,15 +102,16 @@ for model in models[6:]:
 # bp.plt.title("Precipitation for First Time Slice")
 # bp.plt.show()
 
-
 #%%
 # CALCULATE PRECIPITATION RATIO
-def precip_ratio(start_month = 6, stop_month = 8):
+def precip_ratio(save_variable, start_month = 6, stop_month = 8):
     """
     Returns precitation ratio data to a nested dictionary under the model name and emission scenario. 
     The average precip value is across the historical period and all grid points.
+    Save_variable should be the framework dictionary imported from reference_data.py.
     """
     
+    # loop through all listed models and emission scenarios to open all available data
     for model in models:
         for emission_scenario in emission_scenarios:
             fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/'
@@ -134,157 +139,149 @@ def precip_ratio(start_month = 6, stop_month = 8):
                 
                 grand_precip = (grand_mean_fut/ grand_mean_hist) *100
                 
-                scatter_data_sept_26[model][emission_scenario]['precip_ratio'] = grand_precip
+                save_variable[model][emission_scenario]['precip_ratio'] = grand_precip
                 
-            # record ddefault message for files not stored with masked data
+            # record default message for files not stored with masked data
             except OSError:
-                scatter_data_sept_26[model][emission_scenario]['precip_ratio'] = 'File Not Found'
+                save_variable[model][emission_scenario]['precip_ratio'] = 'File Not Found'
                 
     return scatter_data_sept_26   
  
 test = precip_ratio()
-#%%
-def hist_temp_year():
-    hist_temp_data_year = []
+
+
+def delta_temp(save_variable, start_month = 6, stop_month = 8):
+    """
+    Returns the change in temperature from the historical to future period to a nested 
+    dictionary under the model name and emission scenario. 
+    The average temperature calculated is across all grid points in the given period.
+    Save_variable should be the framework dictionary imported from reference_data.py.
+    """
+    
+    # loop through all listed models and emission scenarios to open all available data
     for model in models:
         for emission_scenario in emission_scenarios:
-            fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-            if not bp.os.path.exists(fpath_min):
-                continue
-            else:
-                open_ds_min = bp.xr.open_dataset(fpath_min)
-                open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                years_means_min = []
-                for year in hist_years:
-                    year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.month.isin([6,7,8]) & (open_ds_min.time.dt.year == year))
-                    mean_min = year_dat_min.mean().item()
-                    years_means_min.append(mean_min)
-            fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-            if not bp.os.path.exists(fpath_max):
-                continue
-            else:
-                open_ds_max = bp.xr.open_dataset(fpath_max)
-                open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                years_means_max = []
-                for year in hist_years:
-                    year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.month.isin([6,7,8]) & (open_ds_max.time.dt.year == year))
-                    mean_max = year_dat_max.mean().item()
-                    years_means_max.append(mean_max)    
-            all_avg = [(min + max)/2 for min, max in zip(years_means_min, years_means_max)]
-            grand_mean = float(bp.np.mean(all_avg))
-            hist_temp_data_year.append([model, emission_scenario, grand_mean])
-    return hist_temp_data_year    
+            fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/'
+            hist_min_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_1979-2014_tasmin_masked.nc'
+            hist_max_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_1979-2014_tasmax_masked.nc'
+            fut_min_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_2070-2099_tasmin_masked.nc'
+            fut_max_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_2070-2099_tasmax_masked.nc'
+            
+            try:
+                # find the mean for the historical period
+                hist_ds_min = bp.xr.open_dataset(hist_min_path)
+                hist_means_min = []
+                for year in range(1979, 2015):
+                    data_hist_min = hist_ds_min['tasmin'].sel(time = hist_ds_min.time.dt.year == year)
+                    hist_mean_min = data_hist_min.mean(skipna= True).item()
+                    hist_means_min.append(hist_mean_min)
+                    
+                hist_ds_max = bp.xr.open_dataset(hist_max_path)
+                hist_means_max = []
+                for year in range(1979, 2015):
+                    data_hist_max = hist_ds_max['tasmax'].sel(time = hist_ds_max.time.dt.year == year)
+                    hist_mean_max = data_hist_max.mean(skipna = True).item()
+                    hist_means_max.append(hist_mean_max)    
+                
+                # finds the mean between average min and max values
+                avg_hist = [(min + max)/2 for min, max in zip(hist_means_min, hist_means_max)]
+                hist_val = float(bp.np.mean(avg_hist))
+                
+                # finds the mean for the future period
+                fut_ds_min = bp.xr.open_dataset(fut_min_path)
+                fut_means_min = []
+                for year in range(2070, 2099):
+                    data_fut_min = fut_ds_min['tasmin'].sel(time = fut_ds_min.time.dt.year == year)
+                    fut_mean_min = data_fut_min.mean(skipna= True).item()
+                    fut_means_min.append(fut_mean_min)
+                    
+                fut_ds_max = bp.xr.open_dataset(fut_max_path)
+                fut_means_max = []
+                for year in range(2070, 2099):
+                    data_fut_max = fut_ds_max['tasmax'].sel(time = fut_ds_max.time.dt.year == year)
+                    fut_mean_max = data_fut_max.mean(skipna = True).item()
+                    fut_means_max.append(fut_mean_max)    
+                
+                # finds the mean between average min and max values
+                avg_fut = [(min + max)/2 for min, max in zip(fut_means_min, fut_means_max)]
+                fut_val = float(bp.np.mean(avg_fut))    
+                    
+                # calulate change in temperature and save data to dictionary
+                grand_temp = fut_val - hist_val
+                save_variable[model][emission_scenario]['delta_temp'] = grand_temp
+                
+            # skip over model and emission scenario combos that don't exist in the dataset
+            except OSError:
+                save_variable[model][emission_scenario]['delta_temp'] = 'File Not Found'
+                
+    return save_variable   
 
-def fut_temp_year():
-    fut_temp_data_year = []
-    for model in models:
-        for emission_scenario in emission_scenarios:
-            fpath_min = strong_group_path + model + '_' + emission_scenario + '_tasmin.nc'
-            if not bp.os.path.exists(fpath_min):
-                continue
-            else:
-                open_ds_min = bp.xr.open_dataset(fpath_min)
-                open_ds_min = open_ds_min['tasmin'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                years_means_min = []
-                for year in fut_years:
-                    year_dat_min = open_ds_min.sel(time = open_ds_min.time.dt.month.isin([6,7,8]) & (open_ds_min.time.dt.year == year))
-                    mean_min = year_dat_min.mean().item()
-                    years_means_min.append(mean_min)
-            fpath_max = strong_group_path + model + '_' + emission_scenario + '_tasmax.nc'
-            if not bp.os.path.exists(fpath_max):
-                continue
-            else:
-                open_ds_max = bp.xr.open_dataset(fpath_max)
-                open_ds_max = open_ds_max['tasmax'].sel(lat = slice(min_lat, max_lat), lon = slice(min_lon, max_lon))
-                years_means_max = []
-                for year in fut_years:
-                    year_dat_max = open_ds_max.sel(time = open_ds_max.time.dt.month.isin([6,7,8]) & (open_ds_max.time.dt.year == year))
-                    mean_max = year_dat_max.mean().item()
-                    years_means_max.append(mean_max)    
-            all_avg = [(min + max)/2 for min, max in zip(years_means_min, years_means_max)]
-            grand_mean = float(bp.np.mean(all_avg))
-            fut_temp_data_year.append([model, emission_scenario, grand_mean])
-    return fut_temp_data_year 
+sept_28 = delta_temp(test)
 
-# finds the difference in mean temperature between future and historical periods
-def delta_temp_year():
-    delta_temp_data_year = []
-    fut_data = fut_temp_year()
-    hist_data = hist_temp_year()
-    for fut, hist in zip(fut_data, hist_data):
-        fut_val = fut[2]
-        hist_val = hist[2]
-        grand_temp = fut_val - hist_val
-        delta_temp_data_year.append([fut[0], fut[1], grand_temp])
-    return delta_temp_data_year
-
-
-# pull data points (see copied below)
-yprecip = precip_ratio()
-xtemp = delta_temp_year()
-
-#%%
 
 # graph individual datapoints with colors to match  emission scenarios
-fig, ax = bp.plt.subplots()
-labels = []
-marker_colors = ['purple', 'indigo', 'steelblue', 'darkcyan', 'seagreen', 'gold']
-for idx, data in enumerate(yprecip):
-    temp_data = xtemp[idx][2]
-    precip_data = yprecip[idx][2]
-    if yprecip[idx][1] == 'ssp119':
-        marker = marker_colors[0]
-    elif yprecip[idx][1] == 'ssp126':
-        marker = marker_colors[1]
-    elif yprecip[idx][1] == 'ssp245':
-        marker = marker_colors[2]
-    elif yprecip[idx][1] == 'ssp370':
-         marker = marker_colors[3]
-    elif yprecip[idx][1] == 'ssp434':
-        marker = marker_colors[4]
-    elif yprecip[idx][1] == 'ssp585':
-        marker = marker_colors[5]
-    labels.append([f"Source: {xtemp[idx][0]}, Scenario: {xtemp[idx][1]}"])
-    ax.scatter(temp_data, precip_data, c = marker, s = 25)
+def scatter_plot(save_variable,  PC = False):
+    fig, ax = bp.plt.subplots()
+    labels = []
+    marker_colors = ['purple', 'indigo', 'steelblue', 'darkcyan', 'seagreen', 'gold']
+    for idx, data in enumerate(yprecip):
+        temp_data = xtemp[idx][2]
+        precip_data = yprecip[idx][2]
+        if save_variable[:] == 'ssp119':
+            marker = marker_colors[0]
+        elif save_variable[:] == 'ssp126':
+            marker = marker_colors[1]
+        elif save_variable[:] == 'ssp245':
+            marker = marker_colors[2]
+        elif save_variable[:] == 'ssp370':
+             marker = marker_colors[3]
+        elif save_variable[:] == 'ssp434':
+            marker = marker_colors[4]
+        elif save_variable[:] == 'ssp585':
+            marker = marker_colors[5]
+        labels.append([f"Source: {save_variable[:][:]['precip_ratio']}, Scenario: {save_variable[:][:]['delta_temp']}"])
+        ax.scatter(temp_data, precip_data, c = marker, s = 25)
+        
+    # axis ticks and labels
+    ax.set_yticks([50, 100, 150, 200])
+    ax.set_yticklabels([0.5, 1, 1.5, 2])
+    ax.set_xticks([0, 5])
+
+    # set horizontal and vertical lines
+    ax.axhline(y = 50, color = 'lightgray', linewidth = 0.7)
+    ax.axhline(y = 100, color = 'lightgray', linewidth = 0.7)
+    ax.axhline(y = 150, color = 'lightgray', linewidth = 0.7)
+    ax.axhline(y = 200, color = 'lightgray', linewidth = 0.7)
+    ax.axvline(x = 0, color = 'lightgray', linewidth = 0.7)
+    ax.axvline(x = 5, color = 'lightgray', linewidth = 0.7)
+
+    # remove the black outlines around the graph
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.tick_params(axis='both', which='both', length=0)
+
+    # labels for the graph
+    ax.set_xlabel('Temperature Change (K)')
+    ax.set_ylabel('Precipitation Ratio')
+    # title
+    fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.01)
+    # subtitle
+    ax.set_title('1979-2014 vs. 2070-2099', fontsize = 10, pad = 7)
+
+    # creating a custom legend for emission scenarios
+    my_legend = [
+        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[0], label = emission_scenarios[0]),
+        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[1], label = emission_scenarios[1]),
+        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[2], label = emission_scenarios[2]),
+        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[3], label = emission_scenarios[3]),
+        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[4], label = emission_scenarios[4]),
+       bp. Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[5], label = emission_scenarios[5])]
+    ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
+
+    save_path = bp.os.path.join('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/summer_precip_scatter.png')
+    fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
     
-# axis ticks and labels
-ax.set_yticks([50, 100, 150, 200])
-ax.set_yticklabels([0.5, 1, 1.5, 2])
-ax.set_xticks([0, 5])
-
-# set horizontal and vertical lines
-ax.axhline(y = 50, color = 'lightgray', linewidth = 0.7)
-ax.axhline(y = 100, color = 'lightgray', linewidth = 0.7)
-ax.axhline(y = 150, color = 'lightgray', linewidth = 0.7)
-ax.axhline(y = 200, color = 'lightgray', linewidth = 0.7)
-ax.axvline(x = 0, color = 'lightgray', linewidth = 0.7)
-ax.axvline(x = 5, color = 'lightgray', linewidth = 0.7)
-
-# remove the black outlines around the graph
-for spine in ax.spines.values():
-    spine.set_visible(False)
-ax.tick_params(axis='both', which='both', length=0)
-
-# labels for the graph
-ax.set_xlabel('Temperature Change (K)')
-ax.set_ylabel('Precipitation Ratio')
-# title
-fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.01)
-# subtitle
-ax.set_title('1979-2014 vs. 2070-2099', fontsize = 10, pad = 7)
-
-# creating a custom legend for emission scenarios
-my_legend = [
-    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[0], label = emission_scenarios[0]),
-    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[1], label = emission_scenarios[1]),
-    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[2], label = emission_scenarios[2]),
-    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[3], label = emission_scenarios[3]),
-    bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[4], label = emission_scenarios[4]),
-   bp. Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[5], label = emission_scenarios[5])]
-ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
-
-save_path = bp.os.path.join('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/summer_precip_scatter.png')
-fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
+    return fig
 
 
 #%%
