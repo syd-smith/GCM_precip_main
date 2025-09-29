@@ -220,27 +220,22 @@ sept_28 = delta_temp(test)
 
 
 # graph individual datapoints with colors to match  emission scenarios
-def scatter_plot(save_variable,  PC = False):
+def scatter_plot(save_variable,  save_name, PC = False, save = False):
     fig, ax = bp.plt.subplots()
-    labels = []
     marker_colors = ['purple', 'indigo', 'steelblue', 'darkcyan', 'seagreen', 'gold']
-    for idx, data in enumerate(yprecip):
-        temp_data = xtemp[idx][2]
-        precip_data = yprecip[idx][2]
-        if save_variable[:] == 'ssp119':
-            marker = marker_colors[0]
-        elif save_variable[:] == 'ssp126':
-            marker = marker_colors[1]
-        elif save_variable[:] == 'ssp245':
-            marker = marker_colors[2]
-        elif save_variable[:] == 'ssp370':
-             marker = marker_colors[3]
-        elif save_variable[:] == 'ssp434':
-            marker = marker_colors[4]
-        elif save_variable[:] == 'ssp585':
-            marker = marker_colors[5]
-        labels.append([f"Source: {save_variable[:][:]['precip_ratio']}, Scenario: {save_variable[:][:]['delta_temp']}"])
-        ax.scatter(temp_data, precip_data, c = marker, s = 25)
+    
+    for model in save_variable:
+        for scenario in save_variable[model]:
+            if save_variable[model][scenario] == 'File Not Found':
+                continue
+            if PC == True:
+                marker = save_variable[model][scenario]['PC1']
+                # norm = bp.colors.Normalize(vmin = -15, vmax = 20)
+                size = save_variable[model][scenario]['PC2']
+                ax.scatter(save_variable[model][scenario]['delta_temp'], save_variable[model][scenario]['precip_ratio'], c = marker, cmap = 'virdis', s = size)
+            else:
+                marker = marker_colors[emission_scenarios.index(scenario)]
+                ax.scatter(save_variable[model][scenario]['delta_temp'], save_variable[model][scenario]['precip_ratio'], c = marker, s = 25)
         
     # axis ticks and labels
     ax.set_yticks([50, 100, 150, 200])
@@ -278,7 +273,7 @@ def scatter_plot(save_variable,  PC = False):
        bp. Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[5], label = emission_scenarios[5])]
     ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
 
-    save_path = bp.os.path.join('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/summer_precip_scatter.png')
+    save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/{save_name}.png')
     fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
     
     return fig
