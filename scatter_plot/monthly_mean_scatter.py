@@ -31,7 +31,9 @@ models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6
  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
     
-
+fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_CMCC-ESM2_ssp585_6-8_2070-2099_tasmin_masked.nc'
+ds = bp.xr.open_dataset(fpath)
+#%%
 # APPLY MASK TO MACA DATA
 def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_month = 8, start_year = 1979, stop_year = 2014, save = False):
     """
@@ -84,14 +86,14 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     return ds
 
 
-for model in models[6:]:
-     for emission_scenario in emission_scenarios:
-         try: 
-             mask_MACA(model, 'tasmin', emission_scenario, save = True)
-             mask_MACA(model, 'tasmax', emission_scenario, save = True)
-         except OSError:
-             print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
-             continue
+# for model in models[6:]:
+#      for emission_scenario in emission_scenarios:
+#          try: 
+#              mask_MACA(model, 'tasmin', emission_scenario, save = True)
+#              mask_MACA(model, 'tasmax', emission_scenario, save = True)
+#          except OSError:
+#              print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
+#              continue
 
 
 # apply the model to one test then open and map it to see if boundary application was successful
@@ -101,8 +103,8 @@ for model in models[6:]:
 # ds['pr'].isel(time=0).plot()
 # bp.plt.title("Precipitation for First Time Slice")
 # bp.plt.show()
-
 #%%
+
 # CALCULATE PRECIPITATION RATIO
 def precip_ratio(save_variable, start_month = 6, stop_month = 8):
     """
@@ -140,16 +142,16 @@ def precip_ratio(save_variable, start_month = 6, stop_month = 8):
                 grand_precip = (grand_mean_fut/ grand_mean_hist) *100
                 
                 save_variable[model][emission_scenario]['precip_ratio'] = grand_precip
-                
+
             # record default message for files not stored with masked data
             except OSError:
                 save_variable[model][emission_scenario]['precip_ratio'] = 'File Not Found'
                 
     return scatter_data_sept_26   
  
-test = precip_ratio()
+test = precip_ratio(scatter_data_sept_26)
 
-
+#%%
 def delta_temp(save_variable, start_month = 6, stop_month = 8):
     """
     Returns the change in temperature from the historical to future period to a nested 
@@ -218,7 +220,7 @@ def delta_temp(save_variable, start_month = 6, stop_month = 8):
 
 sept_28 = delta_temp(test)
 
-
+#%%
 # graph individual datapoints with colors to match  emission scenarios
 def scatter_plot(save_variable,  save_name, PC = False, save = False):
     fig, ax = bp.plt.subplots()

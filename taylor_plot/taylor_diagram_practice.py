@@ -100,6 +100,7 @@ def mask_GCM(model_name, start_month, stop_month, save = False):
     ds_slice = ds_years.sel(time = ds_years.time.dt.month.isin(range(start_month, stop_month + 1)))
 
     # regrid the GCM data to ennsure that at least a few gridpoints land within the mask boundaries
+    # look at where these points land and how central they are to the region
     ds_regrid = bp.xr.Dataset(
             {
                 "lat": (["lat"], bp.np.arange(36, 43, 1)),
