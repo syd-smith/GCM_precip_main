@@ -10,7 +10,7 @@ import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages/')
 import base_packages as bp
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/')
-from reference_data import scatter_data_sept_26
+from reference_data import scatter_framework
 
 # check for variables stored in reference_data
 # import reference_data
@@ -31,11 +31,10 @@ models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6
  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
     
-fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_CMCC-ESM2_ssp585_6-8_2070-2099_tasmin_masked.nc'
-ds = bp.xr.open_dataset(fpath)
-#%%
+
 # APPLY MASK TO MACA DATA
 def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_month = 8, start_year = 1979, stop_year = 2014, save = False):
+    
     """
     This function applies the boundaries of the GSLB to a given dataset through setting everything
     outside the boundaries to NAN. Default values return a NETCDF file with data for JJA over the 
@@ -86,14 +85,14 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     return ds
 
 
-# for model in models[6:]:
-#      for emission_scenario in emission_scenarios:
-#          try: 
-#              mask_MACA(model, 'tasmin', emission_scenario, save = True)
-#              mask_MACA(model, 'tasmax', emission_scenario, save = True)
-#          except OSError:
-#              print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
-#              continue
+for model in models[6:]:
+     for emission_scenario in emission_scenarios:
+         try: 
+             mask_MACA(model, 'tasmin', emission_scenario, save = True)
+             mask_MACA(model, 'tasmax', emission_scenario, save = True)
+         except OSError:
+             print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
+             continue
 
 
 # apply the model to one test then open and map it to see if boundary application was successful
@@ -103,10 +102,11 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
 # ds['pr'].isel(time=0).plot()
 # bp.plt.title("Precipitation for First Time Slice")
 # bp.plt.show()
-#%%
 
+#%%
 # CALCULATE PRECIPITATION RATIO
 def precip_ratio(save_variable, start_month = 6, stop_month = 8):
+    
     """
     Returns precitation ratio data to a nested dictionary under the model name and emission scenario. 
     The average precip value is across the historical period and all grid points.
@@ -147,12 +147,13 @@ def precip_ratio(save_variable, start_month = 6, stop_month = 8):
             except OSError:
                 save_variable[model][emission_scenario]['precip_ratio'] = 'File Not Found'
                 
-    return scatter_data_sept_26   
+    return save_variable   
  
-test = precip_ratio(scatter_data_sept_26)
+test = precip_ratio(scatter_framework)
 
 #%%
 def delta_temp(save_variable, start_month = 6, stop_month = 8):
+    
     """
     Returns the change in temperature from the historical to future period to a nested 
     dictionary under the model name and emission scenario. 
@@ -222,7 +223,15 @@ sept_28 = delta_temp(test)
 
 #%%
 # graph individual datapoints with colors to match  emission scenarios
-def scatter_plot(save_variable,  save_name, PC = False, save = False):
+def scatter_plot(save_variable, save_name, PC = False, save = False):
+    
+    """
+    This function graphs data points stored in a nested dictionary (save_variable) by the functions above. 
+    PC = True changes the size and colors of each point to reflect the respective PC scores assigned in the
+    climate analysis process. Note that PC1 and PC2 data was read in from a .csv file. See reference_data.py 
+    for more information.
+    """
+    
     fig, ax = bp.plt.subplots()
     marker_colors = ['purple', 'indigo', 'steelblue', 'darkcyan', 'seagreen', 'gold']
     
@@ -231,10 +240,10 @@ def scatter_plot(save_variable,  save_name, PC = False, save = False):
             if save_variable[model][scenario] == 'File Not Found':
                 continue
             if PC == True:
-                marker = save_variable[model][scenario]['PC1']
+                val = save_variable[model][scenario]['PC1']
                 # norm = bp.colors.Normalize(vmin = -15, vmax = 20)
                 size = save_variable[model][scenario]['PC2']
-                ax.scatter(save_variable[model][scenario]['delta_temp'], save_variable[model][scenario]['precip_ratio'], c = marker, cmap = 'virdis', s = size)
+                ax.scatter(save_variable[model][scenario]['delta_temp'], save_variable[model][scenario]['precip_ratio'], c = val, cmap = 'viridis', vmin = -14, vmax = 20,s = size)
             else:
                 marker = marker_colors[emission_scenarios.index(scenario)]
                 ax.scatter(save_variable[model][scenario]['delta_temp'], save_variable[model][scenario]['precip_ratio'], c = marker, s = 25)
@@ -266,18 +275,17 @@ def scatter_plot(save_variable,  save_name, PC = False, save = False):
     ax.set_title('1979-2014 vs. 2070-2099', fontsize = 10, pad = 7)
 
     # creating a custom legend for emission scenarios
-    my_legend = [
-        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[0], label = emission_scenarios[0]),
-        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[1], label = emission_scenarios[1]),
-        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[2], label = emission_scenarios[2]),
-        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[3], label = emission_scenarios[3]),
-        bp.Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[4], label = emission_scenarios[4]),
-       bp. Line2D([0], [0], marker = 'o', color = 'w', markersize = 8, markerfacecolor = marker_colors[5], label = emission_scenarios[5])]
+    my_legend = [bp.Line2D([0], [0], marker='o', color='w', markersize=8, 
+              markerfacecolor=marker_colors[i], label=emission_scenarios[i])
+     for i in range(len(emission_scenarios))]  
     ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
 
-    save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/{save_name}.png')
-    fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
-    
+    if save == True:
+        save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/{save_name}.png')
+        fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
+    else: 
+        bp.plt.show()
+        
     return fig
 
 

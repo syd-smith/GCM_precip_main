@@ -6,7 +6,7 @@ Created on Sat Sep 13 18:47:40 2025
 @author: Sydney Smith
 """
 
-scatter_data_sept_26 = {
+scatter_framework = {
     'ACCESS-CM2' : {
         'ssp119': {'delta_temp' : 0, 'precip_ratio' : 0, 'PC1' : 0, 'PC2' : 0},
         'ssp126' : {'delta_temp' : 0, 'precip_ratio' : 0, 'PC1' : 0, 'PC2' : 0},
