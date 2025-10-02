@@ -143,7 +143,73 @@ def anomaly(model_name, variable, start_month, stop_month, zoom_out = False):
 # vas = anomaly('ACCESS-CM2', 'vas')
 
 
-def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014, quiver = False, step = 1, zoom_out = False):
+def quiver(anomaly_ref, model_name, variable, start_month, stop_month, start_year, stop_year, zoom_out = False):
+    # add quiver to overlay wind vectors on another variable
+    if zoom_out == True:
+        # slice wind data
+        u = anomaly_ref(model_name, 'uas', start_month, stop_month, zoom_out = True)
+        v = anomaly_ref(model_name, 'vas', start_month, stop_month, zoom_out = True)
+        
+    else:
+        # slice uas and vas data
+        u = anomaly_ref(model_name, 'uas', start_month, stop_month,)
+        v = anomaly_ref(model_name, 'vas', start_month, stop_month,)
+
+    # activate my_quiver function
+    if quiver == True:
+        if zoom_out == True:
+            save_name = f'ZOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
+        else:
+            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
+            
+        # set scale to adjust based on being an anomaly or fut/hist mean
+        if anomaly_ref.__name__ == 'anomaly':
+            scale = 20
+        else: 
+            scale = 175
+        
+        # interpolate data to fit same grid
+        if zoom_out == True:
+            ds_out = bp.xr.Dataset(
+                {
+                    "lat": (["lat"], bp.np.arange(1.25, 63, 3)),
+                    "lon": (["lon"], bp.np.arange(200, 300, 3)),
+                }
+            )
+        else:
+            ds_out = bp.xr.Dataset(
+                {
+                    "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
+                    "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
+                }
+            )
+        
+        regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
+        regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
+        u = regridder_u(u)
+        v = regridder_v(v)
+   
+        # allow to skip values
+        lat = u['lat'][::step]
+        lon = u['lon'][::step]
+        X, Y = bp.np.meshgrid(lon, lat)
+        uu = bp.np.array(u[::step,::step])
+        vv = bp.np.array(v[::step,::step])
+        
+        # setup quiver
+        quiv = ax.quiver(X, Y, uu, vv,
+                    pivot = 'tail',
+                    width = 0.0015,
+                    scale = scale, 
+                    headwidth = 6,
+                    color = 'k',
+                    transform = bp.ccrs.PlateCarree())
+        
+        return quiv
+
+
+
+def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014, quiver = None, step = 1, zoom_out = False):
     
     """
     Maps xarray.DataArray from specified function. Can use contourfill to visualize a 
@@ -154,11 +220,22 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, st
     
     # specified what function to use and calls it to get xarray.DataArray
     if zoom_out == True:
-        data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year, zoom_out = True)
         shrink = 0.6
+        if anomaly_ref.__name__ == 'anomaly':
+            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png
+            data = anomaly_ref(model_name, variable, start_month, stop_month, zoom_out = True)
+        else:
+            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png
+            data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year, zoom_out = True)
+        
     else:
-        data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year)
         shrink = 0.85
+        if anomaly_ref.__name__ == 'anomaly':
+            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
+            data = anomaly_ref(model_name, variable, start_month, stop_year)
+        else:
+            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
+            data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year)
     
     # defines a dictionary that stores formatting information for each variable -> see else: for more information
     plot_dict = {'psl' : {
@@ -373,69 +450,6 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, st
     # ax.add_feature(bp.cfeature.LAKES, zorder = 1)
     # ax.add_feature(bp.cfeature.RIVERS)
     
-    # add quiver to overlay wind vectors on another variable
-    if zoom_out == True:
-        save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
-        # slice uas and vas data
-        u = anomaly_ref(model_name, 'uas', start_month, stop_month, zoom_out = True)
-        v = anomaly_ref(model_name, 'vas', start_month, stop_month, zoom_out = True)
-        
-    else:
-        save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
-        # slice uas and vas data
-        u = anomaly_ref(model_name, 'uas', start_month, stop_month,)
-        v = anomaly_ref(model_name, 'vas', start_month, stop_month,)
-
-    # activate my_quiver function
-    if quiver == True:
-        if zoom_out == True:
-            save_name = f'ZOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
-        else:
-            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
-            
-        # set scale to adjust based on being an anomaly or fut/hist mean
-        if anomaly_ref.__name__ == 'anomaly':
-            scale = 20
-        else: 
-            scale = 175
-        
-        # interpolate data to fit same grid
-        if zoom_out == True:
-            ds_out = bp.xr.Dataset(
-                {
-                    "lat": (["lat"], bp.np.arange(1.25, 63, 3)),
-                    "lon": (["lon"], bp.np.arange(200, 300, 3)),
-                }
-            )
-        else:
-            ds_out = bp.xr.Dataset(
-                {
-                    "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
-                    "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
-                }
-            )
-        
-        regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
-        regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
-        u = regridder_u(u)
-        v = regridder_v(v)
-   
-        # allow to skip values
-        lat = u['lat'][::step]
-        lon = u['lon'][::step]
-        X, Y = bp.np.meshgrid(lon, lat)
-        uu = bp.np.array(u[::step,::step])
-        vv = bp.np.array(v[::step,::step])
-        
-        # setup quiver
-        quiv = ax.quiver(X, Y, uu, vv,
-                    pivot = 'tail',
-                    width = 0.0015,
-                    scale = scale, 
-                    headwidth = 6,
-                    color = 'k',
-                    transform = bp.ccrs.PlateCarree())
-    
     # save path for files
     # all PNGs stored to anomaly_maps directory but ignored in Git
     save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}/'
@@ -463,7 +477,6 @@ for variable in variables:
         map_anomalies(region_mean, model, variable, 7, 9, 2070, 2099)
         map_anomalies(region_mean, model, variable, 7, 9, 1979, 2014)
         bp.plt.show()
-        print(model, variable)
 
 
 # DATA FOR NEW MODEL GROUPS
