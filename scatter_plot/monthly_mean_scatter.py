@@ -30,8 +30,82 @@ emission_scenarios = ['ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp585'
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC',
  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
-    
 
+
+fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_ACCESS-CM2_ssp126_6-8_2070-2099_tasmin_masked.nc'
+ds = bp.xr.open_dataset(fpath)
+
+
+
+#%%
+# loop through all listed models and emission scenarios to open all available data
+for model in models:
+    for emission_scenario in emission_scenarios:
+        fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/'
+        hist_min_path = f'{fpath}MACA_{model}_{emission_scenario}_6-8_1979-2014_tasmin_masked.nc'
+        hist_max_path = f'{fpath}MACA_{model}_{emission_scenario}_6-8_1979-2014_tasmax_masked.nc'
+        fut_min_path = f'{fpath}MACA_{model}_{emission_scenario}_6-8_2070-2099_tasmin_masked.nc'
+        fut_max_path = f'{fpath}MACA_{model}_{emission_scenario}_6-8_2070-2099_tasmax_masked.nc'
+        
+        if not bp.os.path.exists(hist_min_path) and not bp.os.path.exists(hist_max_path) and not bp.os.path.exists(fut_min_path) and not bp.os.path.exists(fut_max_path):
+            print(f'{model}_{emission_scenario} not found')
+            continue
+
+        # find the mean for the historical period
+        hist_ds_min = bp.xr.open_dataset(hist_min_path)
+        hist_means_min = []
+        for year in range(1979, 2015):
+            data_hist_min = hist_ds_min['tasmin'].sel(time = hist_ds_min.time.dt.year == year)
+            hist_mean_min = data_hist_min.mean(skipna= True).item()
+            hist_means_min.append(hist_mean_min)
+            
+        hist_ds_max = bp.xr.open_dataset(hist_max_path)
+        hist_means_max = []
+        for year in range(1979, 2015):
+            data_hist_max = hist_ds_max['tasmax'].sel(time = hist_ds_max.time.dt.year == year)
+            hist_mean_max = data_hist_max.mean(skipna = True).item()
+            hist_means_max.append(hist_mean_max)    
+        
+        # finds the mean between average min and max values
+        avg_hist = [(min + max)/2 for min, max in zip(hist_means_min, hist_means_max)]
+        hist_val = float(bp.np.mean(avg_hist))
+        print(f'{model}_{emission_scenario} hist val is good')
+        
+     
+        # finds the mean for the future period
+        fut_ds_min = bp.xr.open_dataset(fut_min_path)
+        fut_means_min = []
+        for year in range(2070, 2099):
+            data_fut_min = fut_ds_min['tasmin'].sel(time = fut_ds_min.time.dt.year == year)
+            fut_mean_min = data_fut_min.mean(skipna= True).item()
+            fut_means_min.append(fut_mean_min)
+            
+        fut_ds_max = bp.xr.open_dataset(fut_max_path)
+        fut_means_max = []
+        for year in range(2070, 2099):
+            data_fut_max = fut_ds_max['tasmax'].sel(time = fut_ds_max.time.dt.year == year)
+            fut_mean_max = data_fut_max.mean(skipna = True).item()
+            fut_means_max.append(fut_mean_max)    
+        
+        # finds the mean between average min and max values
+        avg_fut = [(min + max)/2 for min, max in zip(fut_means_min, fut_means_max)]
+        fut_val = float(bp.np.mean(avg_fut))    
+        print(f'{model}_{emission_scenario} fut val is good')
+            
+        # calulate change in temperature and save data to dictionary
+        grand_temp = fut_val - hist_val
+        print(f'{model}_{emission_scenario} delta temp = {grand_temp}')
+            
+        # # skip over model and emission scenario combos that don't exist in the dataset
+        # except OSError:
+        #     scatter_framework[model][emission_scenario]['delta_temp'] = 'File Not Found'
+        #     print(f'{model}_{emission_scenario} data not found')
+            
+
+
+
+
+#%%
 # APPLY MASK TO MACA DATA
 def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_month = 8, start_year = 1979, stop_year = 2014, save = False):
     
@@ -85,14 +159,14 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     return ds
 
 
-for model in models[6:]:
+for model in models[1:]:
      for emission_scenario in emission_scenarios:
          try: 
-             mask_MACA(model, 'tasmin', emission_scenario, save = True)
-             mask_MACA(model, 'tasmax', emission_scenario, save = True)
+             mask_MACA(model, 'tasmin', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
          except OSError:
              print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
              continue
+
 
 
 # apply the model to one test then open and map it to see if boundary application was successful
@@ -102,8 +176,8 @@ for model in models[6:]:
 # ds['pr'].isel(time=0).plot()
 # bp.plt.title("Precipitation for First Time Slice")
 # bp.plt.show()
-
 #%%
+
 # CALCULATE PRECIPITATION RATIO
 def precip_ratio(save_variable, start_month = 6, stop_month = 8):
     

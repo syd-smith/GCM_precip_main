@@ -32,13 +32,13 @@ def download_hist(model, variable):
         "temporal_resolution": "monthly",
         "experiment": "historical",
         "variable": variable, 
-        # "level": [
-        #     "500",
-        #     "600",
-        #     "700",
-        #     "800",
-        #     "900",
-        #     "1000"],
+        "level": [
+            "500",
+            "600",
+            "700",
+            "800",
+            "900",
+            "1000"],
         "model": model, 
         "month": [
             "01", "02", "03",
@@ -77,13 +77,14 @@ def download_hist(model, variable):
 
 # download precip data for all models downscaled to MACA
 # 10, 11, -8 failed (doownload these with ESGF)
-for model in MACA_models[-7:]:
-    download_hist(model, variables_25[0])
+# for model in MACA_models[-7:]:
+#     download_hist(model, variables_25[0])
 
+# nothing for CanESM5
 # come back to for finished downloadd
-# for model in models[4:]:
-#     for variable in variables_huss[1:]:
-#         download_hist(model, variable)
+for model in models[6:]:
+    for variable in variables_huss:
+        download_hist(model, variable)
         
 # Had-LL through specific humidity
 
@@ -144,6 +145,6 @@ def download_fut(model, variable):
 # multiple .nc files -> issues unzipping
 # download_fut(models[5], variables_25[3])
 
-for model in models:
+for model in models[6:]:
     for variable in variables_huss:
         download_fut(model, variable)

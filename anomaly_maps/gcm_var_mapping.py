@@ -24,18 +24,32 @@ min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
 # min_lat = 39.553038338687124
 # max_lat = 42.84375
 
-# GCM lon values are in 0-360 format while other datasets use -180-180 -> conversion may be needed
+
 def convert_lon_to_0_360(lon):
+    
+    """
+    GCM lon values are in 0-360 format while other datasets use -180-180 -> 
+    conversion may be needed.
+    """
+    
     # Convert longitude from -180-180 to 0-360
     lon = bp.np.array(lon)
     lon_360 = (lon + 360) % 360
+    
     return lon_360
 
+
 def convert_lon_360_to_180(lon):
-    # Convert longitude from 0360 range to -180 to 180 range
+    
+    """
+    Convert longitude from 0360 range to -180 to 180 range
+    """
+    
     lon = bp.np.array(lon)  # Ensures input works for lists or arrays
     lon_180 = ((lon + 180) % 360) - 180
+    
     return lon_180
+
 
 # MODELS USED FOR LATEST GROUPING -> HIGH, MODERATE, LOW
 # listed in order from highest to lowest
@@ -44,133 +58,72 @@ M_models = ['HadGEM3-GC31-MM']
 L_models = ['MPI-ESM1-2-LR']
 models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
+
 # MODELS USED FOR INITIAL GROUPING OF HIGH AND LOW
 # wet models from monthly_mean_scatter.py (high precip ratio)
 # H_models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G']
 
+
 # dry models from monthly_mean_scatter.py (low precip ratio)
 # L_models = ['MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
-# function to calculate the mean for each gridpoint across the historical period (1979-2014)
-def hist_mean(model_name, variable, start_month, stop_month, zoom_out = False): 
+
+def region_mean(model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014, zoom_out = False): 
+    
+    """
+    Function to calculate the mean for each gridpoint across the historical period 
+    (1979-2014). Intended to run for the summer months. Zoom out expands the region 
+    to have a broader view of the Pacific Ocean. Returns an xarray.DataArray.
+    """
+    
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
-    open_hist = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_hist*.nc'))
+    open = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_hist*.nc'))
     
     # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
     if variable == 'zg':
-        open_hist = open_hist.sel(plev = 50000, method = 'nearest')
+        open = open.sel(plev = 50000, method = 'nearest')
     
-    years_hist = range(1985, 2015)
+    years = range(start_year, stop_year + 1)
     if zoom_out == True:
-        location_hist = open_hist[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
+        location = open[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
     else: 
-        location_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin(range(start_month, stop_month + 1)))
-    means_hist = []
-    for year in years_hist:
-        year_hist = JJA_hist.sel(time = JJA_hist.time.dt.year == year)
+        location = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+    JJA = location.sel(time = location.time.dt.month.isin(range(start_month, stop_month + 1)))
+    means = []
+    for year in years:
+        year = JJA.sel(time = JJA.time.dt.year == year)
         
         # GCM pr data is in precipitation flux so the time unit has to be taken out
         if variable == 'pr':
-            days_in_month = year_hist.time.dt.days_in_month
+            days_in_month = year.time.dt.days_in_month
             seconds_per_month = days_in_month * 24 * 60 * 60
-            mean_hist = (year_hist * seconds_per_month).mean(dim = 'time')
+            mean = (year * seconds_per_month).mean(dim = 'time')
         else:
-            mean_hist = year_hist.mean(dim = 'time')
+            mean = year.mean(dim = 'time')
             
-        means_hist.append(mean_hist)        
-    combine_means_hist = bp.xr.concat(means_hist, dim = 'year')
-    overall_mean_hist = combine_means_hist.mean(dim = 'year')
+        means.append(mean)        
+    combine_means = bp.xr.concat(means, dim = 'year')
+    overall_mean = combine_means.mean(dim = 'year')
     
     if variable == 'psl':
-        overall_mean_hist *= 0.01 # convert from Pa to hPa
+        overall_mean *= 0.01 # convert from Pa to hPa
     elif variable == 'huss':
-        overall_mean_hist *= 1000 # convert from kg/kg to g/kg
-    # else:
-    #     overall_mean_hist = overall_mean_hist
+        overall_mean *= 1000 # convert from kg/kg to g/kg
 
-    return overall_mean_hist
+    return overall_mean
 
-# function to calculate the mean for each gridpoint across the future period (2070-2099)
-# probably should be combined with hist_mean
-def fut_mean(model_name, variable, start_month, stop_month, interpolate = False, zoom_out = False):
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
-    open_fut = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_ssp*.nc'))
 
-    # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
-    if variable == 'zg':
-        open_fut = open_fut.sel(plev = 50000, method = 'nearest')
-        
-    years_fut = range(2070, 2100)
-    if  zoom_out == True:
-        location_fut = open_fut[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
-    else:
-        location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin(range(start_month, stop_month + 1)))
-    means_fut = []
-    for year in years_fut:
-        year_fut = JJA_fut.sel(time = JJA_fut.time.dt.year == year)
-        
-        # GCM pr data is in precipitation flux so the time unit has to be taken out
-        if variable == 'pr':
-            days_in_month = year_fut.time.dt.days_in_month
-            seconds_per_month = days_in_month * 24 * 60 * 60
-            mean_fut = (year_fut * seconds_per_month).mean(dim = 'time')
-        else:
-            mean_fut = year_fut.mean(dim = 'time')
-            
-        means_fut.append(mean_fut)
-    combine_means_fut = bp.xr.concat(means_fut, dim = 'year')
-    overall_mean_fut = combine_means_fut.mean(dim = 'year')
-    
-    if variable == 'psl':
-        overall_mean_fut *= 0.01 # convert from Pa to hPa
-    elif variable == 'huss':
-        overall_mean_fut *= 1000 # convert from kg/kg to g/kg
-    # else:
-    #     overall_mean_fut = overall_mean_fut
-
-    return overall_mean_fut
-
-# function to calculate the change in a variable from 1979-2014 to 2070-2099 as a difference (precipitation is calculated as a percent change)
 def anomaly(model_name, variable, start_month, stop_month, zoom_out = False):
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
-    # open both datasets for future and historical periods
-    open_hist = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_hist*.nc'))
-    open_fut = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_ssp*.nc'))
     
-    # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
-    if variable == 'zg':
-        open_hist = open_hist.sel(plev = 50000, method = 'nearest')
-        open_fut = open_fut.sel(plev = 50000, method = 'nearest')
-        
-    years_hist = range(1985, 2015)
-    if zoom_out == True:
-        location_hist = open_hist[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
-    else: 
-        location_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_hist = location_hist.sel(time = location_hist.time.dt.month.isin(range(start_month, stop_month + 1)))
-    means_hist = []
-    for year in years_hist:
-        year_hist = JJA_hist.sel(time = JJA_hist.time.dt.year == year)
-        mean_hist = year_hist.mean(dim = 'time')
-        means_hist.append(mean_hist)        
-    combine_means_hist = bp.xr.concat(means_hist, dim = 'year')
-    overall_mean_hist = combine_means_hist.mean(dim = 'year')
-
-    years_fut = range(2070, 2100)
-    if zoom_out == True:
-        location_fut = open_fut[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
-    else:
-        location_fut = open_fut[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-    JJA_fut = location_fut.sel(time = location_fut.time.dt.month.isin(range(start_month, stop_month + 1)))
-    means_fut = []
-    for year in years_fut:
-        year_fut = JJA_fut.sel(time = JJA_fut.time.dt.year == year)
-        mean_fut = year_fut.mean(dim = 'time', skipna = True)
-        means_fut.append(mean_fut)
-    combine_means_fut = bp.xr.concat(means_fut, dim = 'year')
-    overall_mean_fut = combine_means_fut.mean(dim = 'year')
+    """
+    Function to calculate the change in a variable from 1979-2014 to 2070-2099 as a 
+    difference (precipitation is calculated as a percent change) by passing the mean
+    calculation from the above function. Note that date ranges need to manually be 
+    changed if they vary from those in this study. Returns an xarray.DataArray.
+    """
+    
+    overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014)
+    overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, start_year = 2070, stop_year = 2099)
    
     # Sets up all variables as a difference between time periods except for precipitation as a percent change
     if variable == 'pr':
@@ -186,155 +139,223 @@ def anomaly(model_name, variable, start_month, stop_month, zoom_out = False):
 
     return anomaly
 
-# examples of the anomaly function being used to return a lat and lon xarray.DataArray for the specified variable
+# example of the anomaly function being used to return a lat and lon xarray.DataArray for the specified variable
 # vas = anomaly('ACCESS-CM2', 'vas')
-# uas = anomaly('ACCESS-CM2', 'uas')
-# psl = anomaly('ACCESS-CM2', 'psl')
-# pr = anomaly('ACCESS-CM2', 'pr')
 
 
-# maps xarray.DataArray from one of the above functions 
-def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, quiver = False, step = 1, zoom_out = False):
+def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014, quiver = False, step = 1, zoom_out = False):
+    
+    """
+    Maps xarray.DataArray from specified function. Can use contourfill to visualize a 
+    single variable and also overlay wind vectors (quiver). Mapping dictionary contains
+    data for each variable to set associated titles, colors, and standardization of the 
+    scale for the color bar. 
+    """
+    
     # specified what function to use and calls it to get xarray.DataArray
     if zoom_out == True:
-        data = anomaly_ref(model_name, variable, start_month, stop_month, zoom_out = True)
+        data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year, zoom_out = True)
         shrink = 0.6
     else:
-        data = anomaly_ref(model_name, variable, start_month, stop_month)
+        data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year)
         shrink = 0.85
     
     # defines a dictionary that stores formatting information for each variable -> see else: for more information
-    if variable == 'psl': 
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_coolwarm'),
-                     'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
-                     'title': 'Sea Level Pressure', 
-                     'cbar_a' : 'Change in Sea Level Pressure (hPa)',
-                     'cbar_m' : 'Mean Sea Level Pressure (hPa)',
-                     'min_m' : 1002.8295312500001,
-                     'max_m' : 1027.75984375,
-                     'min_a' : -2.1117968559265137,
-                     'max_a' : 3.2
-                     }
-    elif variable == 'pr':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_BrBG'),
-                     'cmap_m' : bp.cmap.cmap('cmocean_haline', revBool = True),
-                     'title': 'Precipitation',
-                     'cbar_a' : 'Change in Precipitation (%)',
-                     'cbar_m' : 'Mean Precipitation (mm)',
-                     'min_m' : 0.21196805760707713,
-                     'max_m' : 360,
-                     'min_a' : -75,
-                     'max_a' : 300
-                     }
-    elif variable == 'zg':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('BlAqGrYeOrReVi200'),
-                     'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
-                     'title': 'Geopotential Height',
-                     'cbar_a' : 'Change in 500-hPa Geopotential Height (m)',
-                     'cbar_m' : 'Mean 500-hPa Geopotential Height (m)',
-                     'min_m' : 5676.18017578125,
-                     'max_m' : 5978.65869140625,
-                     'min_a' : 75,
-                     'max_a' : 200
-                     }
-    elif variable == 'vas':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('CBR_wet'),
-                     'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
-                     'title': 'Northward Near Surface Wind',
-                     'cbar_a' : 'Change in Northward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'cbar_m' : 'Mean Northward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'min_m' : -9.491390228271484,
-                     'max_m' : 6.107685565948486,
-                     'min_a' : -1.862033486366272,
-                     'max_a' : 3.81015682220459
-                     }
-    elif variable == 'uas':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('CBR_wet'),
-                     'cmap_m' : bp.cmap.cmap('MPL_coolwarm'),
-                     'title': 'Easthward Near Surface Wind',
-                     'cbar_a' : 'Change in Eastward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'cbar_m' : 'Mean Eastward Near Surface Wind (m s\u207B\u00B9)', # m s^-1
-                     'min_m' : -11.079482078552246,
-                     'max_m' : 5.9408488273620605,
-                     'min_a' : -3.5138015747070312,
-                     'max_a' : 2.595974922180176
-                     }
-    elif variable == 'ts':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_YlOrRd'),
-                     'cmap_m' : bp.cmap.cmap('MPL_YlOrRd'),
-                     'title': 'Surface Temperature',
-                     'cbar_a' : 'Change in Surface Temperature (K)',
-                     'cbar_m' : 'Mean Surface Temperature (K)',
-                     'min_m' : 281.8443298339844,
-                     'max_m' : 318.0555114746094,
-                     'min_a' : 0.475433349609375,
-                     'max_a' : 15.549346923828125
-                     }
-    elif variable == 'huss':
-        plot_dict = {'cmap_a' : bp.cmap.cmap('MPL_YlGnBu'),
-                     'cmap_m' : bp.cmap.cmap('cmocean_haline', revBool = True),
-                     'title': 'Near Surface Specific Humidity',
-                     'cbar_a' : 'Change in Near Surface Specific Humidity (g/kg)', # xr dataset says units are 1 but I think g/kg?
-                     'cbar_m' : 'Mean Near Surface Specific Humidity (g/kg)',
-                     'min_m' : 4.40641213208437,
-                     'max_m' : 27.03595533967018,
-                     'min_a' : 0,
-                     'max_a' : 7.801617622375488
-                     }
-        
-    # format and function of dictionary explained
-    else:
-        plot_dict = {'cmap_a' : 'color map for anomaly',
-                     'cmap_m' : 'color map for hist/fut means',
-                     'title': 'Test Map Title',
-                     'cbar_a' : 'Default Measurement for anomaly colorbar',
-                     'cbar_m' : 'Default Measurement for hist/fut mean colorbar',
-                     'min_m' : 0,
-                     'max_m' : 100,
-                     'min_a' : 0,
-                     'max_a' : 100
-                     }
+    plot_dict = {'psl' : {
+                     'anomaly' : {
+                          'cmap' : bp.cmap.cmap('MPL_coolwarm'),
+                           'cbar' : 'Change in Sea Level Pressure (hPa)',
+                           'min' : -2.1117968559265137,
+                           'max' : 3.2,
+                           'title': 'Sea Level Pressure'
+                      },
+                      'region_mean' : 
+                          {'cmap' : bp.cmap.cmap('MPL_coolwarm'),
+                           'cbar' : 'Mean Sea Level Pressure (hPa)',
+                           'min' : 1002.8295312500001,
+                           'max' : 1027.75984375,
+                           'title': 'Sea Level Pressure'
+                        }
+                    },
+                    'pr': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('MPL_BrBG'),
+                            'cbar': 'Change in Precipitation (%)',
+                            'min': -75,
+                            'max': 300,
+                            'title': 'Precipitation'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                            'cbar': 'Mean Precipitation (mm)',
+                            'min': 0.21196805760707713,
+                            'max': 360,
+                            'title': 'Precipitation'
+                        }
+                    },
+                    'zg': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('BlAqGrYeOrReVi200'),
+                            'cbar': 'Change in 500-hPa Geopotential Height (m)',
+                            'min': 75,
+                            'max': 200,
+                            'title': 'Geopotential Height'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('MPL_coolwarm'),
+                            'cbar': 'Mean 500-hPa Geopotential Height (m)',
+                            'min': 5676.18017578125,
+                            'max': 5978.65869140625,
+                            'title': 'Geopotential Height'
+                        }
+                    },
+                    'vas': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('CBR_wet'),
+                            'cbar': 'Change in Northward Near Surface Wind (m s\u207B\u00B9)',
+                            'min': -1.862033486366272,
+                            'max': 3.81015682220459,
+                            'title': 'Northward Near Surface Wind'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('MPL_coolwarm'),
+                            'cbar': 'Mean Northward Near Surface Wind (m s\u207B\u00B9)',
+                            'min': -9.491390228271484,
+                            'max': 6.107685565948486,
+                            'title': 'Northward Near Surface Wind'
+                        }
+                    },
+                    'uas': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('CBR_wet'),
+                            'cbar': 'Change in Eastward Near Surface Wind (m s\u207B\u00B9)',
+                            'min': -3.5138015747070312,
+                            'max': 2.595974922180176,
+                            'title': 'Eastward Near Surface Wind'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('MPL_coolwarm'),
+                            'cbar': 'Mean Eastward Near Surface Wind (m s\u207B\u00B9)',
+                            'min': -11.079482078552246,
+                            'max': 5.9408488273620605,
+                            'title': 'Eastward Near Surface Wind'
+                        }
+                    },
+                    'ts': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('MPL_YlOrRd'),
+                            'cbar': 'Change in Surface Temperature (K)',
+                            'min': 0.475433349609375,
+                            'max': 15.549346923828125,
+                            'title': 'Surface Temperature'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('MPL_YlOrRd'),
+                            'cbar': 'Mean Surface Temperature (K)',
+                            'min': 281.8443298339844,
+                            'max': 318.0555114746094,
+                            'title': 'Surface Temperature'
+                        }
+                    },
+                    'huss': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                            'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                            'min': 0,
+                            'max': 7.801617622375488,
+                            'title': 'Near Surface Specific Humidity'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                            'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
+                            'min': 4.40641213208437,
+                            'max': 27.03595533967018,
+                            'title': 'Near Surface Specific Humidity'
+                        }
+                    },
+                    'hus': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                            'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                            'min': 0,
+                            'max': 7.801617622375488,
+                            'title': 'Near Surface Specific Humidity'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                            'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
+                            'min': 4.40641213208437,
+                            'max': 27.03595533967018,
+                            'title': 'Near Surface Specific Humidity'
+                        }
+                    },
+                    'ua': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                            'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                            'min': 0,
+                            'max': 7.801617622375488,
+                            'title': 'Near Surface Specific Humidity'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                            'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
+                            'min': 4.40641213208437,
+                            'max': 27.03595533967018,
+                            'title': 'Near Surface Specific Humidity'
+                        }
+                    },
+                    'va': {
+                        'anomaly': {
+                            'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                            'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                            'min': 0,
+                            'max': 7.801617622375488,
+                            'title': 'Near Surface Specific Humidity'
+                        },
+                        'region_mean': {
+                            'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                            'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
+                            'min': 4.40641213208437,
+                            'max': 27.03595533967018,
+                            'title': 'Near Surface Specific Humidity'
+                        }
+                    }
+                }
+
         
     #setup map
     fig = bp.plt.figure()
     ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
     
     # set the color transition to happen at 0
-    if anomaly_ref.__name__ == 'anomaly':
-        data_min = plot_dict['min_a']
-        data_max = plot_dict['max_a']
-    else:
-        data_min = plot_dict['min_m']
-        data_max = plot_dict['max_m']
+    data_min = plot_dict[variable][anomaly_ref]['min']
+    data_max = plot_dict[variable][anomaly_ref]['max']
 
     # defualts norm if 0 can't be at the center
     if data_min < 0.00 < data_max:
-        norm = bp.mcolors.TwoSlopeNorm(vmin=data_min, vcenter=0.00, vmax=data_max)
+        norm = bp.mcolors.TwoSlopeNorm(vmin = data_min, vcenter = 0.00, vmax = data_max)
     else:
-        norm = bp.mcolors.Normalize(vmin=data_min, vmax=data_max)
+        norm = bp.mcolors.Normalize(vmin = data_min, vmax = data_max)
 
     # create outline of map based on mean values or anomalies
-    if anomaly_ref.__name__ == 'fut_mean':
-        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
-        ax.set_title(f'{model_name} ssp585\nMean {plot_dict['title']}\n2070-2099', fontsize = 18)
+    if anomaly_ref.__name__ == 'region_mean':
+        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
+        ax.set_title(f'{model_name} ssp585\nMean {plot_dict[variable][anomaly_ref]['title']}\n{start_year}-{stop_year}', fontsize = 18)
         cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
-        cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
+        cbar.set_label(plot_dict[variable][anomaly_ref]['cbar'], fontsize = 10)
         cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
-    elif anomaly_ref.__name__ == 'hist_mean':
-        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_m'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
-        ax.set_title(f'{model_name}\nMean {plot_dict['title']}\n1985-2014', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
-        cbar.set_label(plot_dict['cbar_m'], fontsize = 10)
-        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+
     else:
-        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict['cmap_a'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
-        ax.set_title(f'{model_name} ssp585\n{plot_dict['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
+        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
+        ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref]['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
         cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
-        cbar.set_label(plot_dict['cbar_a'], fontsize = 10)
+        cbar.set_label(plot_dict[variable][anomaly_ref]['cbar'], fontsize = 10)
         if variable == 'pr' or variable == 'ts' or variable == 'zg':
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
         else:
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
+            
     if zoom_out == True:
         ax.set_ylim(1.25, 63)
         ax.set_xlim(-157.75, -61.5)
@@ -435,14 +456,14 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, qu
 
 # run more at once
 variables = ['pr', 'psl', 'zg', 'ts', 'huss']
-refs = [hist_mean, fut_mean, anomaly]
 
-for ref in refs:
-    for variable in variables:
-        for model in models:
-            map_anomalies(ref, model, variable, 7, 9)
-            bp.plt.show()
-            print(model, variable, ref.__name__)
+for variable in variables:
+    for model in models:
+        map_anomalies(anomaly, model, variable, 7, 9)
+        map_anomalies(region_mean, model, variable, 7, 9, 2070, 2099)
+        map_anomalies(region_mean, model, variable, 7, 9, 1979, 2014)
+        bp.plt.show()
+        print(model, variable)
 
 
 # DATA FOR NEW MODEL GROUPS
