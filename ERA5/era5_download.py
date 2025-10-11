@@ -80,10 +80,11 @@ def download_hist(model, variable):
 # for model in MACA_models[-7:]:
 #     download_hist(model, variables_25[0])
 
-# nothing for CanESM5
-# come back to for finished downloadd
-for model in models[6:]:
-    for variable in variables_huss:
+# hus wont download for last 2
+# download_hist(models[-1], 'hus')
+
+for model in models[-2]:
+    for variable in variables_huss[-2:]:
         download_hist(model, variable)
         
 # Had-LL through specific humidity
@@ -145,6 +146,10 @@ def download_fut(model, variable):
 # multiple .nc files -> issues unzipping
 # download_fut(models[5], variables_25[3])
 
-for model in models[6:]:
-    for variable in variables_huss:
-        download_fut(model, variable)
+# for model in models[6:]:
+#     for variable in variables_huss:
+#         download_fut(model, variable)
+
+download_fut(models[-2], 'hus')
+# download_fut(models[-2], 'ua')
+# download_fut(models[-1], 'ua')

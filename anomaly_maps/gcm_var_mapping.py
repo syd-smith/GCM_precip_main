@@ -5,19 +5,28 @@ Created on Thu Jun 26 13:05:53 2025
 
 @author: u1301408
 """
+
 import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages')
 import base_packages as bp
 
+
 # Define the shapefile path (where to find coordinates used by VIC from Maribeth at USBR)
 bdir = '/uufs/chpc.utah.edu/common/home/u0660911/Documents/projects/gslbip/'
 shapefile_path = bp.os.path.join(bdir,'GSLBIP_shpfiles/MF6_VIC_bounding_box/MF6_VIC_bounding_box.shp')
+
 
 # Load the shapefile for VIC boundaries of Great Salt Lake Basin (not applied for larger maps)
 gdf = bp.gpd.read_file(shapefile_path)
 gdf = gdf.to_crs("EPSG:4326")
 min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
 
+fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/hus/hus_Amon_ACCESS-CM2_historical_r1i1p1f1_gn_19500116-20141216.nc'
+
+ds = bp.xr.open_dataset(fpath)
+ds = ds.sel(plev = 50000, method = 'nearest')
+
+#%%
 # output of values in VIC shapefile
 # min_lon = -113.69354024533703
 # max_lon = -110.59375
@@ -68,26 +77,41 @@ models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL
 # L_models = ['MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
 
-def region_mean(model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014, zoom_out = False): 
+def region_mean(model_name, variable, start_month, stop_month, level = None, start_year = 1979, stop_year = 2014, zoom_out = False, *kwargs): 
     
     """
     Function to calculate the mean for each gridpoint across the historical period 
     (1979-2014). Intended to run for the summer months. Zoom out expands the region 
     to have a broader view of the Pacific Ocean. Returns an xarray.DataArray.
+    
+    Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
     """
     
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
-    open = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '_hist*.nc'))
     
-    # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
-    if variable == 'zg':
-        open = open.sel(plev = 50000, method = 'nearest')
+    # lets the function know what file to open for the given model and variable based on date range
+    if 1970 <= start_year <= 2014:
+        date = '_hist*.nc'
+    else:
+        date = '_ssp585*.nc'
     
-    years = range(start_year, stop_year + 1)
+    fname = fpath + model_name + date
+    open = bp.xr.open_mfdataset(bp.glob.glob(fname), decode_times = True)
+    # print('Files Found:', bp.glob.glob(fname))
+    
+    # variables that have an extra dimension for what pressure level you want to look at needs to be selected
+    # geopotential height should be at the  500 hPa level
+    if level == None:
+        print('No level to select')
+    else:
+        open = open.sel(plev = level, method = 'nearest')
+    
     if zoom_out == True:
         location = open[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
     else: 
         location = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+        
+    years = range(start_year, stop_year + 1)
     JJA = location.sel(time = location.time.dt.month.isin(range(start_month, stop_month + 1)))
     means = []
     for year in years:
@@ -97,9 +121,9 @@ def region_mean(model_name, variable, start_month, stop_month, start_year = 1979
         if variable == 'pr':
             days_in_month = year.time.dt.days_in_month
             seconds_per_month = days_in_month * 24 * 60 * 60
-            mean = (year * seconds_per_month).mean(dim = 'time')
+            mean = (year * seconds_per_month).mean(dim = 'time', skipna = True)
         else:
-            mean = year.mean(dim = 'time')
+            mean = year.mean(dim = 'time', skipna = True)
             
         means.append(mean)        
     combine_means = bp.xr.concat(means, dim = 'year')
@@ -107,23 +131,25 @@ def region_mean(model_name, variable, start_month, stop_month, start_year = 1979
     
     if variable == 'psl':
         overall_mean *= 0.01 # convert from Pa to hPa
-    elif variable == 'huss':
+    elif variable == 'huss' or variable == 'hus':
         overall_mean *= 1000 # convert from kg/kg to g/kg
 
     return overall_mean
 
 
-def anomaly(model_name, variable, start_month, stop_month, zoom_out = False):
+def anomaly(model_name, variable, start_month, stop_month, level = None, zoom_out = False, *kwargs):
     
     """
     Function to calculate the change in a variable from 1979-2014 to 2070-2099 as a 
     difference (precipitation is calculated as a percent change) by passing the mean
     calculation from the above function. Note that date ranges need to manually be 
     changed if they vary from those in this study. Returns an xarray.DataArray.
+    
+    Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
     """
     
-    overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014)
-    overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, start_year = 2070, stop_year = 2099)
+    overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, level, start_year = 1979, stop_year = 2014)
+    overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, level, start_year = 2070, stop_year = 2099)
    
     # Sets up all variables as a difference between time periods except for precipitation as a percent change
     if variable == 'pr':
@@ -143,99 +169,80 @@ def anomaly(model_name, variable, start_month, stop_month, zoom_out = False):
 # vas = anomaly('ACCESS-CM2', 'vas')
 
 
-def quiver(anomaly_ref, model_name, variable, start_month, stop_month, start_year, stop_year, zoom_out = False):
-    # add quiver to overlay wind vectors on another variable
-    if zoom_out == True:
-        # slice wind data
-        u = anomaly_ref(model_name, 'uas', start_month, stop_month, zoom_out = True)
-        v = anomaly_ref(model_name, 'vas', start_month, stop_month, zoom_out = True)
-        
-    else:
-        # slice uas and vas data
-        u = anomaly_ref(model_name, 'uas', start_month, stop_month,)
-        v = anomaly_ref(model_name, 'vas', start_month, stop_month,)
-
-    # activate my_quiver function
-    if quiver == True:
-        if zoom_out == True:
-            save_name = f'ZOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
-        else:
-            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}_quiver.png'
+def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year, stop_year, zoom_out = False, step = 1, *kwargs):
+    
+    """
+    Adds an overlay of wind vectors as arrows. Made to integrate with map_anomalies 
+    function. Make sure to call the same level that coordinates with the contour
+    variable.
+    
+    The only arguements that should be adjusted are which u and v values should 
+    be selected. It is optional to adjust the step  size (spacing of the arrows).
+    All other arguements will be pulled from the map_anomaly function.
+    
+    Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
+    """
+    
+    # call wind data
+    u = anomaly_ref(model_name, u, start_month, stop_month, level, zoom_out = zoom_out)
+    v = anomaly_ref(model_name, v, start_month, stop_month, level, zoom_out = zoom_out)
             
-        # set scale to adjust based on being an anomaly or fut/hist mean
-        if anomaly_ref.__name__ == 'anomaly':
-            scale = 20
-        else: 
-            scale = 175
+    # set scale to adjust based on being an anomaly or fut/hist mean
+    if anomaly_ref.__name__ == 'anomaly':
+        scale = 20
+    else: 
+        scale = 175
         
-        # interpolate data to fit same grid
-        if zoom_out == True:
-            ds_out = bp.xr.Dataset(
-                {
-                    "lat": (["lat"], bp.np.arange(1.25, 63, 3)),
-                    "lon": (["lon"], bp.np.arange(200, 300, 3)),
-                }
-            )
-        else:
-            ds_out = bp.xr.Dataset(
-                {
-                    "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
-                    "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
-                }
-            )
+    # interpolate data to fit same grid
+    if zoom_out == True:
+        ds_out = bp.xr.Dataset(
+            {
+                "lat": (["lat"], bp.np.arange(1.25, 63, 3)),
+                "lon": (["lon"], bp.np.arange(200, 300, 3)),
+            }
+        )
+    else:
+        ds_out = bp.xr.Dataset(
+            {
+                "lat": (["lat"], bp.np.arange(15.625, 51.88, 2.75)),
+                "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
+            }
+        )
+    
+    regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
+    regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
+    u = regridder_u(u)
+    v = regridder_v(v)
+
+    # allow to skip values
+    lat = u['lat'][::step]
+    lon = u['lon'][::step]
+    X, Y = bp.np.meshgrid(lon, lat)
+    uu = bp.np.array(u[::step, ::step])
+    vv = bp.np.array(v[::step, ::step])
+    
+    # setup quiver
+    quiv = ax.quiver(X, Y, uu, vv,
+                pivot = 'tail',
+                width = 0.0015,
+                scale = scale, 
+                headwidth = 6,
+                color = 'k',
+                transform = bp.ccrs.PlateCarree())
         
-        regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
-        regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
-        u = regridder_u(u)
-        v = regridder_v(v)
-   
-        # allow to skip values
-        lat = u['lat'][::step]
-        lon = u['lon'][::step]
-        X, Y = bp.np.meshgrid(lon, lat)
-        uu = bp.np.array(u[::step,::step])
-        vv = bp.np.array(v[::step,::step])
-        
-        # setup quiver
-        quiv = ax.quiver(X, Y, uu, vv,
-                    pivot = 'tail',
-                    width = 0.0015,
-                    scale = scale, 
-                    headwidth = 6,
-                    color = 'k',
-                    transform = bp.ccrs.PlateCarree())
-        
-        return quiv
+    return quiv
 
 
-
-def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, start_year = 1979, stop_year = 2014, quiver = None, step = 1, zoom_out = False):
+def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, level = None, start_year = 1979, stop_year = 2014, add_quiver = None, u = 'uas', v = 'vas', save = False, zoom_out = False):
     
     """
     Maps xarray.DataArray from specified function. Can use contourfill to visualize a 
     single variable and also overlay wind vectors (quiver). Mapping dictionary contains
     data for each variable to set associated titles, colors, and standardization of the 
     scale for the color bar. 
-    """
     
-    # specified what function to use and calls it to get xarray.DataArray
-    if zoom_out == True:
-        shrink = 0.6
-        if anomaly_ref.__name__ == 'anomaly':
-            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png
-            data = anomaly_ref(model_name, variable, start_month, stop_month, zoom_out = True)
-        else:
-            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png
-            data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year, zoom_out = True)
-        
-    else:
-        shrink = 0.85
-        if anomaly_ref.__name__ == 'anomaly':
-            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
-            data = anomaly_ref(model_name, variable, start_month, stop_year)
-        else:
-            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
-            data = anomaly_ref(model_name, variable, start_month, stop_month, start_year, stop_year)
+    Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
+    """
     
     # defines a dictionary that stores formatting information for each variable -> see else: for more information
     plot_dict = {'psl' : {
@@ -353,17 +360,17 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, st
                     'hus': {
                         'anomaly': {
                             'cmap': bp.cmap.cmap('MPL_YlGnBu'),
-                            'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                            'cbar': f'Change in Specific Humidity (g/kg) at {level} Pa',
                             'min': 0,
                             'max': 7.801617622375488,
-                            'title': 'Near Surface Specific Humidity'
+                            'title': 'Specific Humidity'
                         },
                         'region_mean': {
                             'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
-                            'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
-                            'min': 4.40641213208437,
-                            'max': 27.03595533967018,
-                            'title': 'Near Surface Specific Humidity'
+                            'cbar': f'Mean Specific Humidity (g/kg) at {level} Pa',
+                            'min': 0,
+                            'max': 10,
+                            'title': 'Specific Humidity'
                         }
                     },
                     'ua': {
@@ -400,14 +407,32 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, st
                     }
                 }
 
+    # specified what function to use and calls it to get xarray.DataArray
+    if zoom_out == True:
+        shrink = 0.6
+        if anomaly_ref.__name__ == 'anomaly':
+            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
+            data = anomaly_ref(model_name, variable, start_month, stop_month, level, zoom_out = True)
+        else:
+            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
+            data = anomaly_ref(model_name, variable, start_month, stop_month, level, start_year, stop_year, zoom_out = True)
         
-    #setup map
+    else:
+        shrink = 0.85
+        if anomaly_ref.__name__ == 'anomaly':
+            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
+            data = anomaly_ref(model_name, variable, start_month, stop_month, level)
+        else:
+            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
+            data = anomaly_ref(model_name, variable, start_month, stop_month, level, start_year, stop_year)
+        
+    # setup map
     fig = bp.plt.figure()
     ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
     
     # set the color transition to happen at 0
-    data_min = plot_dict[variable][anomaly_ref]['min']
-    data_max = plot_dict[variable][anomaly_ref]['max']
+    data_min = plot_dict[variable][anomaly_ref.__name__]['min']
+    data_max = plot_dict[variable][anomaly_ref.__name__]['max']
 
     # defualts norm if 0 can't be at the center
     if data_min < 0.00 < data_max:
@@ -417,17 +442,20 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, st
 
     # create outline of map based on mean values or anomalies
     if anomaly_ref.__name__ == 'region_mean':
-        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
-        ax.set_title(f'{model_name} ssp585\nMean {plot_dict[variable][anomaly_ref]['title']}\n{start_year}-{stop_year}', fontsize = 18)
+        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
+        ax.set_title(f'{model_name} ssp585\nMean {plot_dict[variable][anomaly_ref.__name__]['title']}\n{start_year}-{stop_year}', fontsize = 18)
         cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
-        cbar.set_label(plot_dict[variable][anomaly_ref]['cbar'], fontsize = 10)
-        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+        cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
+        if variable == 'pr' or variable == 'ts' or variable == 'zg':
+            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+        else:
+            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
 
     else:
-        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
-        ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref]['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
+        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
+        ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref.__name__]['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
         cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
-        cbar.set_label(plot_dict[variable][anomaly_ref]['cbar'], fontsize = 10)
+        cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
         if variable == 'pr' or variable == 'ts' or variable == 'zg':
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
         else:
@@ -450,60 +478,44 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, st
     # ax.add_feature(bp.cfeature.LAKES, zorder = 1)
     # ax.add_feature(bp.cfeature.RIVERS)
     
+    # add arrows to show wind vectors
+    if add_quiver == True:
+        quiver_obj = quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year, stop_year, zoom_out, step = 1)
+            
     # save path for files
-    # all PNGs stored to anomaly_maps directory but ignored in Git
-    save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}/'
-    if start_month == 6 and stop_month == 8:
-        save_path = bp.os.path.join(save_path, 'JJA/' + save_name)
-    elif start_month == 7 and stop_month == 8:
-        save_path = bp.os.path.join(save_path, 'JA/' + save_name)
-    elif start_month == 7 and stop_month == 9:
-        save_path = bp.os.path.join(save_path, 'JAS/' + save_name)
-    else:
-        save_path = bp.os.path.join(save_path)
-    
-    bp.plt.savefig(save_path, dpi = 400)
+    if save == True:
+        # all PNGs stored to anomaly_maps directory but ignored in Git
+        save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}/'
+        if start_month == 6 and stop_month == 8:
+            save_path = bp.os.path.join(save_path, 'JJA/' + save_name)
+        elif start_month == 7 and stop_month == 8:
+            save_path = bp.os.path.join(save_path, 'JA/' + save_name)
+        elif start_month == 7 and stop_month == 9:
+            save_path = bp.os.path.join(save_path, 'JAS/' + save_name)
+        elif start_month == 7 and stop_month == 9:
+            save_path = bp.os.path.join(save_path, 'June/' + save_name)
+        else:
+            save_path = bp.os.path.join(save_path)
+        
+        bp.plt.savefig(save_path, dpi = 400)
+        
     bp.plt.show()   
     
     return fig, ax
 
 
+test = map_anomalies(region_mean, 'ACCESS-CM2', 'hus', 7, 9, start_year = 1979, stop_year = 2014, level = 50000, add_quiver = True, u = 'ua', v = 'va', zoom_out = True)
+
 # run more at once
-variables = ['pr', 'psl', 'zg', 'ts', 'huss']
+# variables = ['pr', 'psl', 'zg', 'ts', 'huss']
 
-for variable in variables:
-    for model in models:
-        map_anomalies(anomaly, model, variable, 7, 9)
-        map_anomalies(region_mean, model, variable, 7, 9, 2070, 2099)
-        map_anomalies(region_mean, model, variable, 7, 9, 1979, 2014)
-        bp.plt.show()
-
-
-# DATA FOR NEW MODEL GROUPS
-# map_anomalies(hist_mean, H_models[-1], 'psl') 
-
-# EXAMPLES FOR OLD MODEL GROUPS
-# loop over multiple models for one variable
-# for model in L_models:
-#     map_anomalies(hist_mean, model, 'zg')
-#     bp.plt.show()
-
-# run one test model for one variable
-# test = map_anomalies(fut_mean, 'KACE-1-0-G', 'zg') 
+# for variable in variables:
+#     for model in models:
+#         map_anomalies(anomaly, model, variable, 7, 9)
+#         map_anomalies(region_mean, model, variable, 7, 9, 2070, 2099)
+#         map_anomalies(region_mean, model, variable, 7, 9, 1979, 2014)
+#         bp.plt.show()
     
-# complete list of models analyzed
-# models = ['UKESM1-0-LL', 'ACCESS-CM2', 'CanESM5', 'KACE-1-0-G', 'MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
-
-                  #%%
-variable = 'pr'
-model_name = 'KACE-1-0-G'
-fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_'
-files = bp.xr.open_mfdataset(bp.glob.glob(fpath + model_name + '*.nc'))
-
-# file = files[0]
-# ds = bp.xr.open_dataset(file)
-# print(ds)
-
 
 #%%
 # finding min and max across datasets for each variable

@@ -168,7 +168,7 @@ for model in models[1:]:
              continue
 
 
-
+    
 # apply the model to one test then open and map it to see if boundary application was successful
 # mask_MACA(models[0], 'pr', emission_scenarios[1], save = True)
 # fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_ACCESS-CM2_ssp126_6-8_1979-2014_pr_masked.nc'
