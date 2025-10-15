@@ -26,7 +26,7 @@ fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5
 ds = bp.xr.open_dataset(fpath)
 ds = ds.sel(plev = 50000, method = 'nearest')
 
-#%%
+
 # output of values in VIC shapefile
 # min_lon = -113.69354024533703
 # max_lon = -110.59375
@@ -201,6 +201,11 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
                 "lon": (["lon"], bp.np.arange(200, 300, 3)),
             }
         )
+        
+        # patch size for key
+        width = 0.14
+        height = 0.035
+        
     else:
         ds_out = bp.xr.Dataset(
             {
@@ -208,6 +213,10 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
                 "lon": (["lon"], bp.np.arange(216.5625, 295.275, 2.75)),
             }
         )
+        
+        # patch size for key
+        width = 0.1
+        height = 0.035
     
     regridder_u = bp.xe.Regridder(u, ds_out, 'bilinear')
     regridder_v = bp.xe.Regridder(v, ds_out, 'bilinear')
@@ -229,8 +238,21 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
                 headwidth = 6,
                 color = 'k',
                 transform = bp.ccrs.PlateCarree())
+    
+    
+    bbox = bp.FancyBboxPatch((0.03, 0.04), width, height,
+                      transform=ax.transAxes,
+                      fc='white', ec='black', boxstyle='round,pad=0.02', zorder=1)
+    ax.add_patch(bbox)
+    
+    key = ax.quiverkey(quiv, 
+                       X = 0.05, 
+                       Y = 0.05, 
+                       U = 5, 
+                       label = '5 m/s', 
+                       labelpos = 'E')
         
-    return quiv
+    return quiv, key
 
 
 def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, level = None, start_year = 1979, stop_year = 2014, add_quiver = None, u = 'uas', v = 'vas', save = False, zoom_out = False):
@@ -433,6 +455,7 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     # set the color transition to happen at 0
     data_min = plot_dict[variable][anomaly_ref.__name__]['min']
     data_max = plot_dict[variable][anomaly_ref.__name__]['max']
+    ticks = bp.np.linspace(data_min, data_max, num = 10)
 
     # defualts norm if 0 can't be at the center
     if data_min < 0.00 < data_max:
@@ -444,9 +467,9 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     if anomaly_ref.__name__ == 'region_mean':
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\nMean {plot_dict[variable][anomaly_ref.__name__]['title']}\n{start_year}-{stop_year}', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both', ticks = ticks)
         cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
-        if variable == 'pr' or variable == 'ts' or variable == 'zg':
+        if variable == 'ts' or variable == 'zg':
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
         else:
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
@@ -454,7 +477,7 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     else:
         contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
         ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref.__name__]['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both')
+        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both', ticks = ticks)
         cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
         if variable == 'pr' or variable == 'ts' or variable == 'zg':
             cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
@@ -480,7 +503,7 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     
     # add arrows to show wind vectors
     if add_quiver == True:
-        quiver_obj = quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year, stop_year, zoom_out, step = 1)
+        quiver_obj, quiver_key = quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year, stop_year, zoom_out, step = 1)
             
     # save path for files
     if save == True:
@@ -492,8 +515,12 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
             save_path = bp.os.path.join(save_path, 'JA/' + save_name)
         elif start_month == 7 and stop_month == 9:
             save_path = bp.os.path.join(save_path, 'JAS/' + save_name)
-        elif start_month == 7 and stop_month == 9:
+        elif start_month == 6 and stop_month == 6:
             save_path = bp.os.path.join(save_path, 'June/' + save_name)
+        elif start_month == 7 and stop_month == 7:
+            save_path = bp.os.path.join(save_path, 'July/' + save_name)
+        elif start_month == 8 and stop_month == 8:
+            save_path = bp.os.path.join(save_path, 'August/' + save_name)
         else:
             save_path = bp.os.path.join(save_path)
         
@@ -503,8 +530,9 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     
     return fig, ax
 
-
-test = map_anomalies(region_mean, 'ACCESS-CM2', 'hus', 7, 9, start_year = 1979, stop_year = 2014, level = 50000, add_quiver = True, u = 'ua', v = 'va', zoom_out = True)
+for model in models:
+    map_anomalies(region_mean, model, 'hus', 7, 7, start_year = 1979, stop_year = 2014, level = 50000, add_quiver = True, u = 'ua', v = 'va')
+    bp.plt.show()
 
 # run more at once
 # variables = ['pr', 'psl', 'zg', 'ts', 'huss']
