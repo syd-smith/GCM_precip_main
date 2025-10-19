@@ -21,10 +21,20 @@ gdf = bp.gpd.read_file(shapefile_path)
 gdf = gdf.to_crs("EPSG:4326")
 min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
 
-fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/hus/hus_Amon_ACCESS-CM2_historical_r1i1p1f1_gn_19500116-20141216.nc'
-
-ds = bp.xr.open_dataset(fpath)
-ds = ds.sel(plev = 50000, method = 'nearest')
+time_dict = {
+    range(5, 6) :'May',
+    range(6, 7) : 'June', 
+    range(7, 8) : 'July',
+    range(8, 9) : 'August',
+    range(9, 10) : 'September', 
+    range(5, 7) : 'MJ',
+    range(5, 8) : 'MJJ',
+    range(6, 8) : 'JJ',
+    range(6, 9) : 'JJA',
+    range(7, 9) : 'JA',
+    range(7, 10) : 'JAS',
+    range(8, 10): 'AS'
+    }
 
 
 # output of values in VIC shapefile
@@ -148,8 +158,13 @@ def anomaly(model_name, variable, start_month, stop_month, level = None, zoom_ou
     Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
     """
     
-    overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, level, start_year = 1979, stop_year = 2014)
-    overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, level, start_year = 2070, stop_year = 2099)
+    if zoom_out == True:
+        overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, level, start_year = 1979, stop_year = 2014, zoom_out = True)
+        overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, level, start_year = 2070, stop_year = 2099, zoom_out = True)
+        
+    else:
+        overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, level, start_year = 1979, stop_year = 2014)
+        overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, level, start_year = 2070, stop_year = 2099)
    
     # Sets up all variables as a difference between time periods except for precipitation as a percent change
     if variable == 'pr':
@@ -189,9 +204,13 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
             
     # set scale to adjust based on being an anomaly or fut/hist mean
     if anomaly_ref.__name__ == 'anomaly':
-        scale = 20
+        scale = 35
+        U = 1
+        label = '1 m/s'
     else: 
         scale = 175
+        U = 5
+        label = '5 m/s'
         
     # interpolate data to fit same grid
     if zoom_out == True:
@@ -243,13 +262,14 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
     bbox = bp.FancyBboxPatch((0.03, 0.04), width, height,
                       transform=ax.transAxes,
                       fc='white', ec='black', boxstyle='round,pad=0.02', zorder=1)
+    
     ax.add_patch(bbox)
     
     key = ax.quiverkey(quiv, 
                        X = 0.05, 
                        Y = 0.05, 
-                       U = 5, 
-                       label = '5 m/s', 
+                       U = U, 
+                       label = label, 
                        labelpos = 'E')
         
     return quiv, key
@@ -384,14 +404,14 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
                             'cmap': bp.cmap.cmap('MPL_YlGnBu'),
                             'cbar': f'Change in Specific Humidity (g/kg) at {level} Pa',
                             'min': 0,
-                            'max': 7.801617622375488,
+                            'max': 3.5, #7801.617622375488,
                             'title': 'Specific Humidity'
                         },
                         'region_mean': {
                             'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
                             'cbar': f'Mean Specific Humidity (g/kg) at {level} Pa',
-                            'min': 0,
-                            'max': 10,
+                            'min': 0.9462222806178033,
+                            'max': 6, #4.642414394766092,
                             'title': 'Specific Humidity'
                         }
                     },
@@ -453,37 +473,38 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
     
     # set the color transition to happen at 0
-    data_min = plot_dict[variable][anomaly_ref.__name__]['min']
-    data_max = plot_dict[variable][anomaly_ref.__name__]['max']
-    ticks = bp.np.linspace(data_min, data_max, num = 10)
+    variable_min = plot_dict[variable][anomaly_ref.__name__]['min']
+    variable_max = plot_dict[variable][anomaly_ref.__name__]['max']
+    ticks = bp.np.linspace(variable_min, variable_max, num = 9)
 
     # defualts norm if 0 can't be at the center
-    if data_min < 0.00 < data_max:
-        norm = bp.mcolors.TwoSlopeNorm(vmin = data_min, vcenter = 0.00, vmax = data_max)
+    if variable_min < 0.00 < variable_max:
+        norm = bp.mcolors.TwoSlopeNorm(vmin = variable_min, vcenter = 0.00, vmax = variable_max)
     else:
-        norm = bp.mcolors.Normalize(vmin = data_min, vmax = data_max)
+        norm = bp.mcolors.Normalize(vmin = variable_min, vmax = variable_max)
 
     # create outline of map based on mean values or anomalies
-    if anomaly_ref.__name__ == 'region_mean':
-        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
-        ax.set_title(f'{model_name} ssp585\nMean {plot_dict[variable][anomaly_ref.__name__]['title']}\n{start_year}-{stop_year}', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both', ticks = ticks)
-        cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
-        if variable == 'ts' or variable == 'zg':
-            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
-        else:
-            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
-
+    contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
+    
+    # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
+    sm = bp.mpl.cm.ScalarMappable(norm = norm, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'])
+    sm.set_array([]) # makes sure no data is attached to the colorbar
+    
+    # specify the layout of the colorbar
+    cbar = bp.plt.colorbar(sm, ax = ax, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both', ticks = ticks)
+    cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
+    
+    if variable == 'ts' or variable == 'zg' or variable == 'pr' or variable == 'huss' or variable == 'psl':
+        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     else:
-        contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
-        ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref.__name__]['title']} Anomaly\n2070-2099 vs 1985-2014', fontsize = 18)
-        cbar = bp.plt.colorbar(contour, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both', ticks = ticks)
-        cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
-        if variable == 'pr' or variable == 'ts' or variable == 'zg':
-            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
-        else:
-            cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
-            
+        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
+        
+    if anomaly_ref.__name__ == 'region_mean':
+        ax.set_title(f'{model_name} ssp585\nMean {plot_dict[variable][anomaly_ref.__name__]['title']}\n{time_dict[range(start_month, stop_month +1)]} {start_year}-{stop_year}', fontsize = 18)
+        
+    else:
+        ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref.__name__]['title']} Anomaly\n{time_dict[range(start_month, stop_month +1)]} 2070-2099 vs 1985-2014', fontsize = 18)
+        
     if zoom_out == True:
         ax.set_ylim(1.25, 63)
         ax.set_xlim(-157.75, -61.5)
@@ -509,33 +530,28 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     if save == True:
         # all PNGs stored to anomaly_maps directory but ignored in Git
         save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}/'
-        if start_month == 6 and stop_month == 8:
-            save_path = bp.os.path.join(save_path, 'JJA/' + save_name)
-        elif start_month == 7 and stop_month == 8:
-            save_path = bp.os.path.join(save_path, 'JA/' + save_name)
-        elif start_month == 7 and stop_month == 9:
-            save_path = bp.os.path.join(save_path, 'JAS/' + save_name)
-        elif start_month == 6 and stop_month == 6:
-            save_path = bp.os.path.join(save_path, 'June/' + save_name)
-        elif start_month == 7 and stop_month == 7:
-            save_path = bp.os.path.join(save_path, 'July/' + save_name)
-        elif start_month == 8 and stop_month == 8:
-            save_path = bp.os.path.join(save_path, 'August/' + save_name)
-        else:
-            save_path = bp.os.path.join(save_path)
         
+        # refers to time_dict for the naming files based on the given months
+        save_path = bp.os.path.join(save_path, time_dict[range(start_month, stop_month +1)] + save_name)
         bp.plt.savefig(save_path, dpi = 400)
         
     bp.plt.show()   
     
     return fig, ax
 
-for model in models:
-    map_anomalies(region_mean, model, 'hus', 7, 7, start_year = 1979, stop_year = 2014, level = 50000, add_quiver = True, u = 'ua', v = 'va')
-    bp.plt.show()
+
+variables = ['pr', 'huss', 'psl', 'ts']
+H_variables = ['hus', 'zg']
+
+for variable in H_variables[0]:
+    for model in models:
+        map_anomalies(region_mean, model, variable, 8, 8, start_year = 1979, stop_year = 2014, u = 'ua', v = 'va', level = 500000, zoom_out = True, save = True)
+        bp.plt.show()
+
 
 # run more at once
 # variables = ['pr', 'psl', 'zg', 'ts', 'huss']
+
 
 # for variable in variables:
 #     for model in models:
@@ -557,7 +573,7 @@ def min_max (variable):
         open = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
         open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
         years = range(1985, 2099)
-        if variable == 'zg':
+        if variable == 'zg' or variable == 'hus':
             open = open.sel(plev = 50000, method = 'nearest')
         means = []
         for year in years:
@@ -591,7 +607,7 @@ def min_max (variable):
     result = f'Min for {variable}: {final_min}\nMax for {variable}: {final_max}'
     return result
         
-print(min_max('uas'))
+print(min_max('hus'))
 
 #MIN AND MAX VALUES FOR HIST AND FUT MEANS
 # Min for pr: 0.21196805760707713
@@ -630,7 +646,7 @@ def anom_min_max(variable):
         open_fut = open_fut.sel(time = open_fut.time.dt.month.isin([6, 7, 8]))
     
         # geopotential height has an extra dimension for what pressure level you want to look at (we chose 500 hPa)
-        if variable == 'zg':
+        if variable == 'zg' or variable == 'hus':
             open_hist = open_hist.sel(plev = 50000, method = 'nearest')
             open_fut = open_fut.sel(plev = 50000, method = 'nearest')
             
@@ -677,7 +693,7 @@ def anom_min_max(variable):
         
     return result
 
-print(anom_min_max('zg'))
+print(anom_min_max('hus'))
     
 # MIN AND MAX VALUES FOR ANOMALIES 
 # Anom min for pr: -84.02847290039062
