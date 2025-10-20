@@ -49,5 +49,4 @@ sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analy
 import nclcmaps as cmap
 import rioxarray 
 from shapely.geometry import mapping
-import pprint
 from matplotlib.patches import FancyBboxPatch

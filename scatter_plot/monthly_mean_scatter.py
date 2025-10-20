@@ -85,29 +85,34 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     
     return ds
 
-model = 'UKESM1-0-LL'
-# for model in models:
-for emission_scenario in emission_scenarios:
-    try: 
-        mask_MACA(model, 'tasmax', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
-        mask_MACA(model, 'tasmax', emission_scenario, start_year = 1979, stop_year = 2014, save = True)
-    except OSError:
-        print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
-        continue
+
+for model in models:
+    for emission_scenario in emission_scenarios:
+        try: 
+            mask_MACA(model, 'tasmax', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
+            mask_MACA(model, 'tasmax', emission_scenario, start_year = 1979, stop_year = 2014, save = True)
+        except OSError:
+            print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
+            continue
 
 
     
 # apply the model to one test then open and map it to see if boundary application was successful
+# mask application
 # mask_MACA(models[0], 'pr', emission_scenarios[1], save = True)
+
+# open newly created dataset
 # fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/MACA_ACCESS-CM2_ssp126_6-8_1979-2014_pr_masked.nc'
 # ds = bp.xr.open_dataset(fpath)
+
+# plot data
 # ds['pr'].isel(time=0).plot()
 # bp.plt.title("Precipitation for First Time Slice")
 # bp.plt.show()
 
 
 #%%
-# read in PC data from Savanna's .csv file
+# read in PC data from tabular format in Savanna's .csv file
 df = bp.pd.read_csv('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/climate_analysis/pca/PCs_zscore_column.csv')
 
 # _ refers to the rows while rows really refers to the columns
@@ -121,16 +126,19 @@ for _, row in df.iterrows():
         'PC1' : float(row['PC1']),
         'PC2' : float(row['PC2'])}
     
+    # input PC data into the dictionary framework foound in reference_data.py (use this dictionary to compile more data with the calculations below)
     scatter_framework.setdefault(model, {})[exp] = record
     
+    
 #%%
-# CALCULATE PRECIPITATION RATIO
+# CALCULATE PERCENT CHANGE IN PRECIPITATION AND CHANGE IN TEMPERATURE
 def precip_ratio(save_variable, start_month = 6, stop_month = 8):
     
     """
-    Returns precitation ratio data to a nested dictionary under the model name and emission scenario. 
-    The average precip value is across the historical period and all grid points.
-    Save_variable should be the framework dictionary imported from reference_data.py.
+    Returns the percent change in precitation to a nested dictionary under the model 
+    name and emission scenario. The average precip value is across the historical 
+    period and all grid points.Save_variable should be the framework dictionary imported 
+    from reference_data.py.
     """
     
     # loop through all listed models and emission scenarios to open all available data
@@ -243,7 +251,7 @@ oct_19 = delta_temp(test)
 
 
 #%%
-# save data from the functions to a specified file
+# save the completed dictionary from the functions to a specified file
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/')
 
@@ -268,31 +276,45 @@ base_dict = ast.literal_eval(contents)
 
 #%%
 # graph individual datapoints with colors to match  emission scenarios
-def scatter_plot(save_variable, save_name, PC = False, save = False):
+def scatter_plot(data_dict, save_name, PC = False, save = False):
     
     """
-    This function graphs data points stored in a nested dictionary (save_variable) by the functions above. 
-    PC = True changes the size and colors of each point to reflect the respective PC scores assigned in the
-    climate analysis process. Note that PC1 and PC2 data was read in from a .csv file. See reference_data.py 
-    for more information.
+    This function graphs data points stored in a nested dictionary (data_dict) by the functions above. 
+    PC = True changes the size and colors of each point to reflect the respective PC scores assigned in 
+    the climate analysis process. Note that PC1 and PC2 data was read in from a .csv file. See above 
+    .csv data readin for more information. 
     """
     
     fig, ax = bp.plt.subplots()
     marker_colors = ['purple', 'indigo', 'steelblue', 'darkcyan', 'seagreen', 'gold']
     
-    for model in save_variable:
-        for scenario in save_variable[model]:
-            if save_variable[model][scenario]['delta_temp'] == 'File Not Found' or save_variable[model][scenario]['precip_ratio'] == 'File Not Found':
+    for model in data_dict:
+        for scenario in data_dict[model]:
+            if data_dict[model][scenario]['delta_temp'] == 'File Not Found' or data_dict[model][scenario]['precip_ratio'] == 'File Not Found':
                 continue
             if PC == True:
-                val = save_variable[model][scenario]['PC1']
-                # norm = bp.colors.Normalize(vmin = -15, vmax = 20)
-                size = save_variable[model][scenario]['PC2']
-                ax.scatter(save_variable[model][scenario]['delta_temp'], save_variable[model][scenario]['precip_ratio'], c = val, cmap = 'viridis', vmin = -14, vmax = 20,s = size)
+                # adjust color of data point relative to PC1 value
+                val = data_dict[model][scenario]['PC1']
+                vmin = -15
+                vmax = 20
+                norm = bp.mcolors.Normalize(vmin = vmin, vmax = vmax)
+                
+                # adjust size of data point relative to PC2 value
+                size = data_dict[model][scenario]['PC2']
+                
+                # positive PC2 values are circles and negatives are triangles
+                if size <= 0:
+                    marker = '^'
+                    size = abs(size)
+                else:
+                    marker = 'o'
+                    
+                scatter = ax.scatter(data_dict[model][scenario]['delta_temp'], data_dict[model][scenario]['precip_ratio'], marker = marker, c = val, cmap = 'viridis', s = size * 30, norm = norm)
+                
             else:
                 marker = marker_colors[emission_scenarios.index(scenario)]
-                ax.scatter(save_variable[model][scenario]['delta_temp'], save_variable[model][scenario]['precip_ratio'], c = marker, s = 25)
-        
+                scatter = ax.scatter(data_dict[model][scenario]['delta_temp'], data_dict[model][scenario]['precip_ratio'], c = marker, s = 25)
+            
     # axis ticks and labels
     ax.set_yticks([50, 100, 150, 200])
     ax.set_yticklabels([0.5, 1, 1.5, 2])
@@ -314,16 +336,36 @@ def scatter_plot(save_variable, save_name, PC = False, save = False):
     # labels for the graph
     ax.set_xlabel('Temperature Change (K)')
     ax.set_ylabel('Precipitation Ratio')
-    # title
-    fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.08)
+
     # subtitle
     ax.set_title('1979-2014 vs. 2070-2099', fontsize = 10, pad = 7)
+    
+    # set legends and colorbar for data interpretation
+    if PC == True:
+        # creating a color bar and legend for PC1 and PC2 data
+        ticks = bp.np.linspace(vmin, vmax, num = 8)
+        cbar = bp.plt.colorbar(scatter, orientation = 'vertical', ticks = ticks, shrink = 0.5, pad = 0)
+        cbar.set_label('PC1 data')
+        cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+        
+        # Create a hollow triangle and hollow circle for PC2 legend handles
+        triangle_handle = bp.Line2D([], [], marker='^', color='black', markerfacecolor='none', markersize=10, linestyle='None', label='Triangle')
+        circle_handle = bp.Line2D([], [], marker='o', color='black', markerfacecolor='none', markersize=10, linestyle='None', label='Circle')
+        
+        ax.legend(handles = [ circle_handle, triangle_handle], labels = ['Positive PC2 Value', 'Negative PC2 Value'], loc = 'lower right', bbox_to_anchor = (1.88, 0.001))
 
-    # creating a custom legend for emission scenarios
-    my_legend = [bp.Line2D([0], [0], marker='o', color='w', markersize=8, 
-              markerfacecolor=marker_colors[i], label=emission_scenarios[i])
-     for i in range(len(emission_scenarios))]  
-    ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
+        # title
+        fig.suptitle("PC Data Overlay on \nProjected Summer Climate Change", fontsize = 20, y = 1.15)
+        
+    else:
+        # creating a custom legend for emission scenarios
+        my_legend = [bp.Line2D([0], [0], marker='o', color='w', markersize=8, 
+                  markerfacecolor=marker_colors[i], label=emission_scenarios[i])
+         for i in range(len(emission_scenarios))]  
+        ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
+        
+        # title
+        fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.08)
 
     if save == True:
         save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/{save_name}.png')
@@ -333,7 +375,7 @@ def scatter_plot(save_variable, save_name, PC = False, save = False):
         
     return fig
 
-scatter_plot(base_dict, 'GSLB_scatter', save = True)
+scatter_plot(base_dict, 'PC_data_scatter', PC = True, save = True)
 
 
 #%%
