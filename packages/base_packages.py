@@ -13,6 +13,7 @@ import glob
 import regex as re
 import numpy as np
 import xarray as xr
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -48,5 +49,5 @@ sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analy
 import nclcmaps as cmap
 import rioxarray 
 from shapely.geometry import mapping
-from pprint import pprint
+import pprint
 from matplotlib.patches import FancyBboxPatch

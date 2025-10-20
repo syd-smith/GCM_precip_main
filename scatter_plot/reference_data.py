@@ -199,6 +199,16 @@ scatter_framework = {
     }
 
 
+import sys
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages/')
+import base_packages as bp
+
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/')
+
+with open('dictionary_structure.txt', 'w') as f:
+    f.write(printer.pformat(scatter_framework))
+
 #%%
 # output of data points used on original scatter plot (old box GSLB boundaries)
 # ysorted_data = sorted(yprecip, key=lambda x: x[2])
