@@ -543,9 +543,10 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
 variables = ['pr', 'huss', 'psl', 'ts']
 H_variables = ['hus', 'zg']
 
-for variable in H_variables[0]:
+for variable in variables:
     for model in models:
-        map_anomalies(region_mean, model, variable, 8, 8, start_year = 1979, stop_year = 2014, u = 'ua', v = 'va', level = 500000, zoom_out = True, save = True)
+        map_anomalies(region_mean, model, variable, 6, 6, start_year = 1979, stop_year = 2014, save = True)
+        map_anomalies(region_mean, model, variable, 6, 6, start_year = 2070, stop_year = 2099, save = True)
         bp.plt.show()
 
 
