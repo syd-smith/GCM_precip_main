@@ -318,7 +318,7 @@ def scatter_plot(data_dict, save_name, PC = False, save = False):
     # axis ticks and labels
     ax.set_yticks([50, 100, 150, 200])
     ax.set_yticklabels([0.5, 1, 1.5, 2])
-    ax.set_xticks([0, 5])
+    ax.set_xticks([0, 5, 10])
 
     # set horizontal and vertical lines
     ax.axhline(y = 50, color = 'lightgray', linewidth = 0.7)
@@ -327,6 +327,7 @@ def scatter_plot(data_dict, save_name, PC = False, save = False):
     ax.axhline(y = 200, color = 'lightgray', linewidth = 0.7)
     ax.axvline(x = 0, color = 'lightgray', linewidth = 0.7)
     ax.axvline(x = 5, color = 'lightgray', linewidth = 0.7)
+    ax.axvline(x = 10, color = 'lightgray', linewidth = 1.15)
 
     # remove the black outlines around the graph
     for spine in ax.spines.values():
@@ -338,7 +339,7 @@ def scatter_plot(data_dict, save_name, PC = False, save = False):
     ax.set_ylabel('Precipitation Ratio')
 
     # subtitle
-    ax.set_title('1979-2014 vs. 2070-2099', fontsize = 10, pad = 7)
+    # ax.set_title('1979-2014 vs. 2070-2099', fontsize = 10, pad = 7)
     
     # set legends and colorbar for data interpretation
     if PC == True:
@@ -362,10 +363,10 @@ def scatter_plot(data_dict, save_name, PC = False, save = False):
         my_legend = [bp.Line2D([0], [0], marker='o', color='w', markersize=8, 
                   markerfacecolor=marker_colors[i], label=emission_scenarios[i])
          for i in range(len(emission_scenarios))]  
-        ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.05, 0.5))
+        ax.legend(handles = my_legend, loc = 'center left', bbox_to_anchor = (1.02, 0.5))
         
         # title
-        fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.08)
+        # fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.08)
 
     if save == True:
         save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/{save_name}.png')
@@ -375,7 +376,7 @@ def scatter_plot(data_dict, save_name, PC = False, save = False):
         
     return fig
 
-scatter_plot(base_dict, 'PC_data_scatter', PC = True, save = True)
+scatter_plot(base_dict, 'updated_GLSB_scatter', save = True)
 
 
 #%%
