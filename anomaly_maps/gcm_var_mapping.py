@@ -106,20 +106,20 @@ def region_mean(model_name, variable, start_month, stop_month, level = None, sta
         date = '_ssp585*.nc'
     
     fname = fpath + model_name + date
-    open = bp.xr.open_mfdataset(bp.glob.glob(fname), decode_times = True)
+    ds = bp.xr.open_mfdataset(bp.glob.glob(fname), decode_times = True)
     # print('Files Found:', bp.glob.glob(fname))
     
     # variables that have an extra dimension for what pressure level you want to look at needs to be selected
     # geopotential height should be at the  500 hPa level
-    if level == None:
+    if not level:
         print('No level to select')
     else:
-        open = open.sel(plev = level, method = 'nearest')
+        ds = ds.sel(plev = level, method = 'nearest')
     
-    if zoom_out == True:
-        location = open[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
+    if zoom_out:
+        location = ds[variable].sel(lat = slice(0, 65), lon = slice(200, 300))
     else: 
-        location = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+        location = ds[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
         
     years = range(start_year, stop_year + 1)
     JJA = location.sel(time = location.time.dt.month.isin(range(start_month, stop_month + 1)))
@@ -158,25 +158,14 @@ def anomaly(model_name, variable, start_month, stop_month, level = None, zoom_ou
     Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
     """
     
-    if zoom_out == True:
-        overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, level, start_year = 1979, stop_year = 2014, zoom_out = True)
-        overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, level, start_year = 2070, stop_year = 2099, zoom_out = True)
+    overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, level, start_year = 1979, stop_year = 2014, zoom_out = zoom_out)
+    overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, level, start_year = 2070, stop_year = 2099, zoom_out = zoom_out)
         
-    else:
-        overall_mean_hist = region_mean(model_name, variable, start_month, stop_month, level, start_year = 1979, stop_year = 2014)
-        overall_mean_fut = region_mean(model_name, variable, start_month, stop_month, level, start_year = 2070, stop_year = 2099)
-   
     # Sets up all variables as a difference between time periods except for precipitation as a percent change
     if variable == 'pr':
         anomaly = ((overall_mean_fut - overall_mean_hist) / overall_mean_hist) * 100
     else:
         anomaly = overall_mean_fut - overall_mean_hist
-        
-    # conversions for some variables
-    if variable == 'psl':
-        anomaly *= 0.01 # convert from Pa to hPa
-    elif variable == 'huss':
-        anomaly *= 1000 # convert from kg/kg to g/kg
 
     return anomaly
 
@@ -213,7 +202,7 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
         label = '5 m/s'
         
     # interpolate data to fit same grid
-    if zoom_out == True:
+    if zoom_out:
         ds_out = bp.xr.Dataset(
             {
                 "lat": (["lat"], bp.np.arange(1.25, 63, 3)),
@@ -450,22 +439,22 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
                 }
 
     # specified what function to use and calls it to get xarray.DataArray
-    if zoom_out == True:
+    if zoom_out:
         shrink = 0.6
         if anomaly_ref.__name__ == 'anomaly':
-            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
+            save_name = f'/ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
             data = anomaly_ref(model_name, variable, start_month, stop_month, level, zoom_out = True)
         else:
-            save_name = f'ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
+            save_name = f'/ZOOOMED_{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
             data = anomaly_ref(model_name, variable, start_month, stop_month, level, start_year, stop_year, zoom_out = True)
         
     else:
         shrink = 0.85
         if anomaly_ref.__name__ == 'anomaly':
-            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
+            save_name = f'/{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
             data = anomaly_ref(model_name, variable, start_month, stop_month, level)
         else:
-            save_name = f'{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
+            save_name = f'/{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{start_year}-{stop_year}_{model_name}.png'
             data = anomaly_ref(model_name, variable, start_month, stop_month, level, start_year, stop_year)
         
     # setup map
@@ -505,7 +494,7 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     else:
         ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref.__name__]['title']} Anomaly\n{time_dict[range(start_month, stop_month +1)]} 2070-2099 vs 1985-2014', fontsize = 18)
         
-    if zoom_out == True:
+    if zoom_out:
         ax.set_ylim(1.25, 63)
         ax.set_xlim(-157.75, -61.5)
     else:
@@ -523,11 +512,11 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     # ax.add_feature(bp.cfeature.RIVERS)
     
     # add arrows to show wind vectors
-    if add_quiver == True:
+    if add_quiver:
         quiver_obj, quiver_key = quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year, stop_year, zoom_out, step = 1)
             
     # save path for files
-    if save == True:
+    if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
         save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}/'
         
@@ -540,27 +529,24 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     return fig, ax
 
 
-variables = ['pr', 'huss', 'psl', 'ts']
-H_variables = ['hus', 'zg']
-
-for variable in variables:
-    for model in models:
-        map_anomalies(region_mean, model, variable, 6, 6, start_year = 1979, stop_year = 2014, save = True)
-        map_anomalies(region_mean, model, variable, 6, 6, start_year = 2070, stop_year = 2099, save = True)
-        bp.plt.show()
-
-
-# run more at once
-# variables = ['pr', 'psl', 'zg', 'ts', 'huss']
-
+# # redo color range on humidit anomaly 
+# variables = ['pr', 'huss', 'psl', 'ts']
+# H_variables = ['hus', 'zg']
 
 # for variable in variables:
 #     for model in models:
-#         map_anomalies(anomaly, model, variable, 7, 9)
-#         map_anomalies(region_mean, model, variable, 7, 9, 2070, 2099)
-#         map_anomalies(region_mean, model, variable, 7, 9, 1979, 2014)
+#         map_anomalies(region_mean, model, variable, 9, 9, start_year = 1979, stop_year = 2014, save = True)
+#         map_anomalies(region_mean, model, variable, 9, 9, start_year = 2070, stop_year = 2099, save = True)
+#         map_anomalies(anomaly, model, variable, 9, 9, save = True)
 #         bp.plt.show()
-    
+
+# for variable in H_variables:
+#     for model in models:
+#         map_anomalies(region_mean, model, variable, 9, 9, level = 50000, start_year = 1979, stop_year = 2014, save = True)
+#         map_anomalies(region_mean, model, variable, 9, 9, level = 50000, start_year = 2070, stop_year = 2099, save = True)
+#         map_anomalies(anomaly, model, variable, 9, 9, level = 50000, save = True)
+#         bp.plt.show()
+        
 
 #%%
 # finding min and max across datasets for each variable
@@ -570,18 +556,18 @@ def min_max (variable):
     all_mins = []
     all_maxs = []
     for model in models:
-        open = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
-        open = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-        open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
+        ds = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
+        ds = ds[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
+        ds = ds.sel(time = ds.time.dt.month.isin([6, 7, 8]))
         years = range(1985, 2099)
         if variable == 'zg' or variable == 'hus':
-            open = open.sel(plev = 50000, method = 'nearest')
+            ds = ds.sel(plev = 50000, method = 'nearest')
         means = []
         for year in years:
-            one_year = open.sel(time = open.time.dt.year == year)
+            one_year = ds.sel(time = ds.time.dt.year == year)
             # GCM pr data is in precipitation flux so the time unit has to be taken out
             if variable == 'pr':
-                days_in_month = open.time.dt.days_in_month
+                days_in_month = ds.time.dt.days_in_month
                 seconds_per_month = days_in_month * 24 * 60 * 60
                 mean = (one_year * seconds_per_month).mean(dim = 'time')
             else:
@@ -717,26 +703,5 @@ print(anom_min_max('hus'))
 
 # Anom min for zg: 69.8876953125
 # Anom max for zg: 210.7177734375
-
-
-#%%
-variable = 'pr'
-model = 'CanESM5'
-open = bp.xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
-open = open[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
-open = open.sel(time = open.time.dt.month.isin([6, 7, 8]))
-years = range(1985, 2099)
-means = []
-for year in years:
-    one_year = open.sel(time = open.time.dt.year == year)
-    # GCM pr data is in precipitation flux so the time unit has to be taken out
-    if variable == 'pr':
-        days_in_month = open.time.dt.days_in_month
-        seconds_per_month = days_in_month * 24 * 60 * 60
-        mean = (one_year * seconds_per_month).mean(dim = 'time')
-    else:
-        mean = one_year.mean(dim = 'time')
-data_max = float(mean.max())
-data_min = float(mean.min())
 
     
