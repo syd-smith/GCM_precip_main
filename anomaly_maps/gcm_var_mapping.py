@@ -173,7 +173,7 @@ def anomaly(model_name, variable, start_month, stop_month, level = None, zoom_ou
 # vas = anomaly('ACCESS-CM2', 'vas')
 
 
-def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year, stop_year, zoom_out = False, step = 1, *kwargs):
+def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year = 1979, stop_year = 2014, zoom_out = False, step = 1, *kwargs):
     
     """
     Adds an overlay of wind vectors as arrows. Made to integrate with map_anomalies 
