@@ -264,6 +264,243 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
     return quiv, key
 
 
+# fig = bp.plt.figure()
+# ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
+
+# ds = anomaly(models[2], 'ts', 6, 8)
+
+# ax.contourf(ds['lon'], ds['lat'], ds.values, cmap = bp.cmap.cmap('MPL_YlOrRd'), transform = bp.ccrs.PlateCarree())
+
+
+
+
+
+# defines a dictionary that stores formatting information for each variable -> see else: for more information
+plot_dict = {'psl' : {
+                 'anomaly' : {
+                      'cmap' : bp.cmap.cmap('MPL_coolwarm'),
+                       'cbar' : 'Change in Sea Level Pressure (hPa)',
+                       'min' : -2.1117968559265137,
+                       'max' : 3.2,
+                       'title': 'Sea Level Pressure'
+                  },
+                  'region_mean' : 
+                      {'cmap' : bp.cmap.cmap('MPL_coolwarm'),
+                       'cbar' : 'Mean Sea Level Pressure (hPa)',
+                       'min' : 1002.8295312500001,
+                       'max' : 1027.75984375,
+                       'title': 'Sea Level Pressure'
+                    }
+                },
+                'pr': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('MPL_BrBG'),
+                        'cbar': 'Change in Precipitation (%)',
+                        'min': -75,
+                        'max': 300,
+                        'title': 'Precipitation'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                        'cbar': 'Mean Precipitation (mm)',
+                        'min': 0.21196805760707713,
+                        'max': 360,
+                        'title': 'Precipitation'
+                    }
+                },
+                'zg': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('BlAqGrYeOrReVi200'),
+                        'cbar': 'Change in 500-hPa Geopotential Height (m)',
+                        'min': 75,
+                        'max': 200,
+                        'title': 'Geopotential Height'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('MPL_coolwarm'),
+                        'cbar': 'Mean 500-hPa Geopotential Height (m)',
+                        'min': 5676.18017578125,
+                        'max': 5978.65869140625,
+                        'title': 'Geopotential Height'
+                    }
+                },
+                'vas': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('CBR_wet'),
+                        'cbar': 'Change in Northward Near Surface Wind (m s\u207B\u00B9)',
+                        'min': -1.862033486366272,
+                        'max': 3.81015682220459,
+                        'title': 'Northward Near Surface Wind'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('MPL_coolwarm'),
+                        'cbar': 'Mean Northward Near Surface Wind (m s\u207B\u00B9)',
+                        'min': -9.491390228271484,
+                        'max': 6.107685565948486,
+                        'title': 'Northward Near Surface Wind'
+                    }
+                },
+                'uas': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('CBR_wet'),
+                        'cbar': 'Change in Eastward Near Surface Wind (m s\u207B\u00B9)',
+                        'min': -3.5138015747070312,
+                        'max': 2.595974922180176,
+                        'title': 'Eastward Near Surface Wind'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('MPL_coolwarm'),
+                        'cbar': 'Mean Eastward Near Surface Wind (m s\u207B\u00B9)',
+                        'min': -11.079482078552246,
+                        'max': 5.9408488273620605,
+                        'title': 'Eastward Near Surface Wind'
+                    }
+                },
+                'ts': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('MPL_YlOrRd'),
+                        'cbar': 'Change in Surface Temperature (K)',
+                        'min': 0.475433349609375,
+                        'max': 15.549346923828125,
+                        'title': 'Surface Temperature'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('MPL_YlOrRd'),
+                        'cbar': 'Mean Surface Temperature (K)',
+                        'min': 281.8443298339844,
+                        'max': 318.0555114746094,
+                        'title': 'Surface Temperature'
+                    }
+                },
+                'huss': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                        'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                        'min': 0,
+                        'max': 7.801617622375488,
+                        'title': 'Near Surface Specific Humidity'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                        'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
+                        'min': 4.40641213208437,
+                        'max': 27.03595533967018,
+                        'title': 'Near Surface Specific Humidity'
+                    }
+                },
+                'hus': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                        'cbar': f'Change in Specific Humidity (g/kg) at {level} Pa',
+                        'min': 0,
+                        'max': 3.5, #7801.617622375488,
+                        'title': 'Specific Humidity'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                        'cbar': f'Mean Specific Humidity (g/kg) at {level} Pa',
+                        'min': 0.9462222806178033,
+                        'max': 6, #4.642414394766092,
+                        'title': 'Specific Humidity'
+                    }
+                },
+                'ua': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                        'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                        'min': 0,
+                        'max': 7.801617622375488,
+                        'title': 'Near Surface Specific Humidity'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                        'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
+                        'min': 4.40641213208437,
+                        'max': 27.03595533967018,
+                        'title': 'Near Surface Specific Humidity'
+                    }
+                },
+                'va': {
+                    'anomaly': {
+                        'cmap': bp.cmap.cmap('MPL_YlGnBu'),
+                        'cbar': 'Change in Near Surface Specific Humidity (g/kg)',
+                        'min': 0,
+                        'max': 7.801617622375488,
+                        'title': 'Near Surface Specific Humidity'
+                    },
+                    'region_mean': {
+                        'cmap': bp.cmap.cmap('cmocean_haline', revBool=True),
+                        'cbar': 'Mean Near Surface Specific Humidity (g/kg)',
+                        'min': 4.40641213208437,
+                        'max': 27.03595533967018,
+                        'title': 'Near Surface Specific Humidity'
+                    }
+                }
+            }
+
+    
+#%%  
+    
+model_name = models[-1]
+variable = 'ts'
+level = 0
+start_month = 6
+stop_month = 8
+zoom_out = False
+save = False
+anomaly_ref = anomaly
+add_quiver = False
+start_year = 1979
+stop_year = 2014    
+
+shrink = 0.85
+    if anomaly_ref.__name__ == 'anomaly':
+        save_name = f'/{variable}_{anomaly_ref.__name__}_{start_month}-{stop_month}_{model_name}.png'
+        data = anomaly_ref(model_name, variable, start_month, stop_month, level)
+        
+# setup map
+fig = bp.plt.figure()
+ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
+
+# set the color transition to happen at 0
+variable_min = 0
+variable_max = 15
+ticks = bp.np.linspace(variable_min, variable_max, num = 9)
+
+norm = bp.mcolors.TwoSlopeNorm(vmin = variable_min, vcenter = 7.5, vmax = variable_max)
+
+# create outline of map based on mean values or anomalies
+contour = ax.contourf(data['lon'], data['lat'], data.values, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'], transform = bp.ccrs.PlateCarree(), levels = 20, norm = norm)
+
+# create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
+sm = bp.mpl.cm.ScalarMappable(norm = norm, cmap = plot_dict[variable][anomaly_ref.__name__]['cmap'])
+sm.set_array([]) # makes sure no data is attached to the colorbar
+
+# specify the layout of the colorbar
+cbar = bp.plt.colorbar(sm, ax = ax, orientation = 'horizontal', pad = 0.03, aspect = 50, shrink = shrink, extend = 'both', ticks = ticks)
+cbar.set_label(plot_dict[variable][anomaly_ref.__name__]['cbar'], fontsize = 10)
+cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+
+ax.set_title(f'{model_name} ssp585\n{plot_dict[variable][anomaly_ref.__name__]['title']} Anomaly\n{time_dict[range(start_month, stop_month +1)]} 2070-2099 vs 1985-2014', fontsize = 18)
+    
+ax.set_ylim(20, 51.25)
+ax.set_xlim(-143, -67.5)
+
+# add features to the map
+ax.coastlines(linewidth=0.5,color = 'k')
+states = bp.cfeature.NaturalEarthFeature(category = 'cultural', name = 'admin_1_states_provinces_lines', scale = '50m', facecolor = 'none', edgecolor = 'k')
+ax.add_feature(states, linewidth = 0.5)
+countries = bp.cfeature.NaturalEarthFeature(category = 'cultural', name = 'admin_0_boundary_lines_land', scale = '50m', facecolor = 'none', edgecolor = 'k')
+ax.add_feature(countries, linewidth = 0.5)
+
+# add arrows to show wind vectors
+# if add_quiver:
+#     quiver_obj, quiver_key = quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year, stop_year, zoom_out, step = 1)
+    
+bp.plt.show()   
+
+
+#%%
 def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, level = None, start_year = 1979, stop_year = 2014, add_quiver = None, u = 'uas', v = 'vas', save = False, zoom_out = False):
     
     """
@@ -528,6 +765,7 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     
     return fig, ax
 
+map_anomalies(anomaly, models[2], 'ts', 6, 8)
 
 # # redo color range on humidit anomaly 
 # variables = ['pr', 'huss', 'psl', 'ts']
@@ -594,7 +832,7 @@ def min_max (variable):
     result = f'Min for {variable}: {final_min}\nMax for {variable}: {final_max}'
     return result
         
-print(min_max('hus'))
+# print(min_max('hus'))
 
 #MIN AND MAX VALUES FOR HIST AND FUT MEANS
 # Min for pr: 0.21196805760707713
@@ -680,7 +918,7 @@ def anom_min_max(variable):
         
     return result
 
-print(anom_min_max('hus'))
+# print(anom_min_max('hus'))
     
 # MIN AND MAX VALUES FOR ANOMALIES 
 # Anom min for pr: -84.02847290039062

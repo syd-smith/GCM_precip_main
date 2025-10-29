@@ -30,6 +30,17 @@ def color_bar(var_min, var_center, var_max, color, location, axs):
     
     return cbar
 
+# zoom out for zg
+fig = bp.plt.figure()
+ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
+
+ds = anomaly(models[2], 'ts', 6, 8)
+
+ax.contourf(ds['lon'], ds['lat'], ds.values, cmap = bp.cmap.cmap('MPL_YlOrRd'), transform = bp.ccrs.PlateCarree(), levels = 20)
+color_bar(0, 7.5, 15, bp.cmap.cmap('MPL_YlOrRd'), 'right', ax)
+
+
+#%%
 def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
     fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
     
@@ -40,8 +51,8 @@ def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
     for i, model in enumerate(models):
         precip_data = anomaly(model, 'pr', start_month, stop_month)
         temp_data = anomaly(model, 'ts', start_month, stop_month)
-        precip_maps = axs[0][i].contourf(precip_data['lon'], precip_data['lat'], precip_data.values, cmap = bp.cmap.cmap('MPL_BrBG'), extend = 'both', transform = bp.ccrs.PlateCarree(),)
-        temp_maps = axs[1][i].contourf(temp_data['lon'], temp_data['lat'], temp_data.values, cmap = bp.cmap.cmap('MPL_YlOrRd'), extend = 'both', transform = bp.ccrs.PlateCarree(),)
+        precip_maps = axs[0][i].contourf(precip_data['lon'], precip_data['lat'], precip_data.values, cmap = bp.cmap.cmap('MPL_BrBG'), extend = 'both', transform = bp.ccrs.PlateCarree())
+        temp_maps = axs[1][i].contourf(temp_data['lon'], temp_data['lat'], temp_data.values, cmap = bp.cmap.cmap('MPL_YlOrRd'), extend = 'both', transform = bp.ccrs.PlateCarree())
         
         for ax in [axs[0, i], axs[1, i]]:
             ax.set_extent([-143, -67.5, 20, 44.8])
@@ -67,6 +78,8 @@ def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
         bp.plt.savefig(save_path, dpi = 400)
         
     bp.plt.show()
+    
+temp_precip_fig(6, 8)
       
 def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
     fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
@@ -112,7 +125,7 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
       
     bp.plt.show()
 
-height_wind_fig(6, 8, save_name = 'zg_take_one', save = True)
+height_wind_fig(6, 8)
 
 def humidity_fig(start_month, stop_month, save_name = 'test', save = False):
     fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
@@ -152,4 +165,4 @@ def humidity_fig(start_month, stop_month, save_name = 'test', save = False):
       
     bp.plt.show()
     
-humidity_fig(6, 8, save_name = 'humidity_take_one', save = True)
+humidity_fig(6, 8)
