@@ -15,6 +15,7 @@ from gcm_var_mapping import region_mean, anomaly, quiver
 
 models = ['UKESM1-0-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
+
 def color_bar(var_min, var_center, var_max, color, location, axs):
     ticks = bp.np.linspace(var_min, var_max, num = 10)
     norm = bp.mcolors.TwoSlopeNorm(vmin = var_min, vcenter = var_center, vmax = var_max)
@@ -40,8 +41,8 @@ ax.contourf(ds['lon'], ds['lat'], ds.values, cmap = bp.cmap.cmap('MPL_YlOrRd'), 
 color_bar(0, 7.5, 15, bp.cmap.cmap('MPL_YlOrRd'), 'right', ax)
 
 
-#%%
 def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
+ 
     fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
     
     labels_one = ['a.', 'b.', 'c.']
@@ -51,8 +52,8 @@ def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
     for i, model in enumerate(models):
         precip_data = anomaly(model, 'pr', start_month, stop_month)
         temp_data = anomaly(model, 'ts', start_month, stop_month)
-        precip_maps = axs[0][i].contourf(precip_data['lon'], precip_data['lat'], precip_data.values, cmap = bp.cmap.cmap('MPL_BrBG'), extend = 'both', transform = bp.ccrs.PlateCarree())
-        temp_maps = axs[1][i].contourf(temp_data['lon'], temp_data['lat'], temp_data.values, cmap = bp.cmap.cmap('MPL_YlOrRd'), extend = 'both', transform = bp.ccrs.PlateCarree())
+        precip_maps = axs[0][i].contourf(precip_data['lon'], precip_data['lat'], precip_data.values, levels = bp.np.linspace(-75, 300, 10), norm = bp.mcolors.TwoSlopeNorm(vmin = -75, vcenter = 0, vmax = 300), cmap = bp.cmap.cmap('MPL_BrBG'), extend = 'both', transform = bp.ccrs.PlateCarree())
+        temp_maps = axs[1][i].contourf(temp_data['lon'], temp_data['lat'], temp_data.values, levels = bp.np.linspace(0, 15, 10), norm = bp.mcolors.TwoSlopeNorm(vmin = 0, vcenter = 7.5, vmax = 15),cmap = bp.cmap.cmap('MPL_YlOrRd'), extend = 'both', transform = bp.ccrs.PlateCarree())
         
         for ax in [axs[0, i], axs[1, i]]:
             ax.set_extent([-143, -67.5, 20, 44.8])
@@ -81,6 +82,8 @@ def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
     
 temp_precip_fig(6, 8)
       
+
+#%%
 def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
     fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
     
@@ -93,12 +96,12 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
         anom_data = anomaly(model, 'zg', start_month, stop_month, level = 50000)
         
         # add mean geopotential height and wind data for the historical period to the top row
-        mean_maps = axs[0][i].contourf(mean_data['lon'], mean_data['lat'], mean_data.values, cmap = bp.cmap.cmap('MPL_coolwarm'), extend = 'both', transform = bp.ccrs.PlateCarree(),)
+        mean_maps = axs[0][i].contourf(mean_data['lon'], mean_data['lat'], mean_data.values, levels = bp.np.linspace(5675, 5975, 10), norm = bp.mcolors.TwoSlopeNorm(vmin = 5675, vcenter = 5825, vmax = 5975), cmap = bp.cmap.cmap('MPL_coolwarm'), extend = 'both', transform = bp.ccrs.PlateCarree())
         mean_quiver, mean_key = quiver('ua', 'va', axs[0][i], region_mean, model, start_month, stop_month, level = 50000)
         
         # add anomaly data to the bottom row
-        anom_maps = axs[1][i].contourf(anom_data['lon'], anom_data['lat'], anom_data.values, cmap = bp.cmap.cmap('BlAqGrYeOrReVi200'), extend = 'both', transform = bp.ccrs.PlateCarree(),)
-        anomm_quiver, anom_key = quiver('ua', 'va', axs[1][i], anomaly, model, start_month, stop_month, level = 50000)
+        anom_maps = axs[1][i].contourf(anom_data['lon'], anom_data['lat'], anom_data.values, levels = bp.np.linspace(75, 200, 10), norm = bp.mcolors.TwoSlopeNorm(vmin = 75, vcenter = 138, vmax = 200), cmap = bp.cmap.cmap('BlAqGrYeOrReVi200'), extend = 'both', transform = bp.ccrs.PlateCarree())
+        anom_quiver, anom_key = quiver('ua', 'va', axs[1][i], anomaly, model, start_month, stop_month, level = 50000)
         
         for ax in [axs[0, i], axs[1, i]]:
             ax.set_extent([-143, -67.5, 20, 44.8])
@@ -126,6 +129,8 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
     bp.plt.show()
 
 height_wind_fig(6, 8)
+
+#%%
 
 def humidity_fig(start_month, stop_month, save_name = 'test', save = False):
     fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
