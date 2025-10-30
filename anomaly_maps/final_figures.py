@@ -75,7 +75,7 @@ def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
       
 
 def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
-    fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (32, 13))
+    fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (33, 13))
     
     labels_one = ['a.', 'b.', 'c.']
     labels_two = ['d.', 'e.', 'f.']
