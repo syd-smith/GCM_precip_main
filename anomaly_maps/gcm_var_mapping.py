@@ -211,7 +211,7 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
         )
         
         # patch size for key
-        width = 0.14
+        width = 0.13
         height = 0.035
         
     else:
@@ -259,7 +259,8 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
                        Y = 0.05, 
                        U = U, 
                        label = label, 
-                       labelpos = 'E')
+                       labelpos = 'E',
+                       fontproperties = {'size' : 20})
         
     return quiv, key
 
@@ -529,9 +530,9 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     
     return fig, ax
 
-map_anomalies(anomaly, models[2], 'ts', 6, 8)
+# map_anomalies(anomaly, models[2], 'ts', 6, 8)
 
-# # redo color range on humidit anomaly 
+# # redo color range on humidity anomaly 
 # variables = ['pr', 'huss', 'psl', 'ts']
 # H_variables = ['hus', 'zg']
 
