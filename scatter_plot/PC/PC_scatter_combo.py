@@ -21,9 +21,10 @@ with open("oct_19.txt", "r") as f:
 # Convert from string representation to actual dictionary
 data_dict = ast.literal_eval(contents)
 
+# establish figure for subplots
+fig, axs = bp.plt.subplots(1, 2, figsize = (18, 8))
 
-fig, axs = bp.plt.subplots(1, 2, figsize = (20, 20))
-
+# loop through dictionary to pull out necessary data for scatter
 for model in data_dict:
     for scenario in data_dict[model]:
         if data_dict[model][scenario]['delta_temp'] == 'File Not Found' or data_dict[model][scenario]['precip_ratio'] == 'File Not Found':
@@ -33,15 +34,16 @@ for model in data_dict:
                               data_dict[model][scenario]['precip_ratio'], 
                               c = data_dict[model][scenario]['PC1'], 
                               cmap = 'viridis', 
-                              s = 25, 
+                              s = 50, 
                               norm = bp.mcolors.Normalize(vmin = -10, vmax = 18))
         PC2_scatter = axs[1].scatter(data_dict[model][scenario]['delta_temp'], 
                               data_dict[model][scenario]['precip_ratio'], 
                               c = data_dict[model][scenario]['PC2'], 
                               cmap = 'viridis', 
-                              s = 25, 
+                              s = 50, 
                               norm = bp.mcolors.Normalize(vmin = -5, vmax = 6))
         
+# loop through both subplots to add visual features        
 for ax in [0, 1]:        
     # axis ticks and labels
     axs[ax].set_yticks([50, 100, 150, 200])
@@ -70,29 +72,34 @@ for ax in [0, 1]:
 # creating a color bar and legend for PC1 and PC2 data
 PC1_cbar = bp.plt.colorbar(PC1_scatter, 
                            orientation = 'horizontal', 
-                           ticks = bp.np.linspace(-10, 18, num = 8), 
+                           ticks = bp.np.linspace(-10, 18, num = 9), 
                            shrink = 0.5, 
-                           pad = 0,
+                           pad = 0.05,
                            extend = 'both')
 PC1_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
 
 PC2_cbar = bp.plt.colorbar(PC2_scatter, 
                            orientation = 'horizontal', 
-                           ticks = bp.np.linspace(-5, 6, num = 8), 
+                           ticks = bp.np.linspace(-5, 6, num = 9), 
                            shrink = 0.5, 
-                           pad = 0,
+                           pad = 0.05,
                            extend = 'both')
 PC2_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
 
+# add labels to each subplot
+axs[0].text(0.05, 0.85, 'a.', fontsize = 15, fontweight = 'bold', transform = axs[0].transAxes)
+axs[1].text(0.05, 0.85, 'b.', fontsize = 15, fontweight = 'bold', transform = axs[1].transAxes)
 
-# save_name = 'place_holder'
-# save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/{save_name}.png')
-# fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
+# save figure
+save_name = 'PC_scatter_combo_take_one'
+save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/PC/{save_name}.png')
+fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
 
 bp.plt.show()
 
 
 #%%
+# search for mins and maxs in PC data
 PC1_dat = []
 PC2_dat = []
 for model in data_dict:
