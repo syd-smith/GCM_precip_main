@@ -23,6 +23,9 @@ MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNR
  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+# not found
+not_found = ['CNRM-CM6-1', 'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'HadGEM3-GC31-LL', 'IITM-ESM', 
+             'MIROC-ES2H', 'MIROC-ES2L', 'MPI-ESM1-2-HR']
 
 import cdsapi
 
@@ -75,6 +78,10 @@ def download_hist(model, variable):
     client = cdsapi.Client()
     client.retrieve(dataset, request).download(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/hist_{model}_{variable}.zip')
 
+
+for model in not_found:
+    download_hist(model, 'tas')
+
 # download precip data for all models downscaled to MACA
 # 10, 11, -8 failed (doownload these with ESGF)
 # for model in MACA_models[-7:]:
@@ -83,9 +90,9 @@ def download_hist(model, variable):
 # hus wont download for last 2
 # download_hist(models[-1], 'hus')
 
-for model in models[-2]:
-    for variable in variables_huss[-2:]:
-        download_hist(model, variable)
+# for model in models[-2]:
+#     for variable in variables_huss[-2:]:
+#         download_hist(model, variable)
         
 # Had-LL through specific humidity
 

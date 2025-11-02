@@ -48,7 +48,7 @@ MACA_data = []
 for year in range(1979, 2015):
     # Select all JJA months for this year
     # check if this is monthly average
-    MACA_dat = MACA_open['pr'].sel(time=(MACA_open.time.dt.month.isin([6])) & (MACA_open.time.dt.year == year), drop=True)
+    MACA_dat = MACA_open['pr'].sel(time=(MACA_open.time.dt.month.isin([6, 7, 8])) & (MACA_open.time.dt.year == year), drop=True)
     MACA_summer_precip = MACA_dat.mean(dim = 'time')
 
     MACA_data.append(MACA_summer_precip)
@@ -116,7 +116,7 @@ for ax in axs:
 fig.suptitle('KACE-1-0-G Mean Precipitation Over Study Region', fontsize = 20)
 
 #set save path for image
-save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/poster_figs/study_region.png'
+save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/gcm_vs_gridmet/study_region.png'
 bp.plt.savefig(save_path, dpi = 400)
 
 bp.plt.show()
