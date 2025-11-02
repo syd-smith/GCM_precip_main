@@ -25,29 +25,32 @@ def color_bar(var_min, var_center, var_max, color, location, axs):
     sm.set_array([]) # makes sure no data is attached to the colorbar
     
     # specify the layout of the colorbar
-    cbar = bp.plt.colorbar(sm, ax = axs, orientation = 'vertical', pad = 0.025, aspect = 50, extend = 'both', ticks = ticks, location = location)
+    cbar = bp.plt.colorbar(sm, ax = axs, orientation = 'vertical', pad = 0.015, aspect = 50, extend = 'both', ticks = ticks, location = location)
     cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     cbar.ax.tick_params(labelsize = 30)
     
     return cbar
 
-
-def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
+#%%
+def future_change_fig(start_month, stop_month, save_name = 'test', save = False):
  
-    fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
+    fig, axs = bp.plt.subplots(nrows = 3, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 17.5))
     
     labels_one = ['a.', 'b.', 'c.']
     labels_two = ['d.', 'e.', 'f.']
+    labels_three = ['g.', 'h.', 'i.']
     
     # loop for pecip anomalies on the top row
     for i, model in enumerate(models):
         precip_data = anomaly(model, 'pr', start_month, stop_month)
         temp_data = anomaly(model, 'ts', start_month, stop_month)
+        huss_data = anomaly(model, 'huss', start_month, stop_month)
         precip_maps = axs[0][i].contourf(precip_data['lon'], precip_data['lat'], precip_data.values, levels = bp.np.linspace(-75, 300, 15), norm = bp.mcolors.TwoSlopeNorm(vmin = -75, vcenter = 0, vmax = 300), cmap = bp.cmap.cmap('MPL_BrBG'), extend = 'both', transform = bp.ccrs.PlateCarree())
         temp_maps = axs[1][i].contourf(temp_data['lon'], temp_data['lat'], temp_data.values, levels = bp.np.linspace(0, 15, 15), norm = bp.mcolors.TwoSlopeNorm(vmin = 0, vcenter = 7.5, vmax = 15),cmap = bp.cmap.cmap('MPL_YlOrRd'), extend = 'both', transform = bp.ccrs.PlateCarree())
+        huss_maps = axs[2][i].contourf(huss_data['lon'], huss_data['lat'], huss_data.values, levels = bp.np.linspace(0, 7, 15), norm = bp.mcolors.TwoSlopeNorm(vmin = 0, vcenter = 3.5, vmax = 7), cmap = bp.cmap.cmap('MPL_BuGn'), extend = 'both', transform = bp.ccrs.PlateCarree())
         
-        for ax in [axs[0, i], axs[1, i]]:
-            ax.set_extent([-143, -67.5, 20, 44.8])
+        for ax in [axs[0, i], axs[1, i], axs[2, i]]:
+            ax.set_extent([-143, -67.5, 20, 44.5])
             
             # add features to each map
             ax.coastlines(linewidth = 1.5,color = 'k')
@@ -59,9 +62,58 @@ def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
             
         axs[0][i].text(0.02, 0.89, labels_one[i], fontsize = 30, fontweight = 'bold', transform = axs[0][i].transAxes)
         axs[1][i].text(0.02, 0.89, labels_two[i], fontsize = 30, fontweight = 'bold', transform = axs[1][i].transAxes)
-            
-    ts_cbar = color_bar(0, 7.5, 15, bp.cmap.cmap('MPL_YlOrRd'), 'right', axs)
-    pr_cbar = color_bar(-75, 0, 300, bp.cmap.cmap('MPL_BrBG'), 'left', axs)
+        axs[2][i].text(0.02, 0.89, labels_three[i], fontsize = 30, fontweight = 'bold', transform = axs[2][i].transAxes)
+    
+    # PRECIPITATION COLORBAR
+    # fine tuning control of colorbar size and placement
+    pr_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.98, 0.08, 0.05, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
+    
+    # norm and tick parameters to standardize colorbar to map color
+    pr_norm = bp.mcolors.TwoSlopeNorm(vmin = -75, vcenter = 0, vmax = 300)
+    pr_ticks = bp.np.linspace(-75, 300, num = 8)
+
+    # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
+    pr_sm = bp.mpl.cm.ScalarMappable(norm = pr_norm, cmap =  bp.cmap.cmap('MPL_BrBG'))
+    pr_sm.set_array([])
+    
+    #  colorbar function passed using the scalar mappable 
+    pr_cbar = fig.colorbar(pr_sm, cax = pr_axins, orientation = 'vertical', extend = 'both', ticks = pr_ticks, aspect = 50)
+    pr_cbar.ax.tick_params(labelsize = 30)
+    pr_cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+    
+    # TEMPERATURE COLORBAR
+    # fine tuning control of colorbar size and placement
+    ts_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.98, -0.25, 0.05, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
+    
+    # norm and tick parameters to standardize colorbar to map color
+    ts_norm = bp.mcolors.TwoSlopeNorm(vmin = 0, vcenter = 7.5, vmax = 15)
+    ts_ticks = bp.np.linspace(0, 15, num = 8)
+
+    # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
+    ts_sm = bp.mpl.cm.ScalarMappable(norm = ts_norm, cmap =  bp.cmap.cmap('MPL_YlOrRd'))
+    ts_sm.set_array([])
+    
+    #  colorbar function passed using the scalar mappable 
+    ts_cbar = fig.colorbar(ts_sm, cax = ts_axins, orientation = 'vertical', extend = 'both', ticks = ts_ticks, aspect = 50)
+    ts_cbar.ax.tick_params(labelsize = 30)
+    ts_cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+    
+    # HUMIDITY COLORBAR
+    # fine tuning control of colorbar size and placement
+    huss_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.98, -0.585, 0.05, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
+    
+    # norm and tick parameters to standardize colorbar to map color
+    huss_norm = bp.mcolors.TwoSlopeNorm(vmin = 0, vcenter = 3.5, vmax = 7)
+    huss_ticks = bp.np.linspace(0, 7, num = 8)
+
+    # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
+    huss_sm = bp.mpl.cm.ScalarMappable(norm = huss_norm, cmap =  bp.cmap.cmap('MPL_BuGn'))
+    huss_sm.set_array([])
+    
+    # colorbar function passed using the scalar mappable 
+    huss_cbar = fig.colorbar(huss_sm, cax = huss_axins, orientation = 'vertical', extend = 'both', ticks = huss_ticks, aspect = 50)
+    huss_cbar.ax.tick_params(labelsize = 30)
+    huss_cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
       
     if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
@@ -71,11 +123,12 @@ def temp_precip_fig(start_month, stop_month, save_name = 'test', save = False):
         
     bp.plt.show()
     
-# temp_precip_fig(6, 8, save_name = 'pr_ts_take_two.png', save = True)
+future_change_fig(6, 8)
       
 
+#%%
 def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
-    fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (33, 13))
+    fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (33, 13.5))
     
     labels_one = ['a.', 'b.', 'c.']
     labels_two = ['d.', 'e.', 'f.']
@@ -104,8 +157,8 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
             ax.add_feature(states, linewidth = 1.5)
             ax.add_feature(countries, linewidth = 1.5)
             
-        axs[0][i].text(0.02, 0.89, labels_one[i], fontsize = 40, fontweight = 'bold', transform = axs[0][i].transAxes)
-        axs[1][i].text(0.02, 0.89, labels_two[i], fontsize = 40, fontweight = 'bold', transform = axs[1][i].transAxes)
+        axs[0][i].text(0.02, 0.88, labels_one[i], fontsize = 60, transform = axs[0][i].transAxes)
+        axs[1][i].text(0.02, 0.88, labels_two[i], fontsize = 60, transform = axs[1][i].transAxes)
             
     mean_cbar = color_bar(5675, 5825, 5975, bp.cmap.cmap('MPL_coolwarm'), 'left', axs)
     anom_cbar = color_bar(75, 138, 200, bp.cmap.cmap('NCV_bright'), 'right', axs)
@@ -118,12 +171,12 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
       
     bp.plt.show()
 
-height_wind_fig(6, 8, save_name = 'zg_500_take_three.png', save = True)
+height_wind_fig(6, 8)
 
 #%%
 
 def humidity_fig(start_month, stop_month, save_name = 'test', save = False):
-    fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (40, 11))
+    fig, axs = bp.plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': bp.ccrs.PlateCarree()}, figsize = (42, 11.5))
     
     labels_one = ['a.', 'b.', 'c.']
     labels_two = ['d.', 'e.', 'f.']
@@ -160,4 +213,4 @@ def humidity_fig(start_month, stop_month, save_name = 'test', save = False):
       
     bp.plt.show()
     
-humidity_fig(6, 8, save_name = 'huss_take_two.png', save = True)
+humidity_fig(6, 8)
