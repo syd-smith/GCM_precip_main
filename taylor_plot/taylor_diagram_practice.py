@@ -14,7 +14,7 @@ import base_packages as bp
 
 # standard deviation : MACA
 # correlation : MACA
-# bias : GCM
+# bias : GCM (shown on colorscale)
 
 
 # list of all models used in the MACA downscaling process
@@ -26,7 +26,14 @@ MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNR
 GCM_models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
 
+# find the variable average for every grid point across the historical period before doing calculations
+# same averaging can be used for standard deviation and correlation
+# learn how to read GCM data out of matlab files
+# make taylor plot repeatable for different variables
+
+
 def st_dev_MACA(dataset):
+    # THIS IS CURRENTLY SETUP TO CALCULATE TEMPORAL STANDARD DEVIATION
     
     # calls data from a specified file path (meant to call saved masked data to prevent masking everytime)
     ds = bp.xr.open_dataset(dataset)
@@ -65,3 +72,7 @@ def st_dev_obs(dataset):
 
 # lat      (lat) float32 672B 36.03 36.07 36.11 36.15 ... 42.9 42.94 42.98
 # * lon      (lon) float32 684B -115.1 -115.1 -115.0 ... -108.1 -108.1 -108.0
+
+# PolarAxes.PolarTransform() # this tells plot to set std for radius and cor for angle
+# diagram = TaylorDiagram(reference.std(ddof=1), fig=myfig)
+# diagram.add_sample(stddev2, corrcoef2, label = 'Model 2', marker = 'o')

@@ -52,3 +52,9 @@ from shapely.geometry import mapping
 from matplotlib.patches import FancyBboxPatch
 import pprint
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from matplotlib.projections import PolarAxes
+import mpl.toolkits.axisartist.floating_axes as fa 
+import mpl.toolkits.axisartist.grid_finder as gf 
+
+
+

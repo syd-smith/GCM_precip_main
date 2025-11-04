@@ -34,13 +34,13 @@ for model in data_dict:
                               data_dict[model][scenario]['precip_ratio'], 
                               c = data_dict[model][scenario]['PC1'], 
                               cmap = 'viridis', 
-                              s = 50, 
+                              s = 100, 
                               norm = bp.mcolors.Normalize(vmin = -10, vmax = 18))
         PC2_scatter = axs[1].scatter(data_dict[model][scenario]['delta_temp'], 
                               data_dict[model][scenario]['precip_ratio'], 
                               c = data_dict[model][scenario]['PC2'], 
                               cmap = 'viridis', 
-                              s = 50, 
+                              s = 100, 
                               norm = bp.mcolors.Normalize(vmin = -5, vmax = 6))
         
 # loop through both subplots to add visual features        
@@ -49,6 +49,8 @@ for ax in [0, 1]:
     axs[ax].set_yticks([50, 100, 150, 200])
     axs[ax].set_yticklabels([0.5, 1, 1.5, 2])
     axs[ax].set_xticks([0, 5, 10])
+    axs[ax].tick_params(axis = 'x', labelsize=12)
+    axs[ax].tick_params(axis = 'y', labelsize=12)
 
     # set horizontal and vertical lines
     axs[ax].axhline(y = 50, color = 'lightgray', linewidth = 0.7)
@@ -65,8 +67,8 @@ for ax in [0, 1]:
     axs[ax].tick_params(axis='both', which='both', length=0)
 
     # labels for the graph
-    axs[ax].set_xlabel('Temperature Change (K)')
-    axs[ax].set_ylabel('Precipitation Ratio')
+    axs[ax].set_xlabel('Temperature Change (K)', fontsize = 16)
+    axs[ax].set_ylabel('Precipitation Ratio', fontsize = 16)
 
 
 # creating a color bar and legend for PC1 and PC2 data
@@ -91,9 +93,9 @@ axs[0].text(0.05, 0.85, 'a.', fontsize = 15, fontweight = 'bold', transform = ax
 axs[1].text(0.05, 0.85, 'b.', fontsize = 15, fontweight = 'bold', transform = axs[1].transAxes)
 
 # save figure
-save_name = 'PC_scatter_combo_take_one'
-save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/PC/{save_name}.png')
-fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
+# save_name = 'PC_scatter_combo_take_two'
+# save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/PC/{save_name}.png')
+# fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
 
 bp.plt.show()
 
