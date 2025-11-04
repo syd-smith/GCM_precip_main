@@ -22,7 +22,7 @@ with open("oct_19.txt", "r") as f:
 data_dict = ast.literal_eval(contents)
 
 # establish figure for subplots
-fig, axs = bp.plt.subplots(1, 2, figsize = (18, 8))
+fig, axs = bp.plt.subplots(1, 2, figsize = (13.5, 6))
 
 # loop through dictionary to pull out necessary data for scatter
 for model in data_dict:
