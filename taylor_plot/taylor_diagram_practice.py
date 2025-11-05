@@ -69,50 +69,69 @@ def matlab_to_netcdf(model, variable):
     
     return ds
 
-def maca_time_avg(model, variable):
+
+def st_dev_MACA(model, variable):
+    """
+    First average data across the time dimension and then
+    calculate the spatial standard deviaton.
+    """
+    
     ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
-    time_average = ds.mean(skipna = True, dims = 'time')
-    return time_average
-
-test = maca_time_avg(MACA_models[0], 'pr')
-#%%
-def st_dev_MACA(dataset):
-    # THIS IS CURRENTLY SETUP TO CALCULATE TEMPORAL STANDARD DEVIATION
+    time_average = ds.mean(skipna = True, dim = 'time')
     
-    # calls data from a specified file path (meant to call saved masked data to prevent masking everytime)
-    ds = bp.xr.open_dataset(dataset)
-    
-    # make a list of yearly averages
-    averages= []
-    years = range(1979, 2015)
-    for year in years:
-        ds_year = ds.sel(time = ds.time.dt.year == year)
-        ds_avg = ds_year.mean(skipna = True)
-        averages.append(ds_avg.values)
-     
-    averages = bp.np.array(averages)
-    st_dev = bp.np.std(averages)
+    st_dev = time_average.std(dim = ['lat', 'lon'])
     
     return st_dev
 
     
-def st_dev_obs(dataset):
+def st_dev_obs(variable):
+    """
+    Averages observational data over the time dimension and then 
+    calculates thee spatial standard deviation. Note that tasmin 
+    is tmmin and tasmax is tmmax for observational data. 
+    """
     
-    # calls gridmet data from a specified file path (meant to call saved masked data to prevent masking everytime)
-    ds = bp.xr.open_dataset(dataset)
+    ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{variable}_1979-2014.nc')
+    time_average = ds.mean(skipna = True, dim = 'day')
     
-    # make a list of yearly averages
-    averages= []
-    years = range(1979, 2015)
-    for year in years:
-        ds_year = ds.sel(days = ds.days.dt.year == year)
-        ds_avg = ds_year.mean(skipna = True)
-        averages.append(ds_avg.values)
-     
-    averages = bp.np.array(averages)
-    st_dev = bp.np.std(averages)
+    st_dev = time_average.std(dim = ['lat', 'lon'])
     
     return st_dev
+
+
+def corr_coef(model, variable):
+    """
+    Calulate the spatial correlation coefficient using the model
+    and observational data. 
+    """
+    # average model data across time
+    ds_MACA = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
+    time_average_MACA = ds_MACA.mean(skipna = True, dim = 'time')
+    MACA_data = time_average_MACA[variable].values.flatten()
+    
+    # convert varibale name for observational data
+    if variable == 'tasmin':
+        variable = 'tmmin'
+    elif variable == 'tasmax':
+        variable = 'tmmin'
+        
+    # average observational data across time
+    ds_obs = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{variable}_1979-2014.nc')
+    time_average_obs = ds_obs.mean(skipna = True, dim = 'day')
+    
+    if variable == 'pr':
+        variable ='precipitation_amount'
+        
+    obs_data = time_average_obs[variable].values.flatten()
+    
+    # correlation coefficient calculation
+    corr_coef = bp.np.corrcoef(MACA_data, obs_data)[0,1] # selects the right correlation coefficient out of an array
+    
+    return float(corr_coef)
+    
+corr_coef(MACA_models[0], 'pr')
+
+
 
 # lat      (lat) float32 672B 36.03 36.07 36.11 36.15 ... 42.9 42.94 42.98
 # * lon      (lon) float32 684B -115.1 -115.1 -115.0 ... -108.1 -108.1 -108.0
@@ -133,13 +152,30 @@ print(var.shape)
 
 
 #%%
-ds_maca = bp.xr.open_dataset('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_ACCESS-CM2_ssp126_pr.nc')
+ds_open = bp.xr.open_dataset('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_pr_1979-2014.nc')
 
 
+#%%
 
+models = [
+    'ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
+    'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3',
+    'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8',
+    'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6',
+    'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL', 'Obs'
+]
+variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 
+model_dict = {
+    model: {
+        'std': {var: 'x' for var in variables},
+        'corrcoef':  {var: 'x' for var in variables},
+        'bias': {var: 'x' for var in variables}
+    }
+    for model in models
+}
 
-
+bp.pprint.pprint(model_dict)
 
 
 
