@@ -16,10 +16,10 @@ import base_packages as bp
 # correlation : MACA
 # bias : GCM (shown on colorscale)
 
-# list of all models used in the MACA downscaling process
+# list of all models used in the MACA downscaling process that have ssp585
 MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-CC',
- 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
- 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+ 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0',
+ 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
     
 # variables used in MACA downscaling process 
 MACA_variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
@@ -96,14 +96,13 @@ def st_dev_MACA(model, variable, dictionary):
     
     return f'Standard Deviation for {model}: {float(st_dev)}'
 
-for model in MACA_models[7:]:
-    for var in MACA_variables:
-        st_dev_MACA(model, var, base_dict)
-        print(model, var)
+# for model in MACA_models[21:]:
+#     for var in MACA_variables:
+#         st_dev_MACA(model, var, base_dict)
+#         print(model, var)
     
 # print(base_dict)
 
-#%%
 # save the dictionary to a specified file
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
