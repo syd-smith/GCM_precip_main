@@ -31,7 +31,7 @@ GCM_models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC3
 # make taylor plot repeatable for different variables
 
 
-
+#%%
 def matlab_to_netcdf(model, variable):
     
     # convert matlab file to netcdf
@@ -70,7 +70,19 @@ def matlab_to_netcdf(model, variable):
     return ds
 
 
-def st_dev_MACA(model, variable):
+#%%
+# read out the dictionary from the .txt file
+import ast
+
+# Open and read the file
+with open("taylor_dict_framework.txt", "r") as f:
+    contents = f.read()
+
+# Convert from string representation to actual dictionary
+base_dict = ast.literal_eval(contents)
+
+
+def st_dev_MACA(model, variable, dictionary):
     """
     First average data across the time dimension and then
     calculate the spatial standard deviaton.
@@ -81,9 +93,15 @@ def st_dev_MACA(model, variable):
     
     st_dev = time_average.std(dim = ['lat', 'lon'])
     
+    dictionary[model]['std'][variable] = st_dev
+    
     return st_dev
 
+for model in MACA_models[-3:]:
+    st_dev_MACA(model, 'pr', base_dict)
     
+print(base_dict)
+#%%
 def st_dev_obs(variable):
     """
     Averages observational data over the time dimension and then 
@@ -152,11 +170,7 @@ print(var.shape)
 
 
 #%%
-ds_open = bp.xr.open_dataset('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_pr_1979-2014.nc')
-
-
-#%%
-
+# list of models to add to framework including obs
 models = [
     'ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
     'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3',
@@ -164,8 +178,11 @@ models = [
     'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6',
     'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL', 'Obs'
 ]
+
+# variables used in MACA
 variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 
+# loop through model dictionary framework to add all models and variables with a placeholder for each value
 model_dict = {
     model: {
         'std': {var: 'x' for var in variables},
@@ -175,7 +192,15 @@ model_dict = {
     for model in models
 }
 
-bp.pprint.pprint(model_dict)
+# save the dictionary to a specified file
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
+
+with open('taylor_dict_framework.txt', 'w') as f:
+    f.write(printer.pformat(model_dict))
+
+# bp.pprint.pprint(model_dict)
+
 
 
 
