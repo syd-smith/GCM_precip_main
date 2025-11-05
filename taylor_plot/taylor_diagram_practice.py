@@ -10,20 +10,20 @@ import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/packages')
 import base_packages as bp
 
-# evaluation of historical efficieny from 1979-2014 using an adpated version of a taylor diagram
+# evaluation of historical efficieny from 1979-2014 using a taylor diagram with optional basis display
 
 # standard deviation : MACA
 # correlation : MACA
 # bias : GCM (shown on colorscale)
 
-
 # list of all models used in the MACA downscaling process
-MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC',
+MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-CC',
  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0',
  'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
     
-# list of models that we currently have pr GCM data downloaded for
-GCM_models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
+# variables used in MACA downscaling process 
+MACA_variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
+gridmet_variables = ['pr', 'rmax', 'rmin', 'sph', 'srad', 'tmmn', 'tmmx', 'uas', 'vas']
 
 # find the variable average for every grid point across the historical period before doing calculations
 # same averaging can be used for standard deviation and correlation
@@ -31,7 +31,6 @@ GCM_models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC3
 # make taylor plot repeatable for different variables
 
 
-#%%
 def matlab_to_netcdf(model, variable):
     
     # convert matlab file to netcdf
@@ -69,13 +68,13 @@ def matlab_to_netcdf(model, variable):
     
     return ds
 
-
 #%%
 # read out the dictionary from the .txt file
 import ast
 
 # Open and read the file
-with open("taylor_dict_framework.txt", "r") as f:
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
+with open('nov_5.txt', 'r') as f:
     contents = f.read()
 
 # Convert from string representation to actual dictionary
@@ -89,68 +88,139 @@ def st_dev_MACA(model, variable, dictionary):
     """
     
     ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
-    time_average = ds.mean(skipna = True, dim = 'time')
+    time_average = ds[variable].mean(skipna = True, dim = 'time')
     
     st_dev = time_average.std(dim = ['lat', 'lon'])
     
-    dictionary[model]['std'][variable] = st_dev
+    dictionary[model]['std'][variable] = float(st_dev)
     
-    return st_dev
+    return f'Standard Deviation for {model}: {float(st_dev)}'
 
-for model in MACA_models[-3:]:
-    st_dev_MACA(model, 'pr', base_dict)
+for model in MACA_models[7:]:
+    for var in MACA_variables:
+        st_dev_MACA(model, var, base_dict)
+        print(model, var)
     
-print(base_dict)
+# print(base_dict)
+
 #%%
+# save the dictionary to a specified file
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
+
+with open('nov_5.txt', 'w') as f:
+    f.write(printer.pformat(base_dict))
+
+#%%
+
 def st_dev_obs(variable):
     """
     Averages observational data over the time dimension and then 
-    calculates thee spatial standard deviation. Note that tasmin 
-    is tmmin and tasmax is tmmax for observational data. 
+    calculates thee spatial standard deviation. 
+    Note that gridmet variables are named differently. 
+    tasmin : tmmn 
+    tasmax : tmmx 
+    rsds : srad
+    huss : sph
+    min rh : rmin
+    max rh : rmax
     """
     
+    # open dataset stored in Savanna's folder of strong-group7
     ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{variable}_1979-2014.nc')
-    time_average = ds.mean(skipna = True, dim = 'day')
+   
+    # change the variable name from abreviation used in file name to variable name in the dataset
+    if variable == 'pr':
+        variable = 'precipitation_amount'
+    elif variable == 'rmax' or variable == 'rmin':
+        variable = 'relative_humidity'
+    elif variable == 'sph':
+        variable = 'specific_humidity'
+    elif variable == 'srad':
+        variable = 'surface_downwelling_shortwave_flux_in_air'
+    elif variable == 'tmmn' or variable == 'tmmx':
+        variable = 'air_temperature'
+        
+    # average selected variable over the time dimension
+    time_average = ds[variable].mean(skipna = True, dim = 'day')
     
+    # calculate spatial standard deviation
     st_dev = time_average.std(dim = ['lat', 'lon'])
     
-    return st_dev
+    return float(st_dev)
+
+# for var in gridmet_variables[3:]:
+#     output = st_dev_obs(var)
+#     print(f'{var} : {output}')
+    
+# standard deviations for observational data
+# pr : 0.46832597244903795
+# rmax : 10.24461758012446
+# rmin : 4.791940955646766
+# sph : 0.0003445885315470638
+# srad : 9.423356161495821
+# tmmn : 3.6344803010020477
+# tmmx : 3.778675424194867
+# uas : 0.7591268756780736
+# vas : 0.3952614372625724
 
 
-def corr_coef(model, variable):
+def corr_coef(model, variable, dictionary):
     """
     Calulate the spatial correlation coefficient using the model
     and observational data. 
     """
-    # average model data across time
+    # open dataset and average model data across time
     ds_MACA = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
     time_average_MACA = ds_MACA.mean(skipna = True, dim = 'time')
     MACA_data = time_average_MACA[variable].values.flatten()
     
-    # convert varibale name for observational data
+    # convert varibale name for observational data file names
     if variable == 'tasmin':
-        variable = 'tmmin'
+        obs_variable = 'tmmn'
     elif variable == 'tasmax':
-        variable = 'tmmin'
+        obs_variable = 'tmmx'
+    elif variable == 'huss':
+        obs_variable = 'sph'
+    elif variable == 'rsds':
+        obs_variable = 'srad'
+    else:
+        obs_variable = variable
+        
+    # open observational data
+    ds_obs = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{obs_variable}_1979-2014.nc')
+    
+    # convert variable name again for variables saved in the dataset
+    if obs_variable == 'pr':
+        obs_variable ='precipitation_amount'
+    elif obs_variable == 'rmax' or variable == 'rmin':
+        obs_variable = 'relative_humidity'
+    elif obs_variable == 'sph':
+        obs_variable = 'specific_humidity'
+    elif obs_variable == 'srad':
+        obs_variable = 'surface_downwelling_shortwave_flux_in_air'
+    elif obs_variable == 'tmmn' or variable == 'tmmx':
+        obs_variable = 'air_temperature'
         
     # average observational data across time
-    ds_obs = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{variable}_1979-2014.nc')
-    time_average_obs = ds_obs.mean(skipna = True, dim = 'day')
-    
-    if variable == 'pr':
-        variable ='precipitation_amount'
-        
-    obs_data = time_average_obs[variable].values.flatten()
+    time_average_obs = ds_obs[obs_variable].mean(skipna = True, dim = 'day')
+    obs_data = time_average_obs.values.flatten()
     
     # correlation coefficient calculation
     corr_coef = bp.np.corrcoef(MACA_data, obs_data)[0,1] # selects the right correlation coefficient out of an array
     
-    return float(corr_coef)
+    # save data point to dictionary
+    dictionary[model]['corrcoef'][variable] = float(corr_coef)
     
-corr_coef(MACA_models[0], 'pr')
+    return float(corr_coef)
+
+for model in MACA_models:
+    for var in MACA_variables:
+        corr_coef(model, var, base_dict)
+        print(model, var)
 
 
-
+# dimensions for MACA region
 # lat      (lat) float32 672B 36.03 36.07 36.11 36.15 ... 42.9 42.94 42.98
 # * lon      (lon) float32 684B -115.1 -115.1 -115.0 ... -108.1 -108.1 -108.0
 
@@ -170,26 +240,15 @@ print(var.shape)
 
 
 #%%
-# list of models to add to framework including obs
-models = [
-    'ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
-    'CanESM5', 'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3',
-    'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8',
-    'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6',
-    'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL', 'Obs'
-]
-
-# variables used in MACA
-variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 
 # loop through model dictionary framework to add all models and variables with a placeholder for each value
 model_dict = {
     model: {
-        'std': {var: 'x' for var in variables},
-        'corrcoef':  {var: 'x' for var in variables},
-        'bias': {var: 'x' for var in variables}
+        'std': {var: 'x' for var in MACA_variables},
+        'corrcoef':  {var: 'x' for var in MACA_variables},
+        'bias': {var: 'x' for var in MACA_variables}
     }
-    for model in models
+    for model in MACA_models
 }
 
 # save the dictionary to a specified file
