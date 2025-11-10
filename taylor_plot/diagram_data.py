@@ -25,48 +25,27 @@ MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNR
 MACA_variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 gridmet_variables = ['pr', 'rmax', 'rmin', 'sph', 'srad', 'tmmn', 'tmmx', 'uas', 'vas']
 
-# find the variable average for every grid point across the historical period before doing calculations
-# same averaging can be used for standard deviation and correlation
-# learn how to read GCM data out of matlab files
-# make taylor plot repeatable for different variables
 
+#%%
+# loop through model dictionary framework variable to add all models and variables with a placeholder for each value
+model_dict = {
+    model: {
+        'std': {var: 'x' for var in MACA_variables},
+        'corrcoef':  {var: 'x' for var in MACA_variables},
+        'bias': {var: 'x' for var in MACA_variables}
+    }
+    for model in MACA_models
+}
 
-def matlab_to_netcdf(model, variable):
-    
-    # convert matlab file to netcdf
-    matlab_file = bp.scipy.io.loadmat(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat')
-    
-    # Suppose you have lat, lon, time, and var in your file:
-    lat = bp.np.squeeze(matlab_file['lat'])
-    lon = bp.np.squeeze(matlab_file['lon'])
-    var = bp.np.squeeze(matlab_file['interpolated_data'])  # shape: (time, lat, lon), check and reshape if necessary
+# save the dictionary to a specified file for later use
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
 
-    years = bp.np.arange(1979, 2015)                 # 36 years
-    # days_per_year = 365                           # change to 366 if all leap years
-    year_full = []
-    day_full = []
-    for year in years:
-        max_day = 366 if bp.calendar.isleap(year) else 365
-        for day in range(1, max_day + 1):
-            year_full.append(year)
-            day_full.append(day)
-    year_full = bp.np.array(year_full)
-    day_full = bp.np.array(day_full)
+with open('taylor_dict_framework.txt', 'w') as f:
+    f.write(printer.pformat(model_dict))
 
-    time = bp.pd.to_datetime({'year' : year_full, 'month' : 1, 'day' : 1}) + bp.pd.to_timedelta(day_full - 1, unit = 'D')
-    
-    # Create an xarray DataArray (or Dataset for multiple variables)
-    ds = bp.xr.DataArray(
-        var,
-        coords = {'time': time, 'lat': lat, 'lon': lon},
-        dims = (variable, 'time', 'lat', 'lon'),
-        name = variable
-    )
-    
-    # Save to NetCDF
-    ds.to_netcdf(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/GCM_data/{model}_historical_{variable}.nc')
-    
-    return ds
+# bp.pprint.pprint(model_dict)
+
 
 #%%
 # read out the dictionary from the .txt file
@@ -74,17 +53,28 @@ import ast
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
-with open('nov_5.txt', 'r') as f:
+with open('taylor_dict_framework.txt', 'r') as f:
     contents = f.read()
 
 # Convert from string representation to actual dictionary
 base_dict = ast.literal_eval(contents)
 
 
+#%%
+# save dictionary containing data to a specified file (after running it through the functions below)
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
+
+with open('nov_9.txt', 'w') as f:
+    f.write(printer.pformat(base_dict))
+    
+
+#%%
 def st_dev_MACA(model, variable, dictionary):
     """
     First average data across the time dimension and then
     calculate the spatial standard deviaton.
+    Dictionary should follow structure outlined above. 
     """
     
     ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
@@ -92,25 +82,16 @@ def st_dev_MACA(model, variable, dictionary):
     
     st_dev = time_average.std(dim = ['lat', 'lon'])
     
+    # add calculation to dictionary
     dictionary[model]['std'][variable] = float(st_dev)
     
     return f'Standard Deviation for {model}: {float(st_dev)}'
 
-# for model in MACA_models[21:]:
+# for model in MACA_models[20]:
 #     for var in MACA_variables:
 #         st_dev_MACA(model, var, base_dict)
 #         print(model, var)
-    
-# print(base_dict)
 
-# save the dictionary to a specified file
-printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
-bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
-
-with open('nov_5.txt', 'w') as f:
-    f.write(printer.pformat(base_dict))
-
-#%%
 
 def st_dev_obs(variable):
     """
@@ -168,6 +149,7 @@ def corr_coef(model, variable, dictionary):
     """
     Calulate the spatial correlation coefficient using the model
     and observational data. 
+    Dictionary structure should match framework above. 
     """
     # open dataset and average model data across time
     ds_MACA = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
@@ -176,30 +158,41 @@ def corr_coef(model, variable, dictionary):
     
     # convert varibale name for observational data file names
     if variable == 'tasmin':
-        obs_variable = 'tmmn'
+        open_variable = 'tmmn'
+        
     elif variable == 'tasmax':
-        obs_variable = 'tmmx'
+        open_variable = 'tmmx'
+        
     elif variable == 'huss':
-        obs_variable = 'sph'
+        open_variable = 'sph'
+        
     elif variable == 'rsds':
-        obs_variable = 'srad'
+        open_variable = 'srad'
+        
     else:
-        obs_variable = variable
+        open_variable = variable
         
     # open observational data
-    ds_obs = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{obs_variable}_1979-2014.nc')
+    ds_obs = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc')
     
     # convert variable name again for variables saved in the dataset
-    if obs_variable == 'pr':
+    if open_variable == 'pr':
         obs_variable ='precipitation_amount'
-    elif obs_variable == 'rmax' or variable == 'rmin':
+        
+    elif open_variable == 'rmax' or variable == 'rmin':
         obs_variable = 'relative_humidity'
-    elif obs_variable == 'sph':
+        
+    elif open_variable == 'sph':
         obs_variable = 'specific_humidity'
-    elif obs_variable == 'srad':
+        
+    elif open_variable == 'srad':
         obs_variable = 'surface_downwelling_shortwave_flux_in_air'
-    elif obs_variable == 'tmmn' or variable == 'tmmx':
+        
+    elif open_variable == 'tmmn' or open_variable == 'tmmx':
         obs_variable = 'air_temperature'
+    
+    else: 
+        obs_variable = open_variable
         
     # average observational data across time
     time_average_obs = ds_obs[obs_variable].mean(skipna = True, dim = 'day')
@@ -213,21 +206,49 @@ def corr_coef(model, variable, dictionary):
     
     return float(corr_coef)
 
-for model in MACA_models:
-    for var in MACA_variables:
-        corr_coef(model, var, base_dict)
-        print(model, var)
+# for model in MACA_models:
+#     for var in MACA_variables:
+#         corr_coef(model, var, base_dict)
+#         print(model, var)
 
-
-# dimensions for MACA region
-# lat      (lat) float32 672B 36.03 36.07 36.11 36.15 ... 42.9 42.94 42.98
-# * lon      (lon) float32 684B -115.1 -115.1 -115.0 ... -108.1 -108.1 -108.0
-
-# PolarAxes.PolarTransform() # this tells plot to set std for radius and cor for angle
-# diagram = TaylorDiagram(reference.std(ddof=1), fig=myfig)
-# diagram.add_sample(stddev2, corrcoef2, label = 'Model 2', marker = 'o')
 
 #%%
+def matlab_to_netcdf(model, variable):
+    
+    # convert matlab file to netcdf
+    matlab_file = bp.scipy.io.loadmat(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat')
+    
+    # Suppose you have lat, lon, time, and var in your file:
+    lat = bp.np.squeeze(matlab_file['lat'])
+    lon = bp.np.squeeze(matlab_file['lon'])
+    var = bp.np.squeeze(matlab_file['interpolated_data'])  # shape: (time, lat, lon), check and reshape if necessary
+
+    years = bp.np.arange(1979, 2015)                 # 36 years
+    # days_per_year = 365                           # change to 366 if all leap years
+    year_full = []
+    day_full = []
+    for year in years:
+        max_day = 366 if bp.calendar.isleap(year) else 365
+        for day in range(1, max_day + 1):
+            year_full.append(year)
+            day_full.append(day)
+    year_full = bp.np.array(year_full)
+    day_full = bp.np.array(day_full)
+
+    time = bp.pd.to_datetime({'year' : year_full, 'month' : 1, 'day' : 1}) + bp.pd.to_timedelta(day_full - 1, unit = 'D')
+    
+    # Create an xarray DataArray (or Dataset for multiple variables)
+    ds = bp.xr.DataArray(
+        var,
+        coords = {'time': time, 'lat': lat, 'lon': lon},
+        dims = (variable, 'time', 'lat', 'lon'),
+        name = variable
+    )
+    
+    # Save to NetCDF
+    ds.to_netcdf(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/GCM_data/{model}_historical_{variable}.nc')
+    
+    return ds
 
 ds = bp.scipy.io.loadmat('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/ACCESS-CM2_historical_pr.mat')
 
@@ -236,28 +257,6 @@ var = bp.np.squeeze(ds['interpolated_data'])
 
 print(var.shape)
 # print(day_of_year.shape)
-
-
-#%%
-
-# loop through model dictionary framework to add all models and variables with a placeholder for each value
-model_dict = {
-    model: {
-        'std': {var: 'x' for var in MACA_variables},
-        'corrcoef':  {var: 'x' for var in MACA_variables},
-        'bias': {var: 'x' for var in MACA_variables}
-    }
-    for model in MACA_models
-}
-
-# save the dictionary to a specified file
-printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
-bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
-
-with open('taylor_dict_framework.txt', 'w') as f:
-    f.write(printer.pformat(model_dict))
-
-# bp.pprint.pprint(model_dict)
 
 
 
