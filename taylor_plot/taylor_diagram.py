@@ -23,12 +23,16 @@ with open('nov_9.txt', 'r') as f:
 # Convert from string representation to actual dictionary
 base_dict = ast.literal_eval(contents)
 
-# Example Taylor statistics
-std_obs = 1.0  # standard deviation of reference (observation)
-models = [
-    {'std': 1.2, 'corr': 0.8, 'label': "Model A"},
-    {'std': 0.9, 'corr': 0.95, 'label': "Model B"}
-]
+variable =  'pr'
+obs_data = {'pr': 0.46832597244903795,
+            'huss': 0.0003445885315470638,
+            'rsds': 9.423356161495821,
+            'tasmin': 3.6344803010020477,
+            'tasmax': 3.778675424194867,
+            'uas': 0.7591268756780736,
+            'vas': 0.3952614372625724
+            }
+
 
 # Setup polar plot: angle = arccos(correlation coefficient), radius = standard deviation
 fig = bp.plt.figure(figsize = (5, 5))
@@ -40,30 +44,40 @@ ax.set_theta_direction(-1)
 ax.set_thetamin(0)
 ax.set_thetamax(180)
 ax.set_xticklabels([])
-ax.spines['polar'].set_linewidth(0.75)
-ax.spines['polar'].set_edgecolor('grey')
+ax.spines['polar'].set_linewidth(0.5)
+ax.spines['polar'].set_edgecolor('black')
 
-# Plot the reference (observation) point always at correlation=1, std=std_obs
-ax.plot(0, std_obs, 'ko', label = "Reference", markersize = 10)
+ax.xaxis.grid(False)
+
+
+# Plot the reference (observation) point 
+ax.plot(bp.np.pi - bp.np.arccos(1), obs_data[variable], 'ko', label = "Reference", markersize = 10)
 
 # Plot all models
-for m in models:
-    theta = bp.np.arccos(m['corr'])  # angle for correlation
-    ax.plot(theta, m['std'], 'o', label=m['label'], markersize=9)
+for model in MACA_models:
+    theta = bp.np.pi - bp.np.arccos(base_dict[model]['corrcoef'][variable])  # angle for correlation
+    ax.plot(theta, base_dict[model]['std'][variable], 'o', label = model, markersize = 9)
 
 # Draw lines for various correlation coefficients as grid
-corrs = bp.np.linspace(-1, 1, 6)
-for c in corrs:
-    angle = bp.np.arccos(c)
-    ax.plot([angle, angle], [0, 1.5], '--', color='gray', lw=0.5)
-    ax.text(angle, 1.55, f"{c:.2f}", ha='center', va='center', fontsize=9)
+corr_lines = bp.np.array([-1.00, -0.93, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 0.93, 1.00])
+for lin in corr_lines:
+    angle = bp.np.pi - bp.np.arccos(lin)
+    ax.plot([angle, angle], [0, 1.62], '-.', color = 'black', lw = 0.25)
+    ax.text(angle, 1.74, f"{lin:.2f}", ha = 'center', va = 'center', fontsize = 9)
 
 # Set axis limits and labels
 ax.set_ylim(0, 1.6)
 ax.set_yticks([0.5, 1.0, 1.5])
+ax.yaxis.grid(True, color = 'black', linewidth = 0.25, linestyle = '-.')
 ax.set_yticklabels(['0.5', '1.0', '1.5'])
-ax.set_title("Simple Taylor Diagram", y=1.08)
-ax.legend(loc="upper right")
+
+r_ticks = [0.5, 1.0, 1.5]
+for r in r_ticks:
+    # Default side (right/top, angle ~22.5° or wherever your main labels are)
+    # Add labels on the left (angle = À radians)
+    ax.text(bp.np.pi, r, f"{r}", ha='center', va='center', fontsize=10)
+    
+# ax.legend(loc="upper right")
 bp.plt.show()
 
 
