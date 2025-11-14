@@ -17,7 +17,7 @@ MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNR
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
-with open('nov_9.txt', 'r') as f:
+with open('nov_13.txt', 'r') as f:
     contents = f.read()
 
 # Convert from string representation to actual dictionary

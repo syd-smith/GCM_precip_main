@@ -53,7 +53,7 @@ import ast
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
-with open('taylor_dict_framework.txt', 'r') as f:
+with open('nov_9.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
 
 # Convert from string representation to actual dictionary
@@ -65,7 +65,7 @@ base_dict = ast.literal_eval(contents)
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
 
-with open('nov_9.txt', 'w') as f:
+with open('nov_13.txt', 'w') as f:
     f.write(printer.pformat(base_dict))
     
 
@@ -78,6 +78,7 @@ def st_dev_MACA(model, variable, dictionary):
     """
     
     ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
+    # restrict to histrocial time period
     time_average = ds[variable].mean(skipna = True, dim = 'time')
     
     st_dev = time_average.std(dim = ['lat', 'lon'])
@@ -146,6 +147,11 @@ def st_dev_obs(variable):
 
 
 def corr_coef(model, variable, dictionary):
+    # make sure the same grid is being used for the model and gridmet (boundaries and gridpoint locations are the same)
+    # make a map plt.imshow() of both dataset next to each other and make sure they match (of collapsed time dataset)
+    # collapse time average to a single array and plot on a scatter plot
+    
+    
     """
     Calulate the spatial correlation coefficient using the model
     and observational data. 
@@ -197,19 +203,20 @@ def corr_coef(model, variable, dictionary):
     # average observational data across time
     time_average_obs = ds_obs[obs_variable].mean(skipna = True, dim = 'day')
     obs_data = time_average_obs.values.flatten()
+    obs_data_flipped = bp.np.flip(obs_data)
     
     # correlation coefficient calculation
-    corr_coef = bp.np.corrcoef(MACA_data, obs_data)[0,1] # selects the right correlation coefficient out of an array
+    corr_coef = bp.np.corrcoef(MACA_data, obs_data_flipped)[0,1] # selects the right correlation coefficient out of an array
     
     # save data point to dictionary
     dictionary[model]['corrcoef'][variable] = float(corr_coef)
     
     return float(corr_coef)
 
-# for model in MACA_models:
-#     for var in MACA_variables:
-#         corr_coef(model, var, base_dict)
-#         print(model, var)
+for model in MACA_models:
+    for var in MACA_variables:
+        corr_coef(model, var, base_dict)
+        print(model, var)
 
 
 #%%
@@ -250,6 +257,7 @@ def matlab_to_netcdf(model, variable):
     
     return ds
 
+#%%
 ds = bp.scipy.io.loadmat('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/ACCESS-CM2_historical_pr.mat')
 
 var = bp.np.squeeze(ds['interpolated_data'])
@@ -258,7 +266,65 @@ var = bp.np.squeeze(ds['interpolated_data'])
 print(var.shape)
 # print(day_of_year.shape)
 
+#%%
+
+# TEST OF DATA TO SEE IF IT'S THE SAME FORMAT
+model = MACA_models[0]
+variable = 'pr'
+
+# open dataset and average model data across time
+ds_MACA = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
+time_average_MACA = ds_MACA.mean(skipna = True, dim = 'time')
+MACA = time_average_MACA[variable]
+MACA_data = MACA.values.flatten()
+
+# map of MACA region (precip data)
+fig = bp.plt.figure()
+ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
+ax.contourf(MACA['lon'], MACA['lat'], MACA.values, transform = bp.ccrs.PlateCarree(), levels = 20)
+bp.plt.show()
+
+# scatter plot of flattened MACA data
+# dates_obs = bp.np.arange(1, 28729)
+# bp.plt.scatter(dates_obs, MACA_data, s = 1)
 
 
+open_variable = 'pr'
+# open observational data
+ds_obs = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc')
+
+# average observational data across time
+obs_variable = 'precipitation_amount'
+time_average_obs = ds_obs[obs_variable].mean(skipna = True, dim = 'day')
+obs_data = time_average_obs.values.flatten()
+obs_data_flipped = bp.np.flip(obs_data)
+
+# raw map of obs data
+fig = bp.plt.figure()
+ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
+ax.contourf(time_average_obs['lon'], time_average_obs['lat'], time_average_obs.values, transform = bp.ccrs.PlateCarree(), levels = 20)
+bp.plt.show()
+
+# scatter plot of flattened obs data
+# dates_obs = bp.np.arange(1, 28729)
+# bp.plt.scatter(dates_obs, obs_data_flipped, s = 1)
+
+# correlation coefficient calculation
+corr_coef = bp.np.corrcoef(MACA_data, obs_data_flipped)[0,1] # selects the right correlation coefficient out of an array
+
+print(float(corr_coef))
+
+#%%
+model = MACA_models[1]
+variable = 'pr'
+
+ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
+# restrict to histrocial time period
+time_average = ds[variable].mean(skipna = True, dim = 'time')
+
+st_dev = time_average.std(dim = ['lat', 'lon'])
+
+# add calculation to dictionary
+# dictionary[model]['std'][variable] = float(st_dev)
 
 
