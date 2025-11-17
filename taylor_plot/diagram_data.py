@@ -157,10 +157,27 @@ def corr_coef(model, variable, dictionary):
     and observational data. 
     Dictionary structure should match framework above. 
     """
+    
+    # dataset
     # open dataset and average model data across time
     ds_MACA = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
-    time_average_MACA = ds_MACA.mean(skipna = True, dim = 'time')
-    MACA_data = time_average_MACA[variable].values.flatten()
+    time_average_MACA = ds_MACA[variable].mean(skipna = True, dim = 'time')
+    time_average_MACA_flipped = time_average_MACA.isel(lat = slice(None, None, -1))
+    print(time_average_MACA.size)
+    MACA_data = time_average_MACA.values.flatten()
+
+    # average observational data across time
+    time_average_obs = ds_obs[obs_variable].mean(skipna = True, dim = 'day')
+    print(time_average_obs.size)
+    obs_data = time_average_obs.values.flatten()
+    obs_data_flipped = bp.np.flip(obs_data)
+    
+    
+    # open dataset and average model data across time
+    ds_MACA = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
+    time_average_MACA = ds_MACA[variable].mean(skipna = True, dim = 'time')
+    time_average_MACA_flipped = time_average_MACA.isel(lat = slice(None, None, -1))
+    MACA_data = time_average_MACA_flipped.values.flatten()
     
     # convert varibale name for observational data file names
     if variable == 'tasmin':
@@ -209,14 +226,16 @@ def corr_coef(model, variable, dictionary):
     corr_coef = bp.np.corrcoef(MACA_data, obs_data_flipped)[0,1] # selects the right correlation coefficient out of an array
     
     # save data point to dictionary
-    dictionary[model]['corrcoef'][variable] = float(corr_coef)
+    # dictionary[model]['corrcoef'][variable] = float(corr_coef)
     
     return float(corr_coef)
 
-for model in MACA_models:
-    for var in MACA_variables:
-        corr_coef(model, var, base_dict)
-        print(model, var)
+
+test = corr_coef(MACA_models[0], MACA_variables[0], base_dict)
+# for model in MACA_models:
+#     for var in MACA_variables:
+#         corr_coef(model, var, base_dict)
+#         print(model, var)
 
 
 #%%
@@ -266,65 +285,73 @@ var = bp.np.squeeze(ds['interpolated_data'])
 print(var.shape)
 # print(day_of_year.shape)
 
+
 #%%
-
-# TEST OF DATA TO SEE IF IT'S THE SAME FORMAT
 model = MACA_models[0]
-variable = 'pr'
+variable = MACA_variables[0]
 
+# dataset
 # open dataset and average model data across time
 ds_MACA = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
-time_average_MACA = ds_MACA.mean(skipna = True, dim = 'time')
-MACA = time_average_MACA[variable]
-MACA_data = MACA.values.flatten()
+time_average_MACA = ds_MACA[variable].mean(skipna = True, dim = 'time')
+time_average_MACA_flipped = time_average_MACA.isel(lat = slice(None, None, -1))
+print(time_average_MACA.size)
+MACA_data = time_average_MACA.values.flatten()
 
-# map of MACA region (precip data)
-fig = bp.plt.figure()
-ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
-ax.contourf(MACA['lon'], MACA['lat'], MACA.values, transform = bp.ccrs.PlateCarree(), levels = 20)
-bp.plt.show()
-
-# scatter plot of flattened MACA data
-# dates_obs = bp.np.arange(1, 28729)
-# bp.plt.scatter(dates_obs, MACA_data, s = 1)
-
-
-open_variable = 'pr'
+#%%
+# convert varibale name for observational data file names
+if variable == 'tasmin':
+    open_variable = 'tmmn'
+    
+elif variable == 'tasmax':
+    open_variable = 'tmmx'
+    
+elif variable == 'huss':
+    open_variable = 'sph'
+    
+elif variable == 'rsds':
+    open_variable = 'srad'
+    
+else:
+    open_variable = variable
+    
 # open observational data
 ds_obs = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc')
 
+# convert variable name again for variables saved in the dataset
+if open_variable == 'pr':
+    obs_variable ='precipitation_amount'
+    
+elif open_variable == 'rmax' or variable == 'rmin':
+    obs_variable = 'relative_humidity'
+    
+elif open_variable == 'sph':
+    obs_variable = 'specific_humidity'
+    
+elif open_variable == 'srad':
+    obs_variable = 'surface_downwelling_shortwave_flux_in_air'
+    
+elif open_variable == 'tmmn' or open_variable == 'tmmx':
+    obs_variable = 'air_temperature'
+
+else: 
+    obs_variable = open_variable
+    
 # average observational data across time
-obs_variable = 'precipitation_amount'
 time_average_obs = ds_obs[obs_variable].mean(skipna = True, dim = 'day')
+print(time_average_obs.size)
 obs_data = time_average_obs.values.flatten()
 obs_data_flipped = bp.np.flip(obs_data)
 
-# raw map of obs data
-fig = bp.plt.figure()
-ax = bp.plt.axes(projection  = bp.ccrs.PlateCarree())
-ax.contourf(time_average_obs['lon'], time_average_obs['lat'], time_average_obs.values, transform = bp.ccrs.PlateCarree(), levels = 20)
-bp.plt.show()
-
-# scatter plot of flattened obs data
-# dates_obs = bp.np.arange(1, 28729)
-# bp.plt.scatter(dates_obs, obs_data_flipped, s = 1)
-
 # correlation coefficient calculation
-corr_coef = bp.np.corrcoef(MACA_data, obs_data_flipped)[0,1] # selects the right correlation coefficient out of an array
-
-print(float(corr_coef))
+# corr_coef = bp.np.corrcoef(MACA_data, obs_data_flipped)[0,1] # selects the right correlation coefficient out of an array
 
 #%%
-model = MACA_models[1]
-variable = 'pr'
+bp.plt.imshow(time_average_MACA_flipped)
 
-ds = bp.xr.open_dataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_ssp585_{variable}.nc')
-# restrict to histrocial time period
-time_average = ds[variable].mean(skipna = True, dim = 'time')
+#%%
+bp.plt.imshow(time_average_obs)
 
-st_dev = time_average.std(dim = ['lat', 'lon'])
-
-# add calculation to dictionary
-# dictionary[model]['std'][variable] = float(st_dev)
-
-
+#%%
+# maca as x
+bp.plt.scatter(time_average_MACA_flipped, time_average_obs, s = 1)
