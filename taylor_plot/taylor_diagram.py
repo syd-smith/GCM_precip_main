@@ -17,7 +17,7 @@ MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNR
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
-with open('nov_13.txt', 'r') as f:
+with open('nov_17.txt', 'r') as f:
     contents = f.read()
 
 # Convert from string representation to actual dictionary
@@ -71,11 +71,11 @@ ax.set_yticks([0.5, 1.0, 1.5])
 ax.yaxis.grid(True, color = 'black', linewidth = 0.25, linestyle = '-.')
 ax.set_yticklabels(['0.5', '1.0', '1.5'])
 
-r_ticks = [0.5, 1.0, 1.5]
-for r in r_ticks:
-    # Default side (right/top, angle ~22.5° or wherever your main labels are)
-    # Add labels on the left (angle = À radians)
-    ax.text(bp.np.pi, r, f"{r}", ha='center', va='center', fontsize=10)
+# r_ticks = [0.5, 1.0, 1.5]
+# for r in r_ticks:
+#     # Default side (right/top, angle ~22.5° or wherever your main labels are)
+#     # Add labels on the left (angle = À radians)
+#     ax.text(bp.np.pi, r, f"{r}", ha='center', va='center', fontsize=10)
     
 # ax.legend(loc="upper right")
 bp.plt.show()

@@ -65,7 +65,7 @@ base_dict = ast.literal_eval(contents)
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/taylor_plot/')
 
-with open('nov_13.txt', 'w') as f:
+with open('nov_17.txt', 'w') as f:
     f.write(printer.pformat(base_dict))
     
 
@@ -145,7 +145,7 @@ def st_dev_obs(variable):
 # uas : 0.7591268756780736
 # vas : 0.3952614372625724
 
-
+#%%
 def corr_coef(model, variable, dictionary):
     # make sure the same grid is being used for the model and gridmet (boundaries and gridpoint locations are the same)
     # make a map plt.imshow() of both dataset next to each other and make sure they match (of collapsed time dataset)
