@@ -116,8 +116,8 @@ for ax in axs:
 fig.suptitle('KACE-1-0-G Mean Precipitation Over Study Region', fontsize = 20)
 
 #set save path for image
-save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/gcm_vs_gridmet/study_region.png'
-bp.plt.savefig(save_path, dpi = 400)
+# save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/gcm_vs_gridmet/study_region.png'
+# bp.plt.savefig(save_path, dpi = 400)
 
 bp.plt.show()
 

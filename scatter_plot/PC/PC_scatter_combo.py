@@ -33,13 +33,13 @@ for model in data_dict:
         PC1_scatter = axs[0].scatter(data_dict[model][scenario]['delta_temp'], 
                               data_dict[model][scenario]['precip_ratio'], 
                               c = data_dict[model][scenario]['PC1'], 
-                              cmap = 'viridis', 
+                              cmap = bp.plt.get_cmap('viridis', 9), 
                               s = 100, 
                               norm = bp.mcolors.Normalize(vmin = -10, vmax = 18))
         PC2_scatter = axs[1].scatter(data_dict[model][scenario]['delta_temp'], 
                               data_dict[model][scenario]['precip_ratio'], 
                               c = data_dict[model][scenario]['PC2'], 
-                              cmap = 'viridis', 
+                              cmap = bp.plt.get_cmap('viridis', 9), 
                               s = 100, 
                               norm = bp.mcolors.Normalize(vmin = -5, vmax = 6))
         
@@ -70,22 +70,31 @@ for ax in [0, 1]:
     axs[ax].set_xlabel('Temperature Change (K)', fontsize = 16)
     axs[ax].set_ylabel('Precipitation Ratio', fontsize = 16)
 
+# define norm and levels for PC1
+PC1_levels = bp.np.linspace(-10, 18, 9)
+# PC1_norm = bp.mcolors.BoundaryNorm(PC1_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_BrBG'), 9).N)
 
 # creating a color bar and legend for PC1 and PC2 data
 PC1_cbar = bp.plt.colorbar(PC1_scatter, 
                            orientation = 'horizontal', 
-                           ticks = bp.np.linspace(-10, 18, num = 9), 
+                           ticks = PC1_levels, 
                            shrink = 0.5, 
                            pad = 0.05,
-                           extend = 'both')
+                           extend = 'both',
+                           boundaries = PC1_levels)
 PC1_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+
+# define norm and levels for PC2
+PC2_levels = bp.np.linspace(-5, 6, num = 9)
+# PC2_norm = bp.mcolors.BoundaryNorm(PC1_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_BrBG'), 9).N)
 
 PC2_cbar = bp.plt.colorbar(PC2_scatter, 
                            orientation = 'horizontal', 
-                           ticks = bp.np.linspace(-5, 6, num = 9), 
+                           ticks = PC2_levels, 
                            shrink = 0.5, 
                            pad = 0.05,
-                           extend = 'both')
+                           extend = 'both', 
+                           boundaries = PC2_levels)
 PC2_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
 
 # add labels to each subplot

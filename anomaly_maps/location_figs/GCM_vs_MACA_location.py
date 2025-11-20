@@ -107,19 +107,36 @@ GCM_mean = combine.mean(skipna = True, dim = 'year')
 fig, axs = bp.plt.subplots(1, 2, figsize = (7, 4), subplot_kw = {'projection' : bp.ccrs.PlateCarree()}, constrained_layout = True)
 labels = ['a.', 'b.']
 
+# define levels for both maps
+GCM_levels = bp.np.linspace(0, 30, 8)
+MACA_levels = bp.np.linspace(0, 85, 8)
+
+# define norms for both maps
+GCM_norm = bp.mcolors.BoundaryNorm(GCM_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_GnBu'), 7).N) # 15 bins means 14 edges
+MACA_norm = bp.mcolors.BoundaryNorm(MACA_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_GnBu'), 7).N)
+
 # setup first map with GCM_mean data
-m1 = axs[0].pcolormesh(GCM_mean['lon'].values, GCM_mean['lat'].values, GCM_mean.values, cmap = bp.cmap.cmap('MPL_GnBu'))
+m1 = axs[0].pcolormesh(GCM_mean['lon'].values, GCM_mean['lat'].values, GCM_mean.values, norm = GCM_norm, cmap = bp.cmap.cmap('MPL_GnBu'))
 # axs[0].set_title('GCM Data - Coarse Resolution')
 axs[0].set_ylim(36.5, 43)
 axs[0].set_xlim(-115, -108.5)
-fig.colorbar(m1, ax = axs[0], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
+GCM_cbar = fig.colorbar(m1, ax = axs[0], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65, ticks = GCM_levels, boundaries = GCM_levels)
+GCM_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+
+# pr_levels = bp.np.linspace(-150, 150, 15)
+# pr_norm = bp.mcolors.BoundaryNorm(pr_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_BrBG'), 14).N) # 15 bins means 14 edges
+# precip_maps = axs[0][i].contourf(pr_data['lon'], pr_data['lat'], pr_data.values, levels = pr_levels, norm = pr_norm, cmap = bp.cmap.cmap('MPL_BrBG'), extend = 'both', transform = bp.ccrs.PlateCarree())
+# pr_cbar = fig.colorbar(pr_sm, cax = pr_axins, orientation = 'vertical', extend = 'both', ticks = pr_levels, boundaries = pr_levels, aspect = 50)
+
 
 # setup second map with MACA_mean data
-m2 = axs[1].pcolormesh(MACA_mean['lon'].values, MACA_mean['lat'].values, MACA_mean.values, cmap = bp.cmap.cmap('MPL_GnBu'))
+m2 = axs[1].pcolormesh(MACA_mean['lon'].values, MACA_mean['lat'].values, MACA_mean.values, norm = MACA_norm, cmap = bp.cmap.cmap('MPL_GnBu'))
 # axs[1].set_title('MACA Data - Fine Resolution')
 axs[1].set_ylim(36.5, 43)
 axs[1].set_xlim(-115, -108.5)
-fig.colorbar(m2, ax = axs[1], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65)
+MACA_cbar = fig.colorbar(m2, ax = axs[1], orientation = 'horizontal', label = 'mm month\u207B\u00B9', shrink = 0.65, ticks = MACA_levels, boundaries = MACA_levels)
+MACA_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+
 
 for ax, label in zip(axs, labels):
     ax.set_xlabel('lat')
@@ -147,8 +164,8 @@ for ax, label in zip(axs, labels):
 # fig.suptitle('KACE-1-0-G Mean Precipitation Over Study Region', fontsize = 20)
 
 #set save path for image
-save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/location_figs/'
-bp.plt.savefig(save_path + save_name, dpi = 400)
+# save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/location_figs/'
+# bp.plt.savefig(save_path + save_name, dpi = 400)
 
 bp.plt.show()
 
