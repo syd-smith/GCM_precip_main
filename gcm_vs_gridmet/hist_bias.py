@@ -173,7 +173,8 @@ if variable == 'pr':
 #         data.append(float(item))
 
 #%%
-#mean precip bias
+#mean precip 
+
 for model in models:
     mod = mean_JJA(model, 'pr')
     obs = gridmet_mean('pr')
