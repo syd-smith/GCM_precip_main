@@ -28,11 +28,18 @@ gridmet_variables = ['pr', 'rmax', 'rmin', 'sph', 'srad', 'tmmn', 'tmmx', 'uas',
 base_dict = {}
 for model in MACA_models:
     base_dict[model] = {}
-    for calc in ['stdev', 'r_cor', 'p_cor', 'region_bias']:
+    for calc in ['stdev_ratio', 'stdev_ratio_time', 'r_cor', 'p_cor', 'region_bias', 'pr_ratio', 'tasmin_change', 'tasmax_change']:
         base_dict[model][calc] = {}
-        for variable in variables:
-            base_dict[model][calc][variable] = 'x'
+        if calc not in ('pr_ratio', 'tasmin_change', 'tasmax_change', 'stdev_ratio_time'):
+            for variable in variables:
+                base_dict[model][calc][variable] = 'x'
+        elif calc == 'stdev_ratio_time': 
+            for year in range(1979, 2015):
+                base_dict[model][calc][year] = 'x'
+        else:
+            base_dict[model][calc] = 'x'
             
+bp.pprint.pprint(base_dict)
 
 #%%
 
@@ -163,7 +170,7 @@ base_dict = ast.literal_eval(contents)
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
 
-with open('nov_22.txt', 'w') as f:
+with open('nov_23.txt', 'w') as f:
     f.write(printer.pformat(base_dict))
         
 
