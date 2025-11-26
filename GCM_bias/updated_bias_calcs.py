@@ -19,7 +19,29 @@ MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNR
 variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 
 
-def gcm_yearly_avg(model, variable):
+#%%
+gcm_dict = {}
+
+for model in MACA_models:
+    gcm_dict[model] = {}
+    for calc in ('pr_ratio', 'tasmin_change', 'tasmax_change', 'yearly_avg', 'yearly_bias', 'summer_bias', 'stdev_ratio'):
+        if calc in ('pr_ratio', 'tasmin_change', 'tasmax_change'):
+            gcm_dict[model][calc] = 'x'
+        elif calc == 'yearly_avg':
+            gcm_dict[model][calc] = {}
+            for year in range(1979, 2015):
+                gcm_dict[model][calc][year] = {}
+                for variable in variables:
+                    gcm_dict[model][calc][year][variable] = 'x'
+        else: 
+            gcm_dict[model][calc] = {}
+            for variable in variables:
+                gcm_dict[model][calc][variable] = 'x'
+                
+bp.pprint.pprint(gcm_dict)
+
+#%%
+def gcm_yearly_avg(save_variable, model, variable, save = False):
     
     file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat'
     
@@ -60,13 +82,37 @@ def gcm_yearly_avg(model, variable):
     # print(len(lon))
 
     # so data are lat x lon x doy x year
+    
+    if save == True:
+        # save data to dictionary
+        for year, (position, value) in zip(range(1979, 2015), enumerate(var_bar)):
+            save_variable[model]['yearly_avg'][year][variable] = float(var_bar[position])
+            print(f'{value} saved to {variable} in {year} or {model}.')
    
     return var_bar
 
-# test = gcm_yearly_avg(MACA_models[0], variables[0])
+for model in MACA_models:
+    for variable in variables:
+        gcm_yearly_avg(gcm_dict, model, variable)
+        
+#%%   
+# save dictionary containing data to a specified file (after running it through the functions below)
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
 
+with open('gcm_dict_nov_26.txt', 'w') as f:
+    f.write(printer.pformat(gcm_dict))
 
-def gmet_yearly_avg(variable):
+#%%
+gmet_dict = {}
+
+for year in range(1979, 2015):
+    gmet_dict[year] = {}
+    for variable in variables:
+        gmet_dict[year][variable] = 'x'
+
+#%%
+def gmet_yearly_avg(save_variable, variable, save = False):
     
     # convert varibale name for observational data file names
     if variable == 'tasmin':
@@ -107,65 +153,72 @@ def gmet_yearly_avg(variable):
      
     ds_var = ds_open[obs_variable].groupby('day.year').mean(skipna  = True, dim = ('day', 'lat', 'lon'))
     
+    if  save == True:
+        # save data to dictionary
+        for year, (position, value) in zip(range(1979, 2015), enumerate(ds_var.values)):
+            save_variable[year][variable] = float(ds_var.values[position])
+            print(f'{value} saved to {variable} in {year}.')
+    
     return ds_var.values
 
-# test = gmet_yearly_avg(variables[0])
+# for variable in variables:
+#     gmet_yearly_avg(gmet_dict, variable)
+    
+#%%
+# save dictionary containing data to a specified file (after running it through the functions below)
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
 
-
-def bias(model, variable):
+with open('gmet_dict_nov_26.txt', 'w') as f:
+    f.write(printer.pformat(gmet_dict))
+    
+#%%
+def bias(save_variable,  model, variable):
     
     # call GCM data from function and take the average
-    gcm_data = gcm_yearly_avg(model, variable)
+    gcm_data = gcm_yearly_avg(save_variable, model, variable)
     gcm_avg = float(gcm_data.mean())
     
     # call gmet data from function and take the average
-    gmet_data = gmet_yearly_avg(variable)
+    gmet_data = gmet_yearly_avg(save_variable, variable)
     gmet_avg = float(gmet_data.mean())
     
     # calculate bias
     bias = gcm_avg - gmet_avg
     
+    # save data to dictionary
+    save_variable[model]['yearly_bias'][variable]  = bias
+    
     return  bias
     
 # bias_test = bias(MACA_models[0], variables[0])
+for model in MACA_models:
+    for variable in variables:
+        bias(gcm_dict, model, variable)
 
-def stdev_ratio(model, variable):
+
+def stdev_ratio(save_variable, model, variable):
     
     # call GCM data from function and take standard devitation
-    gcm_data = gcm_yearly_avg(model, variable)
+    gcm_data = gcm_yearly_avg(save_variable, model, variable)
     gcm_stdev = float(gcm_data.std())
     
     # call gridmet data from function and take standard deviation
-    gmet_data = gmet_yearly_avg(variable)
+    gmet_data = gmet_yearly_avg(save_variable, variable)
     gmet_stdev = float(gmet_data.std())
     
     stdev_ratio = gcm_stdev / gmet_stdev
     
+    # save data to dictionary
+    save_variable[model]['stdev_ratio'][variable] = stdev_ratio
+    
     return stdev_ratio
 
 # test_stdev = stdev_ratio(MACA_models[0], variables[0])
-    
-#%%
-
-base_dict = {}
-
 for model in MACA_models:
-    base_dict[model] = {}
-    for calc in ('pr_ratio', 'tasmin_change', 'tasmax_change', 'yearly_avg', 'yearly_bias', 'summer_bias', 'stdev_ratio'):
-        if calc in ('pr_ratio', 'tasmin_change', 'tasmax_change'):
-            base_dict[model][calc] = 'x'
-        elif calc == 'yearly_avg':
-            base_dict[model][calc] = {}
-            for year in range(1979, 2015):
-                base_dict[model][calc][year] = {}
-                for variable in variables:
-                    base_dict[model][calc][year][variable] = 'x'
-        else: 
-            base_dict[model][calc] = {}
-            for variable in variables:
-                base_dict[model][calc][variable] = 'x'
-                
-bp.pprint.pprint(base_dict)
+    for variable in variables:
+        stdev_ratio(gcm_dict, model, variable)
+    
                 
 #%%
 
