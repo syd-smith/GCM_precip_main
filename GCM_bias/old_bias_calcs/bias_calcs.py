@@ -31,6 +31,21 @@ with open('nov_23.txt', 'r') as f: # saved before MIROC6
 base_dict = ast.literal_eval(contents)
 
 #%%
+# add individual years to dictionary for stdev_ratio_time
+# for year in range(1979, 2015):
+#     base_dict[model]['stdev_ratio_time'][year] = {}
+#     for variable in variables:
+#         base_dict[model]['stdev_ratio_time'][year][variable] = 'x'
+        
+# printed = bp.pprint.pprint(base_dict)
+
+for model in MACA_models:
+    for year in range(1979, 2015):
+        base_dict[model]['stdev_ratio_time'][year] = {}
+        for variable in variables:
+            base_dict[model]['stdev_ratio_time'][year][variable] = 'x'
+
+#%%
 
 def delta_temp(save_variable, start_month = 6, stop_month = 8):
     
@@ -325,69 +340,108 @@ for model in MACA_models:
 
 #%%
 
-save_variable = base_dict
+def hist_gcm_per_year(model, variable):
+    
+    file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat'
+    
+    # min and max latitudes and longitudes
+    lat_min, lat_max = 36.03, 42.98
+    lon_min, lon_max = -115.1, -108.0
+    
+    # Load the .mat file
+    mat_contents = bp.scipy.io.loadmat(file_path)  
 
-# def stdev_time(save_variable, model, variable):
-model = MACA_models[0]
-variable = variables[0]
+    # Print the contents of the .mat file
+    # print("Contents of the .mat file:")
 
-# call GCM data for the bias comparison
-GCM_data, lat, lon = avg_hist_gcm(model, variable)
-GCM_stdev = GCM_data.std()
+    # for key, value in mat_contents.items():
+    #     if not key.startswith('__'):  # Skip metadata entries
+    #         print(f"{key}")
+
+    var = mat_contents['interpolated_data']  
+   
+    # convert precipitation from kg m-2 s-1 to mm
+    if variable == 'pr':
+       var *= 86400
+       
+    lat = bp.np.squeeze(mat_contents['lat'])
+    lon = bp.np.squeeze(mat_contents['lon'])
+   
+    lat_mask = (lat >= lat_min) & (lat <= lat_max)
+    lon_mask = (lon >= lon_min) & (lon <= lon_max)
+
+    var_bar = bp.np.nanmean(var, axis = 2)  # collapses the day of year dimension to provide lat x lon x year
+   
+    trimmed_var_bar = var_bar[bp.np.ix_(lat_mask, lon_mask)]
+    trimmed_lat = lat[lat_mask]
+    trimmed_lon = lon[lon_mask]
+
+    # print(var.shape)
+    # print(len(lat))
+    # print(len(lon))
+
+    # so data are lat x lon x doy x year
+   
+    return trimmed_var_bar, trimmed_lat, trimmed_lon
  
-# convert varibale name for observational data file names
-if variable == 'tasmin':
-     open_variable = 'tmmn'
+
+def stdev_ratio_yearly(save_variable, model, variable):
+    
+    # call GCM data for the bias comparison
+    GCM_data, lat, lon = hist_gcm_per_year(model, variable)
+    gcm_per_year = bp.np.nanstd(GCM_data, axis = (0,1))
+
+    # convert varibale name for observational data file names
+    if variable == 'tasmin':
+         open_variable = 'tmmn'
+         
+    elif variable == 'tasmax':
+         open_variable = 'tmmx'
+         
+    elif variable == 'huss':
+         open_variable = 'sph'
+         
+    elif variable == 'rsds':
+         open_variable = 'srad'
+         
+    else:
+         open_variable = variable
+         
+    # open gridmet files
+    # gridmet is already restricted to the MACA region
+    gridmet_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc'
+    ds_open = bp.xr.open_dataset(gridmet_path) 
      
-elif variable == 'tasmax':
-     open_variable = 'tmmx'
+    # convert variable name again for variables saved in the dataset
+    if open_variable == 'pr':
+         obs_variable ='precipitation_amount'
+         
+    elif open_variable == 'rmax' or variable == 'rmin':
+         obs_variable = 'relative_humidity'
+         
+    elif open_variable == 'sph':
+         obs_variable = 'specific_humidity'
+         
+    elif open_variable == 'srad':
+         obs_variable = 'surface_downwelling_shortwave_flux_in_air'
+         
+    elif open_variable == 'tmmn' or open_variable == 'tmmx':
+         obs_variable = 'air_temperature'
+    else: 
+         obs_variable = open_variable
      
-elif variable == 'huss':
-     open_variable = 'sph'
-     
-elif variable == 'rsds':
-     open_variable = 'srad'
-     
-else:
-     open_variable = variable
-     
-# open gridmet files
-# gridmet is already restricted to the MACA region
-gridmet_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc'
-ds_open = bp.xr.open_dataset(gridmet_path) 
- 
-# convert variable name again for variables saved in the dataset
-if open_variable == 'pr':
-     obs_variable ='precipitation_amount'
-     
-elif open_variable == 'rmax' or variable == 'rmin':
-     obs_variable = 'relative_humidity'
-     
-elif open_variable == 'sph':
-     obs_variable = 'specific_humidity'
-     
-elif open_variable == 'srad':
-     obs_variable = 'surface_downwelling_shortwave_flux_in_air'
-     
-elif open_variable == 'tmmn' or open_variable == 'tmmx':
-     obs_variable = 'air_temperature'
-else: 
-     obs_variable = open_variable
- 
-gridmet_stdev = ds_open[obs_variable].std()
- 
-# ratio calculation
-stdev_ratio = GCM_stdev / gridmet_stdev
- 
-# save to dictionary
-save_variable[model]['stdev_ratio_time'][year][variable] = stdev_ratio
+    gridmet_data = ds_open[obs_variable]
+    stdevs = gridmet_data.groupby('day.year').std(dim = ('day', 'lat', 'lon'))
+    gridmet_stdevs = stdevs.values
+
+    for gmet, gcm, year in zip(gridmet_stdevs, gcm_per_year, range(1979, 2015)):
+        yearly_stdev = float(gcm / gmet)
+        save_variable[model]['stdev_ratio_time'][year][variable] = yearly_stdev
+    
+    return save_variable
 
 
-#%%
-for year in range(1979, 2015):
-    base_dict[model]['stdev_ratio_time'][year] = {}
+for model in MACA_models:
     for variable in variables:
-        base_dict[model]['stdev_ratio_time'][year][variable] = 'x'
-
-#%%
-printed = bp.pprint.pprint(base_dict)
+        stdev_ratio_yearly(base_dict, model, variable)
+        print(f'{model} {variable} saved!')
