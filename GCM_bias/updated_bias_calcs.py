@@ -164,6 +164,7 @@ def gmet_yearly_avg(save_variable, variable, save = False):
 # for variable in variables:
 #     gmet_yearly_avg(gmet_dict, variable)
     
+
 #%%
 # save dictionary containing data to a specified file (after running it through the functions below)
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
@@ -172,16 +173,42 @@ bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/
 with open('gmet_dict_nov_26.txt', 'w') as f:
     f.write(printer.pformat(gmet_dict))
     
+    
+#%%
+# read out the dictionary from the .txt file
+import ast
+
+# Open and read the file
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
+with open('gcm_dict_nov_26.txt', 'r') as f: # saved before MIROC6
+    contents = f.read()
+
+# Convert from string representation to actual dictionary
+gcm_dict = ast.literal_eval(contents)
+
+with open('gmet_dict_nov_26.txt', 'r') as f: # saved before MIROC6
+    contents = f.read()
+
+# Convert from string representation to actual dictionary
+gmet_dict = ast.literal_eval(contents)
+
+
 #%%
 def bias(save_variable,  model, variable):
     
-    # call GCM data from function and take the average
-    gcm_data = gcm_yearly_avg(save_variable, model, variable)
-    gcm_avg = float(gcm_data.mean())
-    
+    # call GCM data from saved dictionary and take the average
+    retrived_gcm_data =  []
+    for year in range(1979, 2015):
+        gcm_dat_point = gcm_dict[model]['yearly_avg'][year][variable]
+        retrived_gcm_data.append(gcm_dat_point)
+    gcm_avg = float(bp.np.mean(retrived_gcm_data))
+
     # call gmet data from function and take the average
-    gmet_data = gmet_yearly_avg(save_variable, variable)
-    gmet_avg = float(gmet_data.mean())
+    retrived_gmet_data = []
+    for year in range(1979, 2015):
+        gmet_dat_point = gmet_dict[year][variable]
+        retrived_gmet_data.append(gmet_dat_point)
+    gmet_avg = float(bp.np.mean(retrived_gmet_data))
     
     # calculate bias
     bias = gcm_avg - gmet_avg
@@ -199,13 +226,19 @@ for model in MACA_models:
 
 def stdev_ratio(save_variable, model, variable):
     
-    # call GCM data from function and take standard devitation
-    gcm_data = gcm_yearly_avg(save_variable, model, variable)
-    gcm_stdev = float(gcm_data.std())
-    
-    # call gridmet data from function and take standard deviation
-    gmet_data = gmet_yearly_avg(save_variable, variable)
-    gmet_stdev = float(gmet_data.std())
+    # call GCM data from saved dictionary and take the average
+    retrived_gcm_data =  []
+    for year in range(1979, 2015):
+        gcm_dat_point = gcm_dict[model]['yearly_avg'][year][variable]
+        retrived_gcm_data.append(gcm_dat_point)
+    gcm_stdev = float(bp.np.std(retrived_gcm_data))
+
+    # call gmet data from function and take the average
+    retrived_gmet_data = []
+    for year in range(1979, 2015):
+        gmet_dat_point = gmet_dict[year][variable]
+        retrived_gmet_data.append(gmet_dat_point)
+    gmet_stdev = float(bp.np.std(retrived_gmet_data))
     
     stdev_ratio = gcm_stdev / gmet_stdev
     
@@ -221,42 +254,123 @@ for model in MACA_models:
     
                 
 #%%
+model = MACA_models[0]
+variable = variables[0]
 
-# convert varibale name for observational data file names
-if variable == 'tasmin':
-     open_variable = 'tmmn'
-     
-elif variable == 'tasmax':
-     open_variable = 'tmmx'
-     
-elif variable == 'huss':
-     open_variable = 'sph'
-     
-elif variable == 'rsds':
-     open_variable = 'srad'
-     
-else:
-     open_variable = variable
+file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat'
 
-fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc'
-ds_open = bp.xr.open_dataset(fpath)
+# min and max latitudes and longitudes
+lat_min, lat_max = 36.03, 42.98
+lon_min, lon_max = -115.1, -108.0
 
-# convert variable name again for variables saved in the dataset
-if open_variable == 'pr':
-     obs_variable ='precipitation_amount'
+# Load the .mat file
+mat_contents = bp.scipy.io.loadmat(file_path)  
+
+# Print the contents of the .mat file
+# print("Contents of the .mat file:")
+
+# for key, value in mat_contents.items():
+#     if not key.startswith('__'):  # Skip metadata entries
+#         print(f"{key}")
+
+var = mat_contents['interpolated_data']  
+
+# convert precipitation from kg m-2 s-1 to mm
+if variable == 'pr':
+   var *= 86400
+   
+lat = bp.np.squeeze(mat_contents['lat'])
+lon = bp.np.squeeze(mat_contents['lon'])
+
+lat_mask = (lat >= lat_min) & (lat <= lat_max)
+lon_mask = (lon >= lon_min) & (lon <= lon_max)
+
+trimmed_var = var[bp.np.ix_(lat_mask, lon_mask)]
+
+#%%
+gmet_JJA_dict = {}
+
+for year in range(1979, 2015):
+    gmet_JJA_dict[year] = {}
+    for variable in variables:
+        gmet_JJA_dict[year][variable] = 'x'
+        
+# save dictionary containing data to a specified file (after running it through the functions below)
+printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
+
+with open('gmet_JJA_dict.txt', 'w') as f:
+    f.write(printer.pformat(gmet_JJA_dict))
+
+#%%
+        
+def gmet_JJA_avg(variable):
+    # convert varibale name for observational data file names
+    if variable == 'tasmin':
+         open_variable = 'tmmn'
+         
+    elif variable == 'tasmax':
+         open_variable = 'tmmx'
+         
+    elif variable == 'huss':
+         open_variable = 'sph'
+         
+    elif variable == 'rsds':
+         open_variable = 'srad'
+         
+    else:
+         open_variable = variable
+
+    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc'
+    ds_open = bp.xr.open_dataset(fpath)
+
+    # convert variable name again for variables saved in the dataset
+    if open_variable == 'pr':
+         obs_variable ='precipitation_amount'
+         
+    elif open_variable == 'rmax' or variable == 'rmin':
+         obs_variable = 'relative_humidity'
+         
+    elif open_variable == 'sph':
+         obs_variable = 'specific_humidity'
+         
+    elif open_variable == 'srad':
+         obs_variable = 'surface_downwelling_shortwave_flux_in_air'
+         
+    elif open_variable == 'tmmn' or open_variable == 'tmmx':
+         obs_variable = 'air_temperature'
+    else: 
+         obs_variable = open_variable
      
-elif open_variable == 'rmax' or variable == 'rmin':
-     obs_variable = 'relative_humidity'
+    da  = ds_open[obs_variable]   
      
-elif open_variable == 'sph':
-     obs_variable = 'specific_humidity'
-     
-elif open_variable == 'srad':
-     obs_variable = 'surface_downwelling_shortwave_flux_in_air'
-     
-elif open_variable == 'tmmn' or open_variable == 'tmmx':
-     obs_variable = 'air_temperature'
-else: 
-     obs_variable = open_variable
- 
-ds_var = ds_open[obs_variable].groupby('day.month')
+    year = da['day'].dt.year.values
+    month = da['day'].dt.month.values
+    da = da.assign_coords(year=('day', year), month=('day', month))
+
+    # now group by both at once using a tuple key
+    ds_var = da.groupby(['year', 'month'])
+    ds_mean = ds_var.mean('day')
+
+    for year in range(1979, 2015):
+        june_mean = ds_mean.sel(year = year, month = 6)
+        july_mean = ds_mean.sel(year = year, month = 7)
+        august_mean = ds_mean.sel(year = year, month = 8)
+        combine = bp.xr.concat([june_mean, july_mean, august_mean], dim = 'monthly_JJA')
+        dat_point = float(bp.np.mean(combine))
+        gmet_JJA_dict[year][variable] = dat_point
+    
+    return gmet_JJA_dict
+
+for variable in variables:
+    gmet_JJA_avg(variable)
+    print(f'{variable} saved!')
+    
+    
+    
+    
+
+
+# ds_year = ds_open[obs_variable].groupby('day.year')
+# ds_month = ds_year[obs_variable].groupby('day.month')
+# ds_JJA_mean = bp.np.mean(ds_var[6], ds_var[7], ds_var[8])
