@@ -24,13 +24,13 @@ import ast
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
-with open('gcm_dict_nov_26.txt', 'r') as f: # saved before MIROC6
+with open('gcm_dict_nov_30.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
 
 # Convert from string representation to actual dictionary
 gcm_dict = ast.literal_eval(contents)
 
-
+#%%
 with open('gmet_dict_nov_26.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
 
@@ -122,8 +122,8 @@ for model in MACA_models:
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
 
-with open('gcm_dict_nov_30.txt', 'w') as f:
-    f.write(printer.pformat(updated_gcm_dict))
+with open('gcm_dict_dec_1.txt', 'w') as f:
+    f.write(printer.pformat(gcm_dict))
     
     
 #%%
@@ -237,7 +237,7 @@ for variable in variables:
 
 
 #%%
-def bias(save_variable,  model, variable):
+def bias(save_variable, model, variable):
     
     # call GCM data from saved dictionary and take the average
     retrived_gcm_data =  []
@@ -254,17 +254,22 @@ def bias(save_variable,  model, variable):
     gmet_avg = float(bp.np.mean(retrived_gmet_data))
     
     # calculate bias
-    bias = gcm_avg - gmet_avg
+    if variable == 'pr':
+        bias = gcm_avg / gmet_avg
+    else:
+        bias = gcm_avg - gmet_avg
     
     # save data to dictionary
     save_variable[model]['yearly_bias'][variable]  = bias
     
-    return  bias
+    return bias
     
-# bias_test = bias(MACA_models[0], variables[0])
 for model in MACA_models:
-    for variable in variables:
-        bias(gcm_dict, model, variable)
+    bias(gcm_dict, model, 'pr')
+    
+# for model in MACA_models:
+#     for variable in variables:
+#         bias(gcm_dict, model, variable)
 
 
 def stdev_ratio(save_variable, model, variable):

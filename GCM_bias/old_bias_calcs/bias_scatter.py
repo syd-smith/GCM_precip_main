@@ -27,7 +27,7 @@ import ast
 
 # Open and read the file with bias data
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
-with open('nov_23.txt', 'r') as f: # saved before MIROC6
+with open('gcm_dict_dec_1.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
 
 # Convert from string representation to actual dictionary
@@ -42,42 +42,42 @@ for model in MACA_models:
     # adjust color of data point relative to PC value
     # row one
     row_one_first = axs[0][0].scatter(bias_dict[model]['pr_ratio'], 
-                          bias_dict[model]['region_bias']['pr'], 
+                          bias_dict[model]['summer_bias']['pr'], 
                           c = 'blue', 
                           s = 10)
     row_one_second = axs[0][1].scatter(bias_dict[model]['tasmin_change'], 
-                          bias_dict[model]['region_bias']['pr'], 
+                          bias_dict[model]['summer_bias']['pr'], 
                           c = 'blue', 
                           s = 10)
     row_one_third = axs[0][2].scatter(bias_dict[model]['tasmax_change'], 
-                          bias_dict[model]['region_bias']['pr'], 
+                          bias_dict[model]['summer_bias']['pr'], 
                           c = 'blue', 
                           s = 10)
     
     # row two
     row_two_first = axs[1][0].scatter(bias_dict[model]['pr_ratio'], 
-                          bias_dict[model]['region_bias']['tasmin'], 
+                          bias_dict[model]['summer_bias']['tasmin'], 
                           c = 'blue', 
                           s = 10)
     row_two_second = axs[1][1].scatter(bias_dict[model]['tasmin_change'], 
-                          bias_dict[model]['region_bias']['tasmin'], 
+                          bias_dict[model]['summer_bias']['tasmin'], 
                           c = 'blue', 
                           s = 10)
     row_two_third = axs[1][2].scatter(bias_dict[model]['tasmax_change'], 
-                          bias_dict[model]['region_bias']['tasmin'], 
+                          bias_dict[model]['summer_bias']['tasmin'], 
                           c = 'blue', 
                           s = 10)
     
     # row three
     row_three_first = axs[2][0].scatter(bias_dict[model]['pr_ratio'], 
-                          bias_dict[model]['region_bias']['tasmax'], 
+                          bias_dict[model]['summer_bias']['tasmax'], 
                           c = 'blue', 
                           s = 10)
     row_three_second = axs[2][1].scatter(bias_dict[model]['tasmin_change'], 
-                          bias_dict[model]['region_bias']['tasmax'], 
+                          bias_dict[model]['summer_bias']['tasmax'], 
                           c = 'blue', 
                           s = 10)
     row_three_third = axs[2][2].scatter(bias_dict[model]['tasmax_change'], 
-                          bias_dict[model]['region_bias']['tasmax'], 
+                          bias_dict[model]['summer_bias']['tasmax'], 
                           c = 'blue', 
                           s = 10)
