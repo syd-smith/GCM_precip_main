@@ -24,7 +24,7 @@ import ast
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
-with open('gcm_dict_nov_30.txt', 'r') as f: # saved before MIROC6
+with open('gcm_dict_dec_1.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
 
 # Convert from string representation to actual dictionary
@@ -122,7 +122,7 @@ for model in MACA_models:
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
 
-with open('gcm_dict_dec_1.txt', 'w') as f:
+with open('gcm_dict_dec_3.txt', 'w') as f:
     f.write(printer.pformat(gcm_dict))
     
     
@@ -445,7 +445,7 @@ def JJA_bias(save_variable, model, variable):
     # call GCM data from saved dictionary and take the average
     retrived_gcm_data =  []
     for year in range(1979, 2015):
-        gcm_dat_point = updated_gcm_dict[model]['JJA_avg'][year][variable]
+        gcm_dat_point = gcm_dict[model]['JJA_avg'][year][variable]
         retrived_gcm_data.append(gcm_dat_point)
     gcm_avg = float(bp.np.mean(retrived_gcm_data))
 
@@ -457,19 +457,22 @@ def JJA_bias(save_variable, model, variable):
     gmet_avg = float(bp.np.mean(retrived_gmet_data))
     
     # calculate bias
-    JJA_bias = gcm_avg - gmet_avg
+    if variable == 'pr':
+        JJA_bias = gcm_avg / gmet_avg
+    else:
+        JJA_bias = gcm_avg - gmet_avg
     
     # save data to dictionary
     save_variable[model]['summer_bias'][variable]  = JJA_bias
     
-    return  bias
+    return JJA_bias
     
 # bias_test = bias(MACA_models[0], variables[0])
 for model in MACA_models:
     for variable in variables:
-        JJA_bias(updated_gcm_dict, model, variable)
+        JJA_bias(gcm_dict, model, variable)
 
-
+#%%
 def JJA_stdev_ratio(save_variable, model, variable):
     
     # call GCM data from saved dictionary and take the average
