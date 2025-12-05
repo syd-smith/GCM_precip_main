@@ -172,7 +172,7 @@ def anomaly(model_name, variable, start_month, stop_month, level = None, zoom_ou
 # example of the anomaly function being used to return a lat and lon xarray.DataArray for the specified variable
 # vas = anomaly('ACCESS-CM2', 'vas')
 
-
+#%%
 def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year = 1979, stop_year = 2014, zoom_out = False, step = 1, *kwargs):
     
     """
@@ -193,11 +193,11 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
             
     # set scale to adjust based on being an anomaly or fut/hist mean
     if anomaly_ref.__name__ == 'anomaly':
-        scale = 35
+        scale = 75
         U = 1
         label = '1 m/s'
     else: 
-        scale = 175
+        scale = 250
         U = 5
         label = '5 m/s'
         

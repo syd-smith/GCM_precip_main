@@ -61,14 +61,15 @@ def future_change_fig(start_month, stop_month, save_name = 'test', save = False)
         huss_data = anomaly(model, 'huss', start_month, stop_month)
         
         # define levels
-        pr_levels = bp.np.linspace(-150, 150, 15) # 15 bins means 14 edges
+        pr_levels  = bp.np.array([-75, -60, -45, -30, -15, 0, 50, 100, 150, 200, 250])
+        # pr_levels = bp.np.linspace(-150, 150, 15) # 15 bins means 14 edges
         ts_levels = bp.np.linspace(0, 15, 15)
-        huss_levels = bp.np.linspace(0, 7, 15)
+        huss_levels = bp.np.linspace(0, 7, 8)
         
         # define norm values to standardize colorbar to map colors
         pr_norm = bp.mcolors.BoundaryNorm(pr_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_BrBG'), 14).N) # 15 bins means 14 edges
         ts_norm = bp.mcolors.BoundaryNorm(ts_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_YlOrRd'), 14).N) # 15 bins means 14 edges
-        huss_norm = bp.mcolors.BoundaryNorm(huss_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_BuGn'), 14).N) # 15 bins means 14 edges
+        huss_norm = bp.mcolors.BoundaryNorm(huss_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_BuGn'), 7).N) # 8 bins means 7 edges
 
         # call contour function in specified ax location      
         precip_maps = axs[0][i].contourf(pr_data['lon'], pr_data['lat'], pr_data.values, levels = pr_levels, norm = pr_norm, cmap = bp.cmap.cmap('MPL_BrBG'), extend = 'both', transform = bp.ccrs.PlateCarree())
@@ -95,7 +96,7 @@ def future_change_fig(start_month, stop_month, save_name = 'test', save = False)
     
     # PRECIPITATION COLORBAR
     # fine tuning control of colorbar size and placement
-    pr_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.98, 0.08, 0.05, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
+    pr_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.935, 0.08, 0.08, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
 
     # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
     pr_sm = bp.mpl.cm.ScalarMappable(norm = pr_norm, cmap =  bp.cmap.cmap('MPL_BrBG'))
@@ -108,20 +109,20 @@ def future_change_fig(start_month, stop_month, save_name = 'test', save = False)
     
     # TEMPERATURE COLORBAR
     # fine tuning control of colorbar size and placement
-    ts_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.98, -0.25, 0.05, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
+    ts_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.935, -0.25, 0.08, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
 
     # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
     ts_sm = bp.mpl.cm.ScalarMappable(norm = ts_norm, cmap =  bp.cmap.cmap('MPL_YlOrRd'))
     ts_sm.set_array([])
     
     #  colorbar function passed using the scalar mappable 
-    ts_cbar = fig.colorbar(ts_sm, cax = ts_axins, orientation = 'vertical', extend = 'both', ticks = ts_levels, boundaries = ts_levels, aspect = 50)
+    ts_cbar = fig.colorbar(ts_sm, cax = ts_axins, orientation = 'vertical', extend = 'both', ticks = [0, 2.5, 5, 7.5, 10, 12.5, 15], boundaries = ts_levels, aspect = 50)
     ts_cbar.ax.tick_params(labelsize = 20)
     ts_cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     
     # HUMIDITY COLORBAR
     # fine tuning control of colorbar size and placement
-    huss_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.98, -0.585, 0.05, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
+    huss_axins = bp.inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.935, -0.585, 0.08, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
 
     # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
     huss_sm = bp.mpl.cm.ScalarMappable(norm = huss_norm, cmap =  bp.cmap.cmap('MPL_BuGn'))
@@ -131,16 +132,21 @@ def future_change_fig(start_month, stop_month, save_name = 'test', save = False)
     huss_cbar = fig.colorbar(huss_sm, cax = huss_axins, orientation = 'vertical', extend = 'both', ticks = huss_levels, boundaries = huss_levels, aspect = 50)
     huss_cbar.ax.tick_params(labelsize = 20)
     huss_cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
-      
+     
+    fig.text(-1.7, 3.35, 'Wet Case', transform = ax.transAxes, fontsize = 60, va = 'top', ha = 'left', bbox = dict(facecolor = 'white', pad  = 1, edgecolor = 'white'))
+    fig.text(-0.78, 3.35, 'Moderate Case', transform = ax.transAxes, fontsize = 60, va = 'top', ha = 'left', bbox = dict(facecolor = 'white', pad  = 1, edgecolor = 'white'))
+    fig.text(0.4, 3.35, 'Dry Case', transform = ax.transAxes, fontsize = 60, va = 'top', ha = 'left', bbox = dict(facecolor = 'white', pad  = 1, edgecolor = 'white'))
+    
     if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
         save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/paper_figs/'
         save_path = bp.os.path.join(save_path + save_name + '.png')
         bp.plt.savefig(save_path, dpi = 400)
         
+    
     bp.plt.show()
     
-future_change_fig(6, 8)
+future_change_fig(6, 8, save_name = 'future_change_take_four', save = True)
       
 
 #%%
@@ -162,12 +168,12 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
         anom_data = anomaly(model, 'zg', start_month, stop_month, level = 50000, zoom_out = True)
         
         # define levels
-        mean_levels = bp.np.linspace(5675, 5975, 15)
-        anom_levels = bp.np.linspace(75, 200, 15)
+        mean_levels = bp.np.array([5580, 5640, 5700, 5760, 5820, 5880, 5940, 6000])
+        anom_levels = bp.np.array([75, 85, 95, 105, 115, 125, 135, 145, 155, 165, 175, 185, 195])
         
         # define norms
-        mean_norm = bp.mcolors.BoundaryNorm(mean_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_coolwarm'), 14).N) # 15 bins means 14 edges
-        anom_norm = bp.mcolors.BoundaryNorm(anom_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('NCV_bright'), 14).N)
+        mean_norm = bp.mcolors.BoundaryNorm(mean_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('MPL_coolwarm'), 7).N) # 15 bins means 14 edges
+        anom_norm = bp.mcolors.BoundaryNorm(anom_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('NCV_bright'), 12).N)
         
         # add mean geopotential height and wind data for the historical period to the top row
         mean_maps = axs[0][i].contourf(mean_data['lon'], mean_data['lat'], mean_data.values, levels = mean_levels, norm = mean_norm, cmap = bp.cmap.cmap('MPL_coolwarm'), extend = 'both', transform = bp.ccrs.PlateCarree())
@@ -199,7 +205,7 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
     mean_sm.set_array([])
     
     # colorbar function passed using the scalar mappable 
-    mean_cbar = fig.colorbar(mean_sm, ax = axs, orientation = 'vertical', extend = 'both', ticks = mean_levels, boundaries = mean_levels, aspect = 50, location = 'left', pad = 0.015)
+    mean_cbar = fig.colorbar(mean_sm, ax = axs, orientation = 'vertical', extend = 'both', ticks = mean_levels, boundaries = mean_levels, aspect = 30, location = 'left', pad = 0.015)
     mean_cbar.ax.tick_params(labelsize = 20)
     mean_cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
     
@@ -208,9 +214,13 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
     anom_sm.set_array([])
     
     # colorbar function passed using the scalar mappable 
-    anom_cbar = fig.colorbar(anom_sm, ax = axs, orientation = 'vertical', extend = 'both', ticks = anom_levels, boundaries = anom_levels, aspect = 50, location = 'right', pad = 0.015)
+    anom_cbar = fig.colorbar(anom_sm, ax = axs, orientation = 'vertical', extend = 'both', ticks = anom_levels, boundaries = [75, 95, 115, 135, 155, 175, 195], aspect = 30, location = 'right', pad = 0.015)
     anom_cbar.ax.tick_params(labelsize = 20)
     anom_cbar.ax.yaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+    
+    fig.text(-1.75, 2.2, 'Wet Case', transform = ax.transAxes, fontsize = 50, va = 'top', ha = 'left', bbox = dict(facecolor = 'white', pad  = 1, edgecolor = 'white'))
+    fig.text(-0.82, 2.2, 'Moderate Case', transform = ax.transAxes, fontsize = 50, va = 'top', ha = 'left', bbox = dict(facecolor = 'white', pad  = 1, edgecolor = 'white'))
+    fig.text(0.34, 2.2, 'Dry Case', transform = ax.transAxes, fontsize = 50, va = 'top', ha = 'left', bbox = dict(facecolor = 'white', pad  = 1, edgecolor = 'white'))
     
     if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
@@ -220,7 +230,7 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
       
     bp.plt.show()
 
-height_wind_fig(6, 8)
+height_wind_fig(6, 8, save_name = 'zg_500_take_six', save = True)
 
 
 #%%

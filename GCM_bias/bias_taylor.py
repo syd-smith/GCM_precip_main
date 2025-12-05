@@ -23,6 +23,18 @@ with open('gcm_dict_dec_3.txt', 'r') as f:
 # Convert from string representation to actual dictionary
 gcm_dict = ast.literal_eval(contents)
 
+pr_levels = bp.np.array([])
+temp_levels = bp.np.array([])
+for model in MACA_models:
+    pr_levels = bp.np.append(pr_levels, gcm_dict[model]['pr_ratio'])
+    temp_levels = bp.np.append(temp_levels, gcm_dict[model]['tasmax_change'])
+    
+pr_min = float(pr_levels.min())
+pr_max = float(pr_levels.max())
+temp_min = float(temp_levels.min())
+temp_max = float(temp_levels.max())
+
+#%%
 
 def scaled_data(variable):
     
@@ -68,6 +80,12 @@ def bias_taylor(variable_list):
     
     one, two = axs
     
+    pr_levels = bp.np.array([50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 225])
+    temp_levels = bp.np.array([3, 4, 5, 6, 7, 8, 9])
+    
+    pr_norm = bp.mcolors.BoundaryNorm(pr_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('BlRe'), 10).N) # 15 bins means 14 edges
+    ts_norm = bp.mcolors.BoundaryNorm(temp_levels, ncolors = bp.plt.get_cmap(bp.cmap.cmap('BlRe'), 6).N) # 15 bins means 14 edges
+    
     for index, diagram in enumerate([one, two]):
         diagram.set_theta_zero_location('W')
         diagram.set_theta_direction(-1)
@@ -79,7 +97,7 @@ def bias_taylor(variable_list):
         diagram.xaxis.grid(False)
 
         # Plot the reference (observation) point 
-        diagram.plot(bp.np.pi - bp.np.arccos(obs_bias), obs_stdev_ratio, 'ko', label = "Reference", markersize = 10)
+        diagram.plot(bp.np.pi - bp.np.arccos(obs_bias), obs_stdev_ratio, 'k*', label = "Reference", markersize = 15)
 
         min_value, max_value, data = scaled_data(variable_list[index])
         
@@ -102,7 +120,8 @@ def bias_taylor(variable_list):
         # Plot all models
         for model, value in zip(MACA_models, data):
             theta = bp.np.pi - bp.np.arccos(value)  # angle for bias
-            diagram.plot(theta, gcm_dict[model]['JJA_stdev_ratio'][variable_list[index]], 'o', label = model, markersize = 10)
+            pr = one.scatter(theta, gcm_dict[model]['JJA_stdev_ratio'][variable_list[index]], marker = 'o', norm = pr_norm, cmap = bp.cmap.cmap('BlRe'), c = gcm_dict[model]['pr_ratio'], s = 25)
+            ts = two.scatter(theta, gcm_dict[model]['JJA_stdev_ratio'][variable_list[index]], marker = 'o', norm = ts_norm, cmap = bp.cmap.cmap('BlRe'), c = gcm_dict[model]['tasmax_change'], s = 25)
 
         for lin, label in zip(bias_lines, bias_labels):
             angle = bp.np.pi - bp.np.arccos(lin)
@@ -114,12 +133,30 @@ def bias_taylor(variable_list):
         diagram.set_yticks([0.5, 1.0, 1.5, 2.0, 2.5])
         diagram.yaxis.grid(True, color = 'black', linewidth = 0.25, linestyle = '-.')
         diagram.set_yticklabels([0.5, 1.0, 1.5, 2.0, 2.5], fontsize  = 50)
+        
+    pr_cbar = bp.plt.colorbar(pr, 
+                               orientation = 'horizontal', 
+                               ticks = pr_levels, 
+                               shrink = 0.75, 
+                               pad = -0.08,
+                               extend = 'both',
+                               boundaries = pr_levels)
+    pr_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
+    
+    temp_cbar = bp.plt.colorbar(ts, 
+                               orientation = 'horizontal', 
+                               ticks = temp_levels, 
+                               shrink = 0.75, 
+                               pad = -0.08,
+                               extend = 'both',
+                               boundaries = temp_levels)
+    temp_cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.0f'))
 
     bp.plt.show()
     
     return fig, axs
 
-precip = bias_taylor(['pr', 'pr'])
+# precip = bias_taylor(['pr', 'pr'])
 temp = bias_taylor(['tasmax', 'tasmax'])
     
 #%%

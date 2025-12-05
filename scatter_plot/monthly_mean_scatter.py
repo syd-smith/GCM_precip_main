@@ -368,6 +368,10 @@ def scatter_plot(data_dict, save_name, PC = False, save = False):
         # title
         # fig.suptitle("Climate Change's Impact on Summer Precipitation", fontsize = 20, y = 1.08)
 
+    ax.text(9.2, 167.5, 'Wet Case', fontsize = 7, bbox = dict(edgecolor = 'white', facecolor = 'white'))
+    ax.text(9, 100.6, 'Moderate Case', fontsize = 7, bbox = dict(edgecolor = 'white', facecolor = 'white'))
+    ax.text(7.2, 54.75, 'Dry Case', fontsize = 7, bbox = dict(edgecolor = 'white', facecolor = 'white'))
+
     if save == True:
         save_path = bp.os.path.join(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/{save_name}.png')
         fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
@@ -376,7 +380,7 @@ def scatter_plot(data_dict, save_name, PC = False, save = False):
         
     return fig
 
-scatter_plot(base_dict, 'updated_GLSB_scatter', save = True)
+scatter_plot(base_dict, 'updated_GLSB_scatter')
 
 
 #%%
