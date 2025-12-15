@@ -24,12 +24,21 @@ import ast
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
-with open('gcm_dict_dec_1.txt', 'r') as f: # saved before MIROC6
+with open('gcm_dict_dec_15.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
 
 # Convert from string representation to actual dictionary
 gcm_dict = ast.literal_eval(contents)
 
+
+#%%
+yearly_results = []
+for model in MACA_models:
+    for variable in variables:
+        yearly_results.append(gcm_dict[model]['yearly_avg'][1980][variable])
+        #%%
+print(list(gcm_dict[model]['yearly_avg'].keys())[:])
+print(type(next(iter(gcm_dict[model]['yearly_avg'].keys()))))        
 #%%
 with open('gmet_dict_nov_26.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
@@ -37,7 +46,7 @@ with open('gmet_dict_nov_26.txt', 'r') as f: # saved before MIROC6
 # Convert from string representation to actual dictionary
 gmet_dict = ast.literal_eval(contents)
 
-
+#%%
 with open('gmet_JJA_dict.txt', 'r') as f: # saved before MIROC6
     contents = f.read()
 
@@ -93,25 +102,35 @@ updated_gcm_dict = {}
 
 for model in MACA_models:
     updated_gcm_dict[model] = {}
-    for calc in ('pr_ratio', 'tasmin_change', 'tasmax_change', 'yearly_avg', 'JJA_avg', 'yearly_bias', 'summer_bias', 'JJA_stdev_ratio', 'stdev_ratio'):
+    for calc in ('JJA_future_stdev', 'yearly_future_stdev', 'pr_ratio', 'tasmin_change', 'tasmax_change', 'yearly_avg', 'JJA_avg', 'yearly_bias', 'summer_bias', 'JJA_stdev_ratio', 'stdev_ratio'):
         if calc in ('pr_ratio', 'tasmin_change', 'tasmax_change'):
             updated_gcm_dict[model][calc] = gcm_dict[model][calc]
         elif calc == 'yearly_avg':
             updated_gcm_dict[model][calc] = {}
-            for year in range(1979, 2015):
+            for year in range(1979, 2100):
                 updated_gcm_dict[model][calc][year] = {}
                 for variable in variables:
-                    updated_gcm_dict[model][calc][year][variable] = gcm_dict[model][calc][year][variable]
+                    if year in range(1979, 2015):
+                        updated_gcm_dict[model][calc][year][variable] = gcm_dict[model][calc][year][variable]
+                    elif year in range(2015, 2100):
+                        updated_gcm_dict[model][calc][year][variable] = 'x'
         elif calc == 'JJA_stdev_ratio':
+            updated_gcm_dict[model][calc] = {}
+            for variable in variables:
+                updated_gcm_dict[model][calc][variable] = gcm_dict[model][calc][variable]
+        elif calc == 'JJA_future_stdev' or calc == 'yearly_future_stdev':
             updated_gcm_dict[model][calc] = {}
             for variable in variables:
                 updated_gcm_dict[model][calc][variable] = 'x'
         elif calc == 'JJA_avg':
             updated_gcm_dict[model][calc] = {}
-            for year in range(1979, 2015):
+            for year in range(1979, 2100):
                 updated_gcm_dict[model][calc][year] = {}
                 for variable in variables:
-                    updated_gcm_dict[model][calc][year][variable] = 'x'
+                    if year in range(1979, 2015):
+                        updated_gcm_dict[model][calc][year][variable] = gcm_dict[model][calc][year][variable]
+                    elif year in range(2015, 2100):
+                        updated_gcm_dict[model][calc][year][variable] = 'x'
         else: 
             updated_gcm_dict[model][calc] = {}
             for variable in variables:
@@ -122,8 +141,8 @@ for model in MACA_models:
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
 
-with open('gcm_dict_dec_3.txt', 'w') as f:
-    f.write(printer.pformat(gcm_dict))
+with open('gcm_dict_dec_15.txt', 'w') as f:
+    f.write(printer.pformat(updated_gcm_dict))
     
     
 #%%
@@ -179,7 +198,63 @@ def gcm_yearly_avg(save_variable, model, variable, save = False):
 
 for model in MACA_models:
     for variable in variables:
-        gcm_yearly_avg(gcm_dict, model, variable)
+        gcm_yearly_avg(updated_gcm_dict, model, variable)
+        
+#%%
+
+def gcm_future_yearly_avg(save_variable, model, variable, save = False):
+    
+    file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_ssp585_{variable}.mat'
+    
+    # min and max latitudes and longitudes
+    lat_min, lat_max = 36.03, 42.98
+    lon_min, lon_max = -115.1, -108.0
+    
+    # Load the .mat file
+    mat_contents = bp.scipy.io.loadmat(file_path)  
+
+    # Print the contents of the .mat file
+    # print("Contents of the .mat file:")
+
+    # for key, value in mat_contents.items():
+    #     if not key.startswith('__'):  # Skip metadata entries
+    #         print(f"{key}")
+
+    var = mat_contents['interpolated_data']  
+   
+    # convert precipitation from kg m-2 s-1 to mm
+    if variable == 'pr':
+       var *= 86400
+       
+    lat = bp.np.squeeze(mat_contents['lat'])
+    lon = bp.np.squeeze(mat_contents['lon'])
+   
+    lat_mask = (lat >= lat_min) & (lat <= lat_max)
+    lon_mask = (lon >= lon_min) & (lon <= lon_max)
+
+    trimmed_var = var[bp.np.ix_(lat_mask, lon_mask)]
+    trimmed_lat = lat[lat_mask]
+    trimmed_lon = lon[lon_mask]
+    
+    var_bar = bp.np.nanmean(trimmed_var, axis = (0, 1, 2))  # get single value average for each year
+   
+    # print(var.shape)
+    # print(len(lat))
+    # print(len(lon))
+
+    # so data are lat x lon x doy x year
+    
+    if save == True:
+        # save data to dictionary
+        for year, (position, value) in zip(range(2015, 2100), enumerate(var_bar)):
+            save_variable[model]['yearly_avg'][year][variable] = float(var_bar[position])
+            print(f'{value} saved to {variable} in {year} for {model}.')
+   
+    return var_bar
+
+for model in MACA_models:
+    for variable in variables:
+        gcm_future_yearly_avg(updated_gcm_dict, model, variable, save = True)
         
 
 #%%
@@ -270,7 +345,8 @@ for model in MACA_models:
 # for model in MACA_models:
 #     for variable in variables:
 #         bias(gcm_dict, model, variable)
-
+#%%
+new_dict = gcm_dict
 
 def stdev_ratio(save_variable, model, variable):
     
@@ -284,7 +360,7 @@ def stdev_ratio(save_variable, model, variable):
     # call gmet data from function and take the average
     retrived_gmet_data = []
     for year in range(1979, 2015):
-        gmet_dat_point = gmet_dict[year][variable]
+        gmet_dat_point = gmet_JJA_dict[year][variable]
         retrived_gmet_data.append(gmet_dat_point)
     gmet_stdev = float(bp.np.std(retrived_gmet_data))
     
@@ -298,8 +374,46 @@ def stdev_ratio(save_variable, model, variable):
 # test_stdev = stdev_ratio(MACA_models[0], variables[0])
 for model in MACA_models:
     for variable in variables:
-        stdev_ratio(gcm_dict, model, variable)
+        stdev_ratio(new_dict, model, variable)
+        
+#%%
+
+def JJA_future_stdev(save_variable, model, variable):
     
+    gcm_data  = []
+    for year in range(2015, 2100):
+        gcm_dat_point = updated_gcm_dict[model]['JJA_avg'][year][variable]
+        gcm_data.append(gcm_dat_point)
+    gcm_stdev = float(bp.np.std(gcm_data))
+
+    # save data to dictionary
+    save_variable[model]['JJA_future_stdev'][variable] = gcm_stdev
+    print(f'{gcm_stdev} saved to {variable} for {model}.')
+    
+    return gcm_stdev
+    
+for model in MACA_models:
+    for variable in variables:
+        JJA_future_stdev(updated_gcm_dict, model, variable)
+
+
+def yearly_future_stdev(save_variable, model, variable):
+    
+    gcm_data  = []
+    for year in range(2015, 2100):
+        gcm_dat_point = updated_gcm_dict[model]['yearly_avg'][year][variable]
+        gcm_data.append(gcm_dat_point)
+    gcm_stdev = float(bp.np.std(gcm_data))
+    
+    # save data to dictionary
+    save_variable[model]['yearly_future_stdev'][variable] = gcm_stdev
+    print(f'{gcm_stdev} saved to {variable} for {model}.')
+    
+    return gcm_stdev
+
+for model in MACA_models:
+    for variable in variables:
+        yearly_future_stdev(updated_gcm_dict, model, variable)
                 
 #%%
 def gcm_JJA_avg(save_variable, model, variable, save = False):
@@ -363,7 +477,7 @@ def gcm_JJA_avg(save_variable, model, variable, save = False):
 
     # find the average for the summer months
     means = []
-    for year, position in zip(range(1979, 2015), range(0, 36)):
+    for year, position in zip(range(1979, 2100), range(0, 36)):
         JJA_mean  = float(bp.np.mean([monthly_mean[5, position], monthly_mean[6, position], monthly_mean[7, position]]))
         means.append(JJA_mean)
         if save == True:
@@ -374,6 +488,83 @@ def gcm_JJA_avg(save_variable, model, variable, save = False):
 for model in MACA_models:
     for variable in variables:
         gcm_JJA_avg(updated_gcm_dict, model, variable, save = True)
+        
+#%%
+def gcm_future_JJA_avg(save_variable, model, variable, save = False):
+    
+    file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_ssp585_{variable}.mat'
+    
+    # min and max latitudes and longitudes used in the MACA process
+    lat_min, lat_max = 36.03, 42.98
+    lon_min, lon_max = -115.1, -108.0
+
+    # Load the .mat file
+    mat_contents = bp.scipy.io.loadmat(file_path)  
+
+    # Print the contents of the .mat file
+    # print("Contents of the .mat file:")
+
+    # for key, value in mat_contents.items():
+    #     if not key.startswith('__'):  # Skip metadata entries
+    #         print(f"{key}")
+
+    var = mat_contents['interpolated_data']  
+
+    # convert precipitation from kg m-2 s-1 to mm
+    if variable == 'pr':
+       var *= 86400
+       
+    lat = bp.np.squeeze(mat_contents['lat'])
+    lon = bp.np.squeeze(mat_contents['lon'])
+
+    lat_mask = (lat >= lat_min) & (lat <= lat_max)
+    lon_mask = (lon >= lon_min) & (lon <= lon_max)
+
+    # output of (6, 8, 366, 36) -> (lat, lon, days in year, year)
+    trimmed_var = var[bp.np.ix_(lat_mask, lon_mask)]
+
+    # number of days in each month based on the number of days in the year for that model
+    ndays = trimmed_var.shape[2]
+    if ndays == 366:
+        days_in_month = bp.np.array([31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+    elif ndays == 365:
+        days_in_month = bp.np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+    elif ndays == 360:
+        days_in_month = bp.np.array([30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30])
+    else:
+        print(model)
+        raise ValueError(f"Number of days in the year not found: ndays = {ndays}")
+
+    # repeat the month number for the number of days in that month
+    month_index = bp.np.repeat(bp.np.arange(1, 13), days_in_month)
+
+    # define the shape of monthly_mean to be (12, 36) -> (month, year)
+    nmonths = 12
+    nyears = trimmed_var.shape[3]
+    monthly_mean = bp.np.empty((nmonths, nyears))
+
+    # loop over months and give an average for each month across all of the lat, lon, and years
+    for m in range(1, nmonths + 1):
+        mask = (month_index == m)          # True for days in month m
+        data_m = trimmed_var[:, :, mask, :]
+        monthly_mean[m-1, :] = bp.np.nanmean(data_m, axis = (0, 1, 2))
+
+    # find the average for the summer months
+    means = []
+    for year, position in zip(range(2015, 2100), range(0, 85)):
+        JJA_mean  = float(bp.np.mean([monthly_mean[5, position], monthly_mean[6, position], monthly_mean[7, position]]))
+        means.append(JJA_mean)
+        if save == True:
+            save_variable[model]['JJA_avg'][year][variable] = JJA_mean
+            print(f'{JJA_mean} saved to {variable} in {year} for {model}.')
+        else:
+            print('Not saving data.')
+
+    return means
+
+for model in MACA_models:
+    for variable in variables:
+        gcm_future_JJA_avg(updated_gcm_dict, model, variable, save = True)
 
 
 #%%    

@@ -17,7 +17,7 @@ MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNR
 
 # Open and read the file
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias')
-with open('gcm_dict_dec_3.txt', 'r') as f:
+with open('gcm_dict_dec_15.txt', 'r') as f:
     contents = f.read()
 
 # Convert from string representation to actual dictionary
@@ -36,14 +36,20 @@ for model in MACA_models:
     per_model.append(gcm_dict[model]['tasmin_change'])
     per_model.append(gcm_dict[model]['summer_bias']['pr'])
     per_model.append(gcm_dict[model]['JJA_stdev_ratio']['pr'])
+    per_model.append(gcm_dict[model]['JJA_future_stdev']['pr'])
     per_model.append(gcm_dict[model]['summer_bias']['tasmax'])
     per_model.append(gcm_dict[model]['JJA_stdev_ratio']['tasmax'])
+    per_model.append(gcm_dict[model]['JJA_future_stdev']['tasmax'])
     per_model.append(gcm_dict[model]['summer_bias']['tasmin'])
     per_model.append(gcm_dict[model]['JJA_stdev_ratio']['tasmin'])
+    per_model.append(gcm_dict[model]['JJA_future_stdev']['tasmin'])
     df_list.append(per_model)
     
 # note: all calculations are for JJA
-df = bp.pd.DataFrame(df_list, columns = ['Precip Ratio', 'Delta Tasmax', 'Delta Tasmin', 'Precip Bias', 'Precip StDev Ratio', 'Tasmax Bias', 'Tasmax StDev Ratio', 'Tasmin Bias', 'Tasmin StDev Ratio'])
+df = bp.pd.DataFrame(df_list, columns = ['Precip Ratio', 'Delta Tasmax', 'Delta Tasmin', 'Precip Bias', 
+                                         'Historical Precip StDev Ratio', 'Future Precip StDev', 'Tasmax Bias', 
+                                         'Historical Tasmax StDev Ratio', 'Future Tasmax StDev', 'Tasmin Bias', 
+                                         'Historical Tasmin StDev Ratio', 'Future Tasmin StDev'])
 
 def corr_pvalues(df):
     cols = df.columns
@@ -56,16 +62,17 @@ def corr_pvalues(df):
 
     return bp.pd.DataFrame(pvals, index=cols, columns=cols)
 
-pvalues = corr_pvalues(df)
-
-# significance level
-alpha = 0.05
-# label for box is a star if less than alpha (statistically significant)
-annot = bp.np.where(pvalues.values < alpha, '*', '').astype(object)
 
 # create correlation matrix with pearson r values (plus mask to hide half the square)
 corr_matrix =  df.corr(method  = 'pearson').round(2)
 mask = bp.np.triu(bp.np.ones_like(corr_matrix, dtype = bool))
+
+# significance level
+alpha = 0.05
+pvalues = corr_pvalues(df)
+
+# label for box is a star if less than alpha (statistically significant)
+annot = bp.np.where(pvalues.values < alpha, '*', '').astype(object)
 
 # add specifications for the colorbar
 levels = bp.np.array([-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5,  0.75, 1])
@@ -77,11 +84,14 @@ matrix = bp.sb.heatmap(corr_matrix,
                        cmap = 'RdBu', 
                        vmin = -1, 
                        vmax = 1, 
-                       annot = True, 
-                       fmt = '0.2f', 
+                       annot = annot, 
+                       fmt = '', 
                        square = True, 
                        mask = mask, 
-                       cbar = False)
+                       cbar = False, 
+                       annot_kws = dict(color = 'black',
+                                        fontsize = 35,
+                                        va = 'center'))
 
 # pull mappable from matrix to pass in colorbar
 mappable = matrix.collections[0]
@@ -95,6 +105,10 @@ cbar = bp.plt.colorbar(mappable,
                            boundaries = levels)
 # round labels to two decimal places
 cbar.ax.xaxis.set_major_formatter(bp.ticker.FormatStrFormatter('%.2f'))
+
+# force clear diagonal on the same array you pass to heatmap
+for i in range(annot.shape[0]):
+    annot[i, i] = ''
 
 bp.plt.show()
 
