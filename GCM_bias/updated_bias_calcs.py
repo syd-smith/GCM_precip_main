@@ -105,32 +105,12 @@ for model in MACA_models:
     for calc in ('JJA_future_stdev', 'yearly_future_stdev', 'pr_ratio', 'tasmin_change', 'tasmax_change', 'yearly_avg', 'JJA_avg', 'yearly_bias', 'summer_bias', 'JJA_stdev_ratio', 'stdev_ratio'):
         if calc in ('pr_ratio', 'tasmin_change', 'tasmax_change'):
             updated_gcm_dict[model][calc] = gcm_dict[model][calc]
-        elif calc == 'yearly_avg':
+        elif calc == 'yearly_avg' or calc == 'JJA_avg':
             updated_gcm_dict[model][calc] = {}
             for year in range(1979, 2100):
                 updated_gcm_dict[model][calc][year] = {}
                 for variable in variables:
-                    if year in range(1979, 2015):
-                        updated_gcm_dict[model][calc][year][variable] = gcm_dict[model][calc][year][variable]
-                    elif year in range(2015, 2100):
-                        updated_gcm_dict[model][calc][year][variable] = 'x'
-        elif calc == 'JJA_stdev_ratio':
-            updated_gcm_dict[model][calc] = {}
-            for variable in variables:
-                updated_gcm_dict[model][calc][variable] = gcm_dict[model][calc][variable]
-        elif calc == 'JJA_future_stdev' or calc == 'yearly_future_stdev':
-            updated_gcm_dict[model][calc] = {}
-            for variable in variables:
-                updated_gcm_dict[model][calc][variable] = 'x'
-        elif calc == 'JJA_avg':
-            updated_gcm_dict[model][calc] = {}
-            for year in range(1979, 2100):
-                updated_gcm_dict[model][calc][year] = {}
-                for variable in variables:
-                    if year in range(1979, 2015):
-                        updated_gcm_dict[model][calc][year][variable] = gcm_dict[model][calc][year][variable]
-                    elif year in range(2015, 2100):
-                        updated_gcm_dict[model][calc][year][variable] = 'x'
+                    updated_gcm_dict[model][calc][year][variable] = gcm_dict[model][calc][year][variable]
         else: 
             updated_gcm_dict[model][calc] = {}
             for variable in variables:
@@ -141,8 +121,8 @@ for model in MACA_models:
 printer = bp.pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/')
 
-with open('gcm_dict_dec_15.txt', 'w') as f:
-    f.write(printer.pformat(updated_gcm_dict))
+with open('gcm_dict_dec_19.txt', 'w') as f:
+    f.write(printer.pformat(gcm_dict))
     
     
 #%%
@@ -381,8 +361,8 @@ for model in MACA_models:
 def JJA_future_stdev(save_variable, model, variable):
     
     gcm_data  = []
-    for year in range(2015, 2100):
-        gcm_dat_point = updated_gcm_dict[model]['JJA_avg'][year][variable]
+    for year in range(2070, 2100):
+        gcm_dat_point = gcm_dict[model]['JJA_avg'][year][variable]
         gcm_data.append(gcm_dat_point)
     gcm_stdev = float(bp.np.std(gcm_data))
 
@@ -394,14 +374,14 @@ def JJA_future_stdev(save_variable, model, variable):
     
 for model in MACA_models:
     for variable in variables:
-        JJA_future_stdev(updated_gcm_dict, model, variable)
+        JJA_future_stdev(gcm_dict, model, variable)
 
 
 def yearly_future_stdev(save_variable, model, variable):
     
     gcm_data  = []
-    for year in range(2015, 2100):
-        gcm_dat_point = updated_gcm_dict[model]['yearly_avg'][year][variable]
+    for year in range(2070, 2100):
+        gcm_dat_point = gcm_dict[model]['yearly_avg'][year][variable]
         gcm_data.append(gcm_dat_point)
     gcm_stdev = float(bp.np.std(gcm_data))
     
@@ -413,7 +393,7 @@ def yearly_future_stdev(save_variable, model, variable):
 
 for model in MACA_models:
     for variable in variables:
-        yearly_future_stdev(updated_gcm_dict, model, variable)
+        yearly_future_stdev(gcm_dict, model, variable)
                 
 #%%
 def gcm_JJA_avg(save_variable, model, variable, save = False):
