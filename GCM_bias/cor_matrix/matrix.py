@@ -24,6 +24,16 @@ with open('gcm_dict_dec_15.txt', 'r') as f:
 gcm_dict = ast.literal_eval(contents)
 
 #%%
+# Court's extreme value data from pickle file
+# Open and read the file
+bp.os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/cor_matrix')
+with open('pickle_dict_jan_6.txt', 'r') as f:
+    contents = f.read()
+
+# Convert from string representation to actual dictionary
+pickle_dict = ast.literal_eval(contents)
+
+#%%
 
 df_list = []
 
@@ -43,13 +53,17 @@ for model in MACA_models:
     per_model.append(gcm_dict[model]['summer_bias']['tasmin'])
     per_model.append(gcm_dict[model]['JJA_stdev_ratio']['tasmin'])
     per_model.append(gcm_dict[model]['JJA_future_stdev']['tasmin'])
+    per_model.append(pickle_dict[model]['Ratio']['10 year'])
+    per_model.append(pickle_dict[model]['Ratio']['50 year'])
+    per_model.append(pickle_dict[model]['Ratio']['100 year'])
     df_list.append(per_model)
     
 # note: all calculations are for JJA
 df = bp.pd.DataFrame(df_list, columns = ['Precip Ratio', 'Delta Tasmax', 'Delta Tasmin', 'Precip Bias', 
                                          'Historical Precip StDev Ratio', 'Future Precip StDev', 'Tasmax Bias', 
                                          'Historical Tasmax StDev Ratio', 'Future Tasmax StDev', 'Tasmin Bias', 
-                                         'Historical Tasmin StDev Ratio', 'Future Tasmin StDev'])
+                                         'Historical Tasmin StDev Ratio', 'Future Tasmin StDev', '10 Year Extreme Value', 
+                                         '50 Year Extreme Value', '100 Year Extreme Value'])
 
 def corr_pvalues(df):
     cols = df.columns
@@ -81,7 +95,7 @@ norm = bp.mcolors.BoundaryNorm(levels, ncolors = bp.plt.get_cmap('RdBu', 8).N) #
 # set figure size and call heatmmap
 bp.plt.figure(figsize = (10, 10))
 matrix = bp.sb.heatmap(corr_matrix, 
-                       cmap = 'RdBu', 
+                       cmap = 'RdBu_r', 
                        vmin = -1, 
                        vmax = 1, 
                        annot = annot, 

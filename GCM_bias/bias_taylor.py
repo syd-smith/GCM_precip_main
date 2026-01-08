@@ -199,4 +199,4 @@ def bias_taylor(variable_list):
     return fig, axs, raw_data
 
 # precip = bias_taylor(['pr', 'pr'])
-temp = bias_taylor(['tasmax', 'tasmax'])
+temp = bias_taylor(['tasmin', 'tasmin'])
