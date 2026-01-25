@@ -11,29 +11,46 @@ import pprint
 import os
 import scipy.io
 import numpy as np
+import glob
 
-MACA_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-CC',
- 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0',
- 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+# path to access netcdf files containing the data
+strong_group_path = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'
+find_files = sorted(glob.glob(strong_group_path + '*ssp370*.nc'))
+prefix = strong_group_path
+
+# makes list of all model names by editing file paths
+models = []
+for file in find_files:
+    no_prefix = file.replace(prefix, '')
+    model = no_prefix.split('_ssp')[0]
+    if model not in models:
+        models.append(model)
+
+
+#%%
+ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
+                 'CanESM5', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL',
+                  'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6',
+                   'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
+ssp370_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-AerChem',
+                 'EC-Earth3-Veg-LR', 'GFDL-ESM4', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L',
+                  'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
+ssp245_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5', 'EC-Earth3-CC',
+                 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'INM-CM4-8', 'INM-CM5-0',
+                  'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
 
 # variables used in MACA downscaling process 
 variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 
-seasons = {'DJF':(11, 0, 1), 'MAM':(2, 3, 4), 'JJA':(5, 6, 7), 'SON':(8, 9, 10), 'yearly':tuple(range(0, 12))}
+seasons = {'DJF':[11, 0, 1], 'MAM':[2, 3, 4], 'JJA':[5, 6, 7], 'SON':[8, 9, 10], 'yearly':list(range(0, 12))}
 
-# # Open and read the file
-# os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/ssp370')
-# with open('ssp370_dict_jan_24.txt', 'r') as f:
-#     contents = f.read()
-
-# # Convert from string representation to actual dictionary
-# gcm_dict = ast.literal_eval(contents)
-
-#%%
 # create the framework for a gcm dictionary
 gcm_dict = {}
 
-for model in MACA_models:
+for model in ssp245_models:
     gcm_dict[model] = {}
     for season in ['DJF', 'MAM', 'JJA', 'SON', 'yearly']:
         gcm_dict[model][season] = {}
@@ -52,17 +69,29 @@ for model in MACA_models:
                     gcm_dict[model][season][calc][variable] = 'x'
                 
 pprint.pprint(gcm_dict)
+
+
+#%%
+# Open and read the file
+os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/ssp370')
+with open('ssp370_dict_jan_24.txt', 'r') as f:
+    contents = f.read()
+
+# Convert from string representation to actual dictionary
+gcm_dict = ast.literal_eval(contents)
+
+
 #%%  
 def temporal_avg(save_variable, model, variable, season_name, season, hist_vs_fut, save = False):
 
     if hist_vs_fut ==  'historical':
         file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat'
         time_period  = range(1979, 2015)
-        num_o_years = range(0, 36)
+
     elif hist_vs_fut == 'future':
         file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_ssp245_{variable}.mat'
         time_period = range(2015, 2100)
-        num_o_years  =  range(0, 86)
+
     else:
         print('Time period not found.')
         
@@ -123,7 +152,7 @@ def temporal_avg(save_variable, model, variable, season_name, season, hist_vs_fu
 
     # find the average for the summer months
     means = []
-    for year, position in zip(time_period, num_o_years):  
+    for position, year in enumerate(time_period):  
         temporal_mean  = float(np.mean([monthly_mean[x, position] for x in season]))
         means.append(temporal_mean)
         if save == True:
@@ -132,19 +161,17 @@ def temporal_avg(save_variable, model, variable, season_name, season, hist_vs_fu
             
     return means
 
-temporal_avg(gcm_dict, MACA_models[0], variables[0], 'DJF', seasons['DJF'], 'historical')
-
-# for model in MACA_models:
-#     for variable in variables:
-#         for season_name, season in seasons.items():
-#             historical_avg(gcm_dict, model, variable, season_name, season,save = True)
+for model in ssp245_models:
+    for variable in variables:
+        for season_name, season in seasons.items():
+            temporal_avg(gcm_dict, model, variable, season_name, season, 'future', save = True)
             
 #%%
 # save dictionary containing data to a specified file (after running it through the functions below)
 printer = pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
-os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/ssp370')
+os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/ssp245')
 
-with open('ssp370_dict_jan_24.txt', 'w') as f:
+with open('ssp245_dict_jan_24.txt', 'w') as f:
     f.write(printer.pformat(gcm_dict))
         
         
