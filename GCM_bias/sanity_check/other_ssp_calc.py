@@ -106,14 +106,14 @@ for season in seasons:
     gmet_dict[season] = {}
     for year in range(1979, 2015):
         gmet_dict[season][year] = {}
-        for variable in variables:
+        for variable in ['pr', 'tasmin', 'tasmax']:
             gmet_dict[season][year][variable] = 'x'
             
 
 #%%
 # Open and read the file
-os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/ssp370')
-with open('ssp370_dict_jan_24.txt', 'r') as f:
+os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check')
+with open('gcm_hist_jan_27.txt', 'r') as f:
     contents = f.read()
 
 # Convert from string representation to actual dictionary
@@ -161,7 +161,8 @@ def obs_avg(save_variable, variable, season_name, season, save = False):
          obs_variable = open_variable
      
     ds_month = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin([12,1,2]))
-    ds_year = ds_month.resample(day='YS').mean(skipna=True)
+    # ds_year = ds_month.resample(day='YS').mean(skipna=True)
+    ds_year = ds_month.groupby('day.year').mean(skipna = True, dim = ('day', 'lat', 'lon'))
 
     if  save == True:
         # save data to dictionary
@@ -171,9 +172,11 @@ def obs_avg(save_variable, variable, season_name, season, save = False):
 
     return ds_year.values
 
-for season_name, season in seasons.items():
-    for variable in variables:
+
+for season_name, season in obs_seasons.items():
+    for variable in ['pr', 'tasmin', 'tasmax']:
         obs_avg(gmet_dict, variable, season_name, season)
+        print(f'{season_name}, {variable} done!')
 
 
 #%%  
@@ -294,7 +297,7 @@ for model in models:
             bias(gcm_dict, model, variable, season)
 
 
-#%%
+
 def stdev_ratio(save_variable, model, variable, season, save = True):
     
     # call GCM data from saved dictionary and take the average
@@ -320,7 +323,7 @@ def stdev_ratio(save_variable, model, variable, season, save = True):
     return stdev_ratio
 
 # test_stdev = stdev_ratio(MACA_models[0], variables[0])
-for model in ssp245_models:
+for model in models:
     for season in seasons.keys():
         for variable in variables:
             stdev_ratio(gcm_dict, model, variable, season)            
@@ -332,8 +335,8 @@ for model in ssp245_models:
 printer = pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
 os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check')
 
-with open('gcm_hist_jan_27.txt', 'w') as f:
-    f.write(printer.pformat(gcm_hist_dict))
+with open('obs_jan_28.txt', 'w') as f:
+    f.write(printer.pformat(gmet_dict))
         
         
         
