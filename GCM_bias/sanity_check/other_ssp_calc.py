@@ -14,21 +14,11 @@ import numpy as np
 import glob
 import xarray as xr
 
-#%%
-# path to access netcdf files containing the data
-strong_group_path = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'
-find_files = sorted(glob.glob(strong_group_path + '*.nc'))
-prefix = strong_group_path
+import sys
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
+from file_traversing import write2file, read_file
 
-# makes list of all model names by editing file paths
-models = []
-for file in find_files:
-    no_prefix = file.replace(prefix, '')
-    model = no_prefix.split('_ssp')[0]
-    if model not in models:
-        models.append(model)
 
-#%%
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',
           'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4',
           'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 
@@ -56,130 +46,7 @@ obs_seasons = {'DJF':[12, 1,2], 'MAM':[3, 4, 5], 'JJA':[6, 7, 8], 'SON':[9, 10, 
 
 
 #%%
-# create the framework for a gcm dictionary
-gcm_hist_dict = {}
-
-for model in models:
-    gcm_hist_dict[model] = {}
-    for season in ['DJF', 'MAM', 'JJA', 'SON', 'yearly']:
-        gcm_hist_dict[model][season] = {}
-        for calc in ['bias', 'stdev_ratio']:
-            gcm_hist_dict[model][season][calc]  = 'x'
-        for year in range(1979, 2015):
-            gcm_hist_dict[model][season][year] = {}
-            for variable in variables:
-                gcm_hist_dict[model][season][year][variable] = 'x'
-                
-# gcm_calc_dict = {}             
-
-# for model in models:
-#     gcm_calc_dict[model] = {}
-#     for ssp in ['ssp245', 'ssp370', 'ssp585']:
-#         gcm_calc_dict[model][ssp] = {}
-#         for season in ['DJF', 'MAM', 'JJA', 'SON', 'yearly']:
-#             gcm_calc_dict[model][ssp][season] = {}
-#             for calc in ('pr_ratio', 'tasmin_change', 'tasmax_change', 'bias', 'stdev_ratio'):
-#                 if calc in ('pr_ratio', 'tasmin_change', 'tasmax_change'):
-#                     gcm_dict[model][season][calc] = 'x'
-#                 elif calc == 'avg':
-#                     gcm_dict[model][season][calc] = {}
-#                     for year in range(1979, 2100):
-#                         gcm_dict[model][season][calc][year] = {}
-#                         for variable in variables:
-#                             gcm_dict[model][season][calc][year][variable] = 'x'
-#                 else: 
-#                     gcm_dict[model][season][calc] = {}
-#                     for variable in variables:
-#                         gcm_dict[model][season][calc][variable] = 'x'
-            
-        
-        
-        
-pprint.pprint(gcm_hist_dict)
-
-
-#%%
-# create framework for gridmet dictionary
-gmet_dict = {}
-
-for season in seasons:
-    gmet_dict[season] = {}
-    for year in range(1979, 2015):
-        gmet_dict[season][year] = {}
-        for variable in ['pr', 'tasmin', 'tasmax']:
-            gmet_dict[season][year][variable] = 'x'
-            
-
-#%%
-# Open and read the file
-os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check')
-with open('gcm_hist_jan_27.txt', 'r') as f:
-    contents = f.read()
-
-# Convert from string representation to actual dictionary
-gcm_dict = ast.literal_eval(contents)
-
-
-#%%
-def obs_avg(save_variable, variable, season_name, season, save = False):
-    
-    # convert varibale name for observational data file names
-    if variable == 'tasmin':
-         open_variable = 'tmmn'
-         
-    elif variable == 'tasmax':
-         open_variable = 'tmmx'
-         
-    elif variable == 'huss':
-         open_variable = 'sph'
-         
-    elif variable == 'rsds':
-         open_variable = 'srad'
-         
-    else:
-         open_variable = variable
-
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc'
-    ds_open = xr.open_dataset(fpath)
-
-    # convert variable name again for variables saved in the dataset
-    if open_variable == 'pr':
-         obs_variable ='precipitation_amount'
-         
-    elif open_variable == 'rmax' or variable == 'rmin':
-         obs_variable = 'relative_humidity'
-         
-    elif open_variable == 'sph':
-         obs_variable = 'specific_humidity'
-         
-    elif open_variable == 'srad':
-         obs_variable = 'surface_downwelling_shortwave_flux_in_air'
-         
-    elif open_variable == 'tmmn' or open_variable == 'tmmx':
-         obs_variable = 'air_temperature'
-    else: 
-         obs_variable = open_variable
-     
-    ds_month = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin([12,1,2]))
-    # ds_year = ds_month.resample(day='YS').mean(skipna=True)
-    ds_year = ds_month.groupby('day.year').mean(skipna = True, dim = ('day', 'lat', 'lon'))
-
-    if  save == True:
-        # save data to dictionary
-        for year, (position, value) in zip(range(1979, 2015), enumerate(ds_year.values)):
-            save_variable[season_name][year][variable] = float(ds_year.values[position])
-            print(f'{value} saved to {variable} in {year}.')
-
-    return ds_year.values
-
-
-for season_name, season in obs_seasons.items():
-    for variable in ['pr', 'tasmin', 'tasmax']:
-        obs_avg(gmet_dict, variable, season_name, season)
-        print(f'{season_name}, {variable} done!')
-
-
-#%%  
+gcm_dict =  read_file('gcm_hist_jan_27.txt')
 def model_avg(save_variable, model, variable, season_name, season, save = False, future = False):
 
     if future == True:
@@ -259,24 +126,92 @@ def model_avg(save_variable, model, variable, season_name, season, save = False,
 for model in models:
     for variable in variables:
         for season_name, season in seasons.items():
-            model_avg(gcm_hist_dict, model, variable, season_name, season, save = True)
-            
-            
+            model_avg(gcm_dict, model, variable, season_name, season, save = True)
+    
+# save point
+write2file(gcm_dict, 'gcm_hist_jan_27.txt')
+             
+
 #%%
-def bias(save_variable, model, variable, season, save = True):
+def obs_avg(save_variable, variable, season_name, season, save = True):
+    
+    # convert varibale name for observational data file names
+    if variable == 'tasmin':
+         open_variable = 'tmmn'
+         
+    elif variable == 'tasmax':
+         open_variable = 'tmmx'
+         
+    elif variable == 'huss':
+         open_variable = 'sph'
+         
+    elif variable == 'rsds':
+         open_variable = 'srad'
+         
+    else:
+         open_variable = variable
+
+    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc'
+    ds_open = xr.open_dataset(fpath)
+
+    # convert variable name again for variables saved in the dataset
+    if open_variable == 'pr':
+         obs_variable ='precipitation_amount'
+         
+    elif open_variable == 'rmax' or variable == 'rmin':
+         obs_variable = 'relative_humidity'
+         
+    elif open_variable == 'sph':
+         obs_variable = 'specific_humidity'
+         
+    elif open_variable == 'srad':
+         obs_variable = 'surface_downwelling_shortwave_flux_in_air'
+         
+    elif open_variable == 'tmmn' or open_variable == 'tmmx':
+         obs_variable = 'air_temperature'
+    else: 
+         obs_variable = open_variable
+     
+    ds_month = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin([12,1,2]))
+    # ds_year = ds_month.resample(day='YS').mean(skipna=True)
+    ds_year = ds_month.groupby('day.year').mean(skipna = True, dim = ('day', 'lat', 'lon'))
+
+    if  save == True:
+        # save data to dictionary
+        for year, (position, value) in zip(range(1979, 2015), enumerate(ds_year.values)):
+            save_variable[season_name][year][variable] = float(ds_year.values[position])
+            print(f'{value} saved to {variable} in {year}.')
+
+    return ds_year.values
+
+remaining_variables = ['huss', 'rsds', 'uas', 'vas']
+gmet_dict = read_file('obs_jan_28.txt')
+
+for variable in remaining_variables:
+    for season_name, season in obs_seasons.items():
+        obs_avg(gmet_dict, variable, season_name, season, save = True)
+        print(f'{season_name}, {variable} done!')
+        
+# save point        
+write2file(gmet_dict, 'obs_jan_29.txt')
+
+
+gcm_dict = read_file('gcm_jan_29.txt')
+def bias(save_variable, model, variable, season, save_to = 'bias', save = True):
     
     # call GCM data from saved dictionary and take the average
     retrived_gcm_data =  []
     for year in range(1979, 2015):
         gcm_dat_point = gcm_dict[model][season][year][variable]
-        retrived_gcm_data.append(gcm_dat_point)
+        retrived_gcm_data.append(int(gcm_dat_point))    
     gcm_avg = float(np.mean(retrived_gcm_data))
 
     # call gmet data from function and take the average
     retrived_gmet_data = []
     for year in range(1979, 2015):
         gmet_dat_point = gmet_dict[season][year][variable]
-        retrived_gmet_data.append(gmet_dat_point)
+        retrived_gmet_data.append(int(gmet_dat_point))
+    # print(set(type(x) for x in retrived_gmet_data))
     gmet_avg = float(np.mean(retrived_gmet_data))
     
     # calculate bias
@@ -287,15 +222,17 @@ def bias(save_variable, model, variable, season, save = True):
     
     if save == True:
         # save data to dictionary
-        save_variable[model][season]['bias'][variable] = bias
+        save_variable[model][season][save_to][variable] = bias
     
     return bias
     
 for model in models:
     for season in seasons.keys():
-        for variable in variables:
+        for variable in remaining_variables:
             bias(gcm_dict, model, variable, season)
-
+            
+# save point            
+write2file(gcm_dict, 'gcm_jan_29.txt')
 
 
 def stdev_ratio(save_variable, model, variable, season, save = True):
@@ -304,14 +241,14 @@ def stdev_ratio(save_variable, model, variable, season, save = True):
     retrived_gcm_data =  []
     for year in range(1979, 2015):
         gcm_dat_point = gcm_dict[model][season][year][variable]
-        retrived_gcm_data.append(gcm_dat_point)
+        retrived_gcm_data.append(int(gcm_dat_point))
     gcm_stdev = float(np.std(retrived_gcm_data))
 
     # call gmet data from function and take the average
     retrived_gmet_data = []
     for year in range(1979, 2015):
         gmet_dat_point = gmet_dict[season][year][variable]
-        retrived_gmet_data.append(gmet_dat_point)
+        retrived_gmet_data.append(int(gmet_dat_point))
     gmet_stdev = float(np.std(retrived_gmet_data))
     
     stdev_ratio = gcm_stdev / gmet_stdev
@@ -325,19 +262,68 @@ def stdev_ratio(save_variable, model, variable, season, save = True):
 # test_stdev = stdev_ratio(MACA_models[0], variables[0])
 for model in models:
     for season in seasons.keys():
-        for variable in variables:
-            stdev_ratio(gcm_dict, model, variable, season)            
-
+        for variable in remaining_variables:
+            stdev_ratio(gcm_dict, model, variable, season)  
+            
+# save point            
+write2file(gcm_dict, 'gcm_jan_29.txt')
 
 
 #%%
-# save dictionary containing data to a specified file (after running it through the functions below)
-printer = pprint.PrettyPrinter(indent = 3, width = 100, sort_dicts = True)
-os.chdir('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check')
+projections_dict = read_file('projections_jan_29.txt')
+def fut_projection(model, emission_scenario, variable, save_variable, season_name, season, save = True):
+    
+    """
+    Returns the change in a variable from the historical to future period to a nested 
+    dictionary under the model name and emission scenario. 
+    The average for the variable calculated is across all grid points in the given period.
+    Save_variable should be the framework dictionary imported from dictionary_structure.py.
+    """
 
-with open('obs_jan_28.txt', 'w') as f:
-    f.write(printer.pformat(gmet_dict))
+    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_{emission_scenario}_{variable}.nc'
+    open_ds = xr.open_dataset(fpath)
+    
+    # find the mean for the historical period
+    hist_ds = open_ds[variable].sel(time = open_ds[variable].time.dt.month.isin(season))
+    hist_means = []
+    for year in range(1979, 2015):
+        data_hist = hist_ds.sel(time = hist_ds.time.dt.year == year)
+        hist_mean = data_hist.mean(skipna= True).item()
+        hist_means.append(hist_mean)
         
+    hist_val = float(np.mean(hist_means))
+    
+    # finds the mean for the future period
+    fut_ds = open_ds[variable].sel(time = open_ds[variable].time.dt.month.isin(season))
+    fut_means = []
+    for year in range(2070, 2099):
+        data_fut = fut_ds.sel(time = fut_ds.time.dt.year == year)
+        fut_mean = data_fut.mean(skipna= True).item()
+        fut_means.append(fut_mean)
+    
+    fut_val = float(np.mean(fut_means))    
         
+    if variable == 'pr':
+        projection = (fut_val/ hist_val) *100
+        calculation = 'precip_ratio'
+    else:
+        # calulate change in temperature
+        projection = fut_val - hist_val
+        calculation = f'delta_{variable}'
+    
+    if save == True:
+        save_variable[emission_scenario][model][season_name][calculation] = projection
+        print(f'{projection} saved to {model}/{variable}/{season_name}!')
         
+    return save_variable 
+
+for model in ssp245_models:
+    for variable in variables:
+        for season_name, season in seasons.items():
+            fut_projection(model, 'ssp245', variable, projections_dict, season_name, season)
         
+write2file(projections_dict, 'projections_jan_29.txt')
+
+
+
+

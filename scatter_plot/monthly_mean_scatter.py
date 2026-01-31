@@ -132,7 +132,7 @@ for _, row in df.iterrows():
     
 #%%
 # CALCULATE PERCENT CHANGE IN PRECIPITATION AND CHANGE IN TEMPERATURE
-def precip_ratio(save_variable, start_month = 6, stop_month = 8):
+def precip_ratio(model, emission_scenario, save_variable, start_month = 6, stop_month = 8):
     
     """
     Returns the percent change in precitation to a nested dictionary under the model 
@@ -141,40 +141,32 @@ def precip_ratio(save_variable, start_month = 6, stop_month = 8):
     from reference_data.py.
     """
     
-    # loop through all listed models and emission scenarios to open all available data
-    for model in models:
-        for emission_scenario in emission_scenarios:
-            fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/'
-            hist_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_1979-2014_pr_masked.nc'
-            fut_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_2070-2099_pr_masked.nc'
+    fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/masked_MACA/'
+    hist_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_1979-2014_pr_masked.nc'
+    fut_path = f'{fpath}MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_2070-2099_pr_masked.nc'
+    
+    # calculate precipitation ratio for data
+    ds_hist = bp.xr.open_dataset(hist_path)
+    ds_fut = bp.xr.open_dataset(fut_path)
+    
+    years_means_hist = []
+    for year in range(1979, 2015):
+        year_dat_hist = ds_hist['pr'].sel(time = ds_hist.time.dt.year == year)
+        mean_hist = year_dat_hist.mean(skipna = True).item() # <- make sure to skip all NAN values outside the boundary
+        years_means_hist.append(mean_hist)
+    grand_mean_hist = float(bp.np.mean(years_means_hist))
+    
+    years_means_fut = []
+    for year in range(2070, 2100):
+        year_dat_fut = ds_fut['pr'].sel(time = ds_fut.time.dt.year == year)
+        mean_fut = year_dat_fut.mean(skipna = True).item() # <- make sure to skip all NAN values outside the boundary
+        years_means_fut.append(mean_fut)
+    grand_mean_fut = float(bp.np.mean(years_means_fut))
+    
+    grand_precip = (grand_mean_fut/ grand_mean_hist) *100
+    
+    save_variable[model][emission_scenario]['precip_ratio'] = grand_precip
             
-            # calculate precipitation ratio for found data
-            try:
-                ds_hist = bp.xr.open_dataset(hist_path)
-                ds_fut = bp.xr.open_dataset(fut_path)
-                
-                years_means_hist = []
-                for year in range(1979, 2015):
-                    year_dat_hist = ds_hist['pr'].sel(time = ds_hist.time.dt.year == year)
-                    mean_hist = year_dat_hist.mean(skipna = True).item() # <- make sure to skip all NAN values outside the boundary
-                    years_means_hist.append(mean_hist)
-                grand_mean_hist = float(bp.np.mean(years_means_hist))
-                
-                years_means_fut = []
-                for year in range(2070, 2100):
-                    year_dat_fut = ds_fut['pr'].sel(time = ds_fut.time.dt.year == year)
-                    mean_fut = year_dat_fut.mean(skipna = True).item() # <- make sure to skip all NAN values outside the boundary
-                    years_means_fut.append(mean_fut)
-                grand_mean_fut = float(bp.np.mean(years_means_fut))
-                
-                grand_precip = (grand_mean_fut/ grand_mean_hist) *100
-                
-                save_variable[model][emission_scenario]['precip_ratio'] = grand_precip
-
-            # record default message for files not stored with masked data
-            except OSError:
-                save_variable[model][emission_scenario]['precip_ratio'] = 'File Not Found'
-                
     return save_variable   
  
 test = precip_ratio(scatter_framework)
