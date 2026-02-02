@@ -133,6 +133,8 @@ write2file(gcm_dict, 'gcm_hist_jan_27.txt')
              
 
 #%%
+gmet_dict = read_file('obs_jan_28.txt')
+
 def obs_avg(save_variable, variable, season_name, season, save = True):
     
     # convert varibale name for observational data file names
@@ -171,23 +173,58 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
          obs_variable = 'air_temperature'
     else: 
          obs_variable = open_variable
+         
+         
+    ds_season = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin(season))
+    ds_year = ds_season.resample(day = 'YS').mean(dim = 'day', skipna = True)
+    annual_means = ds_year.mean(dim = ('lat', 'lon'), skipna = True)
+    values = annual_means.values
+    
+    # annual_means = annual_means_calc.values
+    # da  = ds_open[obs_variable]   
      
-    ds_month = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin([12,1,2]))
-    # ds_year = ds_month.resample(day='YS').mean(skipna=True)
-    ds_year = ds_month.groupby('day.year').mean(skipna = True, dim = ('day', 'lat', 'lon'))
+    # year = da['day'].dt.year.values
+    # month = da['day'].dt.month.values
+    # da = da.assign_coords(year=('day', year), month=('day', month))
 
-    if  save == True:
+    # # now group by both at once using a tuple key
+    # ds_var = da.groupby(['year', 'month'])
+    # ds_mean = ds_var.mean('day')
+
+    # means = []
+    # for year in range(1979, 2015):
+    #     monthly_means = []
+    #     for month in season:
+    #         monthly_mean = ds_mean.sel(year = year, month = month)
+    #         monthly_means.append(monthly_mean)
+    #     combine = xr.concat(monthly_means, dim = 'season')
+    #     dat_point = float(np.mean(combine))
+    #     means.append(dat_point)
+        
+    #     if save == True:
+    #         save_variable[season_name][year][variable] = dat_point
+     
+    # ds_month = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin(season))
+    # # ds_year = ds_month.resample(day='YS').mean(skipna=True)
+    # ds_year = ds_month.groupby('day.year').mean(skipna = True, dim = ('day', 'lat', 'lon'))
+
+    if save == True:
         # save data to dictionary
-        for year, (position, value) in zip(range(1979, 2015), enumerate(ds_year.values)):
-            save_variable[season_name][year][variable] = float(ds_year.values[position])
+        for year, value in zip(range(1979, 2015), values):
+            save_variable[season_name][year][variable] = float(value)
             print(f'{value} saved to {variable} in {year}.')
 
-    return ds_year.values
+    return values
 
-remaining_variables = ['huss', 'rsds', 'uas', 'vas']
-gmet_dict = read_file('obs_jan_28.txt')
+test = obs_avg(gmet_dict, 'pr', 'DJF', [12, 1, 2], save =  False)
 
-for variable in remaining_variables:
+
+#%%
+
+# remaining_variables = ['huss', 'rsds', 'uas', 'vas']
+# gmet_dict = read_file('obs_jan_28.txt')
+
+for variable in variables:
     for season_name, season in obs_seasons.items():
         obs_avg(gmet_dict, variable, season_name, season, save = True)
         print(f'{season_name}, {variable} done!')
@@ -195,9 +232,11 @@ for variable in remaining_variables:
 # save point        
 write2file(gmet_dict, 'obs_jan_29.txt')
 
-
+#%%
 gcm_dict = read_file('gcm_jan_29.txt')
-def bias(save_variable, model, variable, season, save_to = 'bias', save = True):
+gmet_dict = read_file('obs_jan_28.txt')
+
+def bias(save_variable, model, variable, season, save = True):
     
     # call GCM data from saved dictionary and take the average
     retrived_gcm_data =  []
@@ -222,19 +261,19 @@ def bias(save_variable, model, variable, season, save_to = 'bias', save = True):
     
     if save == True:
         # save data to dictionary
-        save_variable[model][season][save_to][variable] = bias
+        save_variable[model][season]['bias'][variable] = bias
     
     return bias
     
 for model in models:
     for season in seasons.keys():
-        for variable in remaining_variables:
+        for variable in ['pr', 'tasmin', 'tasmax']:
             bias(gcm_dict, model, variable, season)
             
 # save point            
 write2file(gcm_dict, 'gcm_jan_29.txt')
 
-
+#%%
 def stdev_ratio(save_variable, model, variable, season, save = True):
     
     # call GCM data from saved dictionary and take the average

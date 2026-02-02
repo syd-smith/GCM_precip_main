@@ -603,8 +603,10 @@ def gmet_JJA_avg(variable):
         combine = bp.xr.concat([june_mean, july_mean, august_mean], dim = 'monthly_JJA')
         dat_point = float(bp.np.mean(combine))
         gmet_JJA_dict[year][variable] = dat_point
-    
+        
+     
     return gmet_JJA_dict
+
 
 for variable in variables:
     gmet_JJA_avg(variable)
