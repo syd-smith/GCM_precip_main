@@ -37,18 +37,28 @@ ssp245_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1', 'CNRM
                  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'INM-CM4-8', 'INM-CM5-0',
                   'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+ssp126_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
+                 'CanESM5', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'IITM-ESM',
+                 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR',
+                 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
 # variables used in MACA downscaling process 
 variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 
+# dictionaries of seasonal boundaries and names
 seasons = {'DJF':[11, 0, 1], 'MAM':[2, 3, 4], 'JJA':[5, 6, 7], 'SON':[8, 9, 10], 'yearly':list(range(0, 12))}
 obs_seasons = {'DJF':[12, 1,2], 'MAM':[3, 4, 5], 'JJA':[6, 7, 8], 'SON':[9, 10, 11], 'yearly':list(range(1, 13))}
 
 
 #%%
 gcm_dict =  read_file('gcm_hist_jan_27.txt')
-def model_avg(save_variable, model, variable, season_name, season, save = False, future = False):
 
+def model_avg(save_variable, model, variable, season_name, season, save = False, future = False):
+    """
+    Open matlab files annd read out daily data. Use this to calculate the average
+    of the specified variable over the specified time period. 
+    """
+    
     if future == True:
         file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_ssp245_{variable}.mat'
         time_period = range(2015, 2100)
@@ -133,9 +143,14 @@ write2file(gcm_dict, 'gcm_hist_jan_27.txt')
              
 
 #%%
-gmet_dict = read_file('obs_jan_28.txt')
+gmet_dict = read_file('obs_feb3.txt')
 
 def obs_avg(save_variable, variable, season_name, season, save = True):
+    """
+    Use Gridmet data to calculate the seasonal average for the specified variable
+    to serve as the observational reference data. Averages are calculated as
+    daily weighted rather than monthly weighted.
+    """
     
     # convert varibale name for observational data file names
     if variable == 'tasmin':
@@ -174,40 +189,14 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
     else: 
          obs_variable = open_variable
          
-         
+    # open netcdf file and select months in season of choice     
     ds_season = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin(season))
+    # resample data in bins for each year starting with Jan 1
     ds_year = ds_season.resample(day = 'YS').mean(dim = 'day', skipna = True)
+    # take the average of all values along the day (time) dimension
     annual_means = ds_year.mean(dim = ('lat', 'lon'), skipna = True)
     values = annual_means.values
     
-    # annual_means = annual_means_calc.values
-    # da  = ds_open[obs_variable]   
-     
-    # year = da['day'].dt.year.values
-    # month = da['day'].dt.month.values
-    # da = da.assign_coords(year=('day', year), month=('day', month))
-
-    # # now group by both at once using a tuple key
-    # ds_var = da.groupby(['year', 'month'])
-    # ds_mean = ds_var.mean('day')
-
-    # means = []
-    # for year in range(1979, 2015):
-    #     monthly_means = []
-    #     for month in season:
-    #         monthly_mean = ds_mean.sel(year = year, month = month)
-    #         monthly_means.append(monthly_mean)
-    #     combine = xr.concat(monthly_means, dim = 'season')
-    #     dat_point = float(np.mean(combine))
-    #     means.append(dat_point)
-        
-    #     if save == True:
-    #         save_variable[season_name][year][variable] = dat_point
-     
-    # ds_month = ds_open[obs_variable].sel(day = ds_open[obs_variable].day.dt.month.isin(season))
-    # # ds_year = ds_month.resample(day='YS').mean(skipna=True)
-    # ds_year = ds_month.groupby('day.year').mean(skipna = True, dim = ('day', 'lat', 'lon'))
-
     if save == True:
         # save data to dictionary
         for year, value in zip(range(1979, 2015), values):
@@ -216,25 +205,18 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
 
     return values
 
-test = obs_avg(gmet_dict, 'pr', 'DJF', [12, 1, 2], save =  False)
 
-
-#%%
-
-# remaining_variables = ['huss', 'rsds', 'uas', 'vas']
-# gmet_dict = read_file('obs_jan_28.txt')
-
-for variable in variables:
+for variable in ['huss', 'rsds', 'uas', 'vas']:
     for season_name, season in obs_seasons.items():
         obs_avg(gmet_dict, variable, season_name, season, save = True)
-        print(f'{season_name}, {variable} done!')
+        print(f'{season_name}, {variable} -> done!')
         
 # save point        
-write2file(gmet_dict, 'obs_jan_29.txt')
+write2file(gmet_dict, 'obs_feb3.txt')
 
-#%%
-gcm_dict = read_file('gcm_jan_29.txt')
-gmet_dict = read_file('obs_jan_28.txt')
+
+gcm_dict = read_file('gcm_feb3.txt')
+gmet_dict = read_file('obs_feb3.txt')
 
 def bias(save_variable, model, variable, season, save = True):
     
@@ -267,13 +249,15 @@ def bias(save_variable, model, variable, season, save = True):
     
 for model in models:
     for season in seasons.keys():
-        for variable in ['pr', 'tasmin', 'tasmax']:
+        for variable in ['huss', 'rsds', 'uas', 'vas']:
             bias(gcm_dict, model, variable, season)
             
 # save point            
-write2file(gcm_dict, 'gcm_jan_29.txt')
+write2file(gcm_dict, 'gcm_feb3.txt')
 
-#%%
+
+gcm_dict = read_file('gcm_feb3.txt')
+
 def stdev_ratio(save_variable, model, variable, season, save = True):
     
     # call GCM data from saved dictionary and take the average
@@ -301,15 +285,15 @@ def stdev_ratio(save_variable, model, variable, season, save = True):
 # test_stdev = stdev_ratio(MACA_models[0], variables[0])
 for model in models:
     for season in seasons.keys():
-        for variable in remaining_variables:
+        for variable in ['huss', 'rsds', 'uas', 'vas']:
             stdev_ratio(gcm_dict, model, variable, season)  
             
 # save point            
-write2file(gcm_dict, 'gcm_jan_29.txt')
+write2file(gcm_dict, 'gcm_feb3.txt')
 
 
 #%%
-projections_dict = read_file('projections_jan_29.txt')
+projections_dict = read_file('projections_feb3.txt')
 def fut_projection(model, emission_scenario, variable, save_variable, season_name, season, save = True):
     
     """
@@ -343,7 +327,7 @@ def fut_projection(model, emission_scenario, variable, save_variable, season_nam
     fut_val = float(np.mean(fut_means))    
         
     if variable == 'pr':
-        projection = (fut_val/ hist_val) *100
+        projection = (fut_val/ hist_val) * 100
         calculation = 'precip_ratio'
     else:
         # calulate change in temperature
@@ -352,7 +336,7 @@ def fut_projection(model, emission_scenario, variable, save_variable, season_nam
     
     if save == True:
         save_variable[emission_scenario][model][season_name][calculation] = projection
-        print(f'{projection} saved to {model}/{variable}/{season_name}!')
+        print(f'{projection} saved to {model}/{variable}/{season_name}/{emission_scenario}!')
         
     return save_variable 
 
@@ -361,7 +345,7 @@ for model in ssp245_models:
         for season_name, season in seasons.items():
             fut_projection(model, 'ssp245', variable, projections_dict, season_name, season)
         
-write2file(projections_dict, 'projections_jan_29.txt')
+write2file(projections_dict, 'projections_feb3.txt')
 
 
 

@@ -30,7 +30,7 @@ ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
 
 def data_build(variable, season):
     
-    data = read_file('gcm_jan_29.txt')
+    data = read_file('gcm_feb3.txt')
     
     bias = np.array([data[model][season]['bias'][variable] for model in models])
     stdev = np.array([data[model][season]['stdev_ratio'][variable] for model in models])
@@ -47,9 +47,6 @@ def data_build(variable, season):
 # have subplots or not
 
 
-
-
-#%%
 def simple_taylor(bias, stdev_ratio, title):
     
     # find largest magnitude value in the dataset and normalize data to that value
@@ -109,8 +106,8 @@ def simple_taylor(bias, stdev_ratio, title):
     
     return fig
 
-bias, stdev = data_build('tasmax', 'yearly')
-tasmin = simple_taylor(bias, stdev, 'Annual Maximum Temperature')
+bias, stdev = data_build('tasmin', 'yearly')
+tasmin = simple_taylor(bias, stdev, 'Annual Minimum Temperature')
 
 
 #%%

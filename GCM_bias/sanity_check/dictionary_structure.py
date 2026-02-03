@@ -31,6 +31,11 @@ ssp245_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1', 'CNRM
                  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'INM-CM4-8', 'INM-CM5-0',
                   'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+ssp126_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
+                 'CanESM5', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'IITM-ESM',
+                 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR',
+                 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
 
 # variables used in MACA downscaling process 
 variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
@@ -38,9 +43,9 @@ variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 # seasons to break out calculations into
 seasons = ['DJF', 'MAM', 'JJA', 'SON', 'yearly']
 
-ssps = ['ssp245', 'ssp370', 'ssp585']
+ssps = ['ssp126', 'ssp245', 'ssp370', 'ssp585']
 
-
+#%%
 # create the framework for a gcm dictionary to evaluate model performance in historical period
 gcm_dict = read_file('gcm_hist_jan_27.txt')
 
@@ -61,11 +66,11 @@ for model in models:
 
 write2file(gcm_hist_dict, 'gcm_jan_29.txt')
 
-
+#%%
 # create a dictionary framework for future projections of GCM data (change in variables from historical to future period)                
 projections_dict = {}    
      
-for ssp, list_name in zip(ssps, [ssp245_models, ssp370_models, ssp585_models]):
+for ssp, list_name in zip(ssps, [ssp126_models, ssp245_models, ssp370_models, ssp585_models]):
     projections_dict[ssp] = {}
     for model in list_name:
         projections_dict[ssp][model] = {}
@@ -74,9 +79,9 @@ for ssp, list_name in zip(ssps, [ssp245_models, ssp370_models, ssp585_models]):
             for calc in ['precip_ratio', 'delta_tasmin', 'delta_tasmax']:
                 projections_dict[ssp][model][season][calc] = 'x'
 
-write2file(projections_dict, 'projections_jan_29.txt')
+write2file(projections_dict, 'projections_feb3.txt')
 
-
+#%%
 gmet_dict = {}
 
 for season in seasons:

@@ -378,7 +378,7 @@ scatter_plot(base_dict, 'updated_GLSB_scatter')
 #%%
 # path to access netcdf files containing the data
 strong_group_path = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_'
-find_files = sorted(bp.glob.glob(strong_group_path + '*.nc'))
+find_files = sorted(bp.glob.glob(strong_group_path + '*ssp126*.nc'))
 prefix = strong_group_path
 
 # makes list of all model names by editing file paths

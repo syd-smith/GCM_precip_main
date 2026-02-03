@@ -1,0 +1,4 @@
+,grp1,grp2,grp3,grp4,grp5,grp6,grp7
+1,"('EC-Earth3', 'ssp119')","('MPI-ESM1-2-LR', 'ssp126')","('CNRM-ESM2-1', 'ssp370')","('EC-Earth3-CC', 'ssp245')","('KACE-1-0-G', 'ssp245')","('EC-Earth3-AerChem', 'ssp370')","('UKESM1-0-LL', 'ssp370')"
+2,"('INM-CM5-0', 'ssp126')","('GFDL-ESM4', 'ssp119')","('CNRM-ESM2-1', 'ssp245')","('MRI-ESM2-0', 'ssp245')","('KACE-1-0-G', 'ssp126')","('EC-Earth3', 'ssp585')","('HadGEM3-GC31-LL', 'ssp585')"
+3,"('INM-CM4-8', 'ssp126')","('MPI-ESM1-2-HR', 'ssp126')","('EC-Earth3', 'ssp245')","('HadGEM3-GC31-LL', 'ssp126')","('MIROC-ES2L', 'ssp126')","('EC-Earth3-CC', 'ssp585')","('KACE-1-0-G', 'ssp585')"
