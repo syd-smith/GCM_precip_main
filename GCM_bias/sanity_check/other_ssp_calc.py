@@ -214,7 +214,7 @@ for variable in ['huss', 'rsds', 'uas', 'vas']:
 # save point        
 write2file(gmet_dict, 'obs_feb3.txt')
 
-
+#%%
 gcm_dict = read_file('gcm_feb3.txt')
 gmet_dict = read_file('obs_feb3.txt')
 
@@ -224,14 +224,14 @@ def bias(save_variable, model, variable, season, save = True):
     retrived_gcm_data =  []
     for year in range(1979, 2015):
         gcm_dat_point = gcm_dict[model][season][year][variable]
-        retrived_gcm_data.append(int(gcm_dat_point))    
+        retrived_gcm_data.append(float(gcm_dat_point))    
     gcm_avg = float(np.mean(retrived_gcm_data))
 
     # call gmet data from function and take the average
     retrived_gmet_data = []
     for year in range(1979, 2015):
         gmet_dat_point = gmet_dict[season][year][variable]
-        retrived_gmet_data.append(int(gmet_dat_point))
+        retrived_gmet_data.append(float(gmet_dat_point))
     # print(set(type(x) for x in retrived_gmet_data))
     gmet_avg = float(np.mean(retrived_gmet_data))
     
@@ -264,15 +264,17 @@ def stdev_ratio(save_variable, model, variable, season, save = True):
     retrived_gcm_data =  []
     for year in range(1979, 2015):
         gcm_dat_point = gcm_dict[model][season][year][variable]
-        retrived_gcm_data.append(int(gcm_dat_point))
+        retrived_gcm_data.append(float(gcm_dat_point))
     gcm_stdev = float(np.std(retrived_gcm_data))
+    print(retrived_gcm_data)
 
     # call gmet data from function and take the average
     retrived_gmet_data = []
     for year in range(1979, 2015):
         gmet_dat_point = gmet_dict[season][year][variable]
-        retrived_gmet_data.append(int(gmet_dat_point))
+        retrived_gmet_data.append(float(gmet_dat_point))
     gmet_stdev = float(np.std(retrived_gmet_data))
+    print(retrived_gmet_data)
     
     stdev_ratio = gcm_stdev / gmet_stdev
     
@@ -282,10 +284,11 @@ def stdev_ratio(save_variable, model, variable, season, save = True):
     
     return stdev_ratio
 
-# test_stdev = stdev_ratio(MACA_models[0], variables[0])
+# test_stdev = stdev_ratio(gcm_dict, models[0], 'tasmin', 'DJF', save = False)
+
 for model in models:
     for season in seasons.keys():
-        for variable in ['huss', 'rsds', 'uas', 'vas']:
+        for variable in variables:
             stdev_ratio(gcm_dict, model, variable, season)  
             
 # save point            

@@ -106,8 +106,8 @@ def simple_taylor(bias, stdev_ratio, title):
     
     return fig
 
-bias, stdev = data_build('tasmin', 'yearly')
-tasmin = simple_taylor(bias, stdev, 'Annual Minimum Temperature')
+bias, stdev = data_build('tasmax', 'SON')
+tasmin = simple_taylor(bias, stdev, 'Fall Maximum Temperature')
 
 
 #%%
@@ -170,6 +170,6 @@ def pr_taylor(bias, stdev_ratio, title):
     
     return fig
 
-bias, stdev = data_build('pr', 'yearly')
-pr = pr_taylor(bias, stdev, 'Annual Precipitation')
+bias, stdev = data_build('pr', 'SON')
+pr = pr_taylor(bias, stdev, 'Fall Precipitation')
     
