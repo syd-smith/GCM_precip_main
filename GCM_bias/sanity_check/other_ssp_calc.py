@@ -296,7 +296,8 @@ write2file(gcm_dict, 'gcm_feb3.txt')
 
 
 #%%
-projections_dict = read_file('projections_feb3.txt')
+projections_dict = read_file('projections_feb4.txt')
+
 def fut_projection(model, emission_scenario, variable, save_variable, season_name, season, save = True):
     
     """
@@ -343,12 +344,12 @@ def fut_projection(model, emission_scenario, variable, save_variable, season_nam
         
     return save_variable 
 
-for model in ssp245_models:
+for model in ssp585_models:
     for variable in variables:
         for season_name, season in seasons.items():
-            fut_projection(model, 'ssp245', variable, projections_dict, season_name, season)
+            fut_projection(model, 'ssp585', variable, projections_dict, season_name, season)
         
-write2file(projections_dict, 'projections_feb3.txt')
+write2file(projections_dict, 'projections_feb4.txt')
 
 
 

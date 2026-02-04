@@ -46,8 +46,8 @@ def data_build(variable, season):
 # change it to be a quadrant or semi circle (maybe assumed by data points)
 # have subplots or not
 
-
-def simple_taylor(bias, stdev_ratio, title):
+#%%
+def simple_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
     # find largest magnitude value in the dataset and normalize data to that value
     bias_max = abs(bias).max()
@@ -75,10 +75,6 @@ def simple_taylor(bias, stdev_ratio, title):
     # remove x axis
     axs.xaxis.grid(False)
 
-    # Plot point for reference data
-    axs.plot(np.pi - np.arccos(obs_bias), obs_stdev_ratio, marker = '*', 
-             markerfacecolor =  'none', markeredgecolor = 'k', label = "Reference", markersize = 30)
-
     # Set axis limits and labels
     axs.set_ylim(0, 1.6)
     axs.set_yticks([0.5, 1.0, 1.5, 2.0, 2.5])
@@ -87,6 +83,18 @@ def simple_taylor(bias, stdev_ratio, title):
     
     # plot GCM data
     axs.scatter(theta, stdev_ratio, marker = 'o', edgecolors = 'k', linewidths = 0.25, s = 30)
+    
+    # highlight specific model
+    if model_to_label != 'SKIP':
+        for model, color in zip(model_to_label, ['green', 'yellow', 'red']):
+            index = models.index(model)
+            axs.plot(float(theta[index]), float(stdev_ratio[index]), marker = 'o', markeredgecolor = 'black', 
+                     markerfacecolor  = color, markersize = 10, label = model)
+        fig.legend(loc = 'lower center', bbox_to_anchor = (0.52, 0.09))
+        
+    # Plot point for reference data
+    axs.plot(np.pi - np.arccos(obs_bias), obs_stdev_ratio, marker = '*', 
+             markerfacecolor =  'none', markeredgecolor = 'k', markersize = 25)
     
     # normalize and generate lists of radial axis labels and lines
     tick_angles = []
@@ -102,16 +110,24 @@ def simple_taylor(bias, stdev_ratio, title):
     axs.set_xticks(tick_angles)
     axs.set_xticklabels(tick_labels, fontsize = 12)
     
+    # add labels to right side of x axis
+    r_ticks = [0.5, 1.0, 1.5, 2.0, 2.5]
+    
+    for r, move_it in zip(r_ticks, [1, 1.075 ,1.15, 1.23, 1.305]):
+        # Default side (right/top, angle ~22.5° or wherever your main labels are)
+        # Add labels on the left (angle = À radians)
+        fig.text(-0.41 + move_it, 0.2705, f"{r}", ha = 'center', va = 'center', fontsize = 10.1, color =  'k')
+
     axs.set_title(title, fontsize = 20, pad = -25)
     
     return fig
 
-bias, stdev = data_build('tasmax', 'SON')
-tasmin = simple_taylor(bias, stdev, 'Fall Maximum Temperature')
+bias, stdev = data_build('tasmin', 'SON')
+tasmin = simple_taylor(bias, stdev, 'Fall Minimum Temperature', model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
 
 
 #%%
-def pr_taylor(bias, stdev_ratio, title):
+def pr_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
     # find largest magnitude value in the dataset and normalize data to that value
     bias_max = abs(bias).max()
@@ -122,7 +138,7 @@ def pr_taylor(bias, stdev_ratio, title):
     bias_lines = np.linspace(0, bias_max, 9)
 
     # manually set obs data point
-    obs_bias = 0
+    obs_bias = np.pi - np.arccos(1 / bias_max)
     obs_stdev_ratio = 1
 
     # Setup polar plot: angle = arccos(bias), radius = standard deviation
@@ -139,10 +155,6 @@ def pr_taylor(bias, stdev_ratio, title):
     # remove x axis
     axs.xaxis.grid(False)
 
-    # Plot point for reference data
-    axs.plot(np.pi - np.arccos(obs_bias), obs_stdev_ratio, marker = '*', 
-             markerfacecolor = 'none', markeredgecolor = 'k', label = "Reference", markersize = 30)
-
     # Set axis limits and labels
     axs.set_ylim(0, 1.6)
     axs.set_yticks([0.5, 1.0, 1.5, 2.0, 2.5])
@@ -151,6 +163,18 @@ def pr_taylor(bias, stdev_ratio, title):
     
     # plot GCM data
     axs.scatter(theta, stdev_ratio, marker = 'o', edgecolors = 'k', linewidths = 0.25, s = 30)
+    
+    # highlight specific model
+    if model_to_label != 'SKIP':
+        for model, color in zip(model_to_label, ['green', 'yellow', 'red']):
+            index = models.index(model)
+            axs.plot(float(theta[index]), float(stdev_ratio[index]), marker = 'o', markeredgecolor = 'black', 
+                     markerfacecolor  = color, markersize = 10, label = model)
+        fig.legend(loc = 'upper right', bbox_to_anchor = (0.97, 0.95))
+        
+    # Plot point for reference data
+    axs.plot(obs_bias, obs_stdev_ratio, marker = '*', 
+             markerfacecolor = 'none', markeredgecolor = 'k', markersize = 30)
     
     # normalize and generate lists of radial axis labels and lines
     tick_angles = []
@@ -170,6 +194,6 @@ def pr_taylor(bias, stdev_ratio, title):
     
     return fig
 
-bias, stdev = data_build('pr', 'SON')
-pr = pr_taylor(bias, stdev, 'Fall Precipitation')
+bias, stdev = data_build('pr', 'yearly')
+pr = pr_taylor(bias, stdev, 'Annual Precipitation', model_to_label = ['EC-Earth3-CC', 'MRI-ESM2-0', 'HadGEM3-GC31-LL'])
     

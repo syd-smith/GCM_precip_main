@@ -37,18 +37,25 @@ ssp245_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1', 'CNRM
                  'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'INM-CM4-8', 'INM-CM5-0',
                   'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+ssp126_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
+                 'CanESM5', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-ESM4', 'HadGEM3-GC31-LL', 'IITM-ESM',
+                 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR',
+                 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
 
 def mk_df(season, ssp):
     """
     Create pandas dataframe of data you want displayed in correlation matrix.
     """
     
-    historical = read_file('gcm_jan_29.txt')
+    historical = read_file('gcm_feb3.txt')
         # model -> season -> bias/stdev -> variable
-    projections = read_file('projections_jan_29.txt')
+    projections = read_file('projections_feb4.txt')
         # ssp -> model -> season -> projection
         
-    if ssp == 'ssp245':
+    if ssp == 'ssp126':
+        model_list = ssp126_models
+    elif ssp == 'ssp245':
         model_list = ssp245_models
     elif ssp == 'ssp370':
         model_list = ssp370_models
@@ -78,7 +85,7 @@ def mk_df(season, ssp):
                                              'Projected Tasmin', 'Projected Tasmax'])
     return df
 
-dataframe = mk_df('JJA', 'ssp585')
+dataframe = mk_df('yearly', 'ssp585')
 
 
 def corr_pvalues(df):
@@ -93,7 +100,7 @@ def corr_pvalues(df):
     return pd.DataFrame(pvals, index = cols, columns = cols)
 
 
-def correlation_matrix(df, mask = False, pvals = True):
+def correlation_matrix(df, mask = False, pvals = True, title = 'SKIP'):
     
     # create correlation matrix with pearson r values (plus mask to hide half the square)
     corr_matrix =  df.corr(method  = 'pearson').round(2)
@@ -144,6 +151,9 @@ def correlation_matrix(df, mask = False, pvals = True):
                                boundaries = levels)
     # round labels to two decimal places
     cbar.ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
+    
+    if title != 'SKIP':
+        plt.title(title, size = 30, pad = 20)
     
     return plt.show()
 
