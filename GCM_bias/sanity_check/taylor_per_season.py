@@ -30,7 +30,7 @@ ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
 
 def data_build(variable, season):
     
-    data = read_file('gcm_feb3.txt')
+    data = read_file('gcm_feb5.txt')
     
     bias = np.array([data[model][season]['bias'][variable] for model in models])
     stdev = np.array([data[model][season]['stdev_ratio'][variable] for model in models])
@@ -194,6 +194,6 @@ def pr_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
     return fig
 
-bias, stdev = data_build('pr', 'yearly')
-pr = pr_taylor(bias, stdev, 'Annual Precipitation', model_to_label = ['EC-Earth3-CC', 'MRI-ESM2-0', 'HadGEM3-GC31-LL'])
-    
+for season, label in zip(['yearly', 'DJF', 'MAM', 'JJA', 'SON'], ['Annual', 'Winter', 'Spring', 'Summer', 'Fall']):
+    bias, stdev = data_build('pr', season)
+    pr = pr_taylor(bias, stdev, f'{label} Precipitation', model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])

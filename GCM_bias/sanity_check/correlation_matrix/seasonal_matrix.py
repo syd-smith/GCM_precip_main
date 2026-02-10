@@ -48,7 +48,7 @@ def mk_df(season, ssp):
     Create pandas dataframe of data you want displayed in correlation matrix.
     """
     
-    historical = read_file('gcm_feb3.txt')
+    historical = read_file('gcm_feb5.txt')
         # model -> season -> bias/stdev -> variable
     projections = read_file('projections_feb4.txt')
         # ssp -> model -> season -> projection

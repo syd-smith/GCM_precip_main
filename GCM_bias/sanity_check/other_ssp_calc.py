@@ -246,17 +246,23 @@ def bias(save_variable, model, variable, season, save = True):
         save_variable[model][season]['bias'][variable] = bias
     
     return bias
+
+# output = []
+# for model in models:
+#     test = bias(gcm_dict, model, 'pr', 'yearly')
+#     output.append([model, test])
     
 for model in models:
     for season in seasons.keys():
-        for variable in ['huss', 'rsds', 'uas', 'vas']:
+        for variable in variables:
             bias(gcm_dict, model, variable, season)
-            
+           
 # save point            
-write2file(gcm_dict, 'gcm_feb3.txt')
+write2file(gcm_dict, 'gcm_feb5.txt')
+#%%
 
 
-gcm_dict = read_file('gcm_feb3.txt')
+gcm_dict = read_file('gcm_feb5.txt')
 
 def stdev_ratio(save_variable, model, variable, season, save = True):
     
@@ -292,7 +298,7 @@ for model in models:
             stdev_ratio(gcm_dict, model, variable, season)  
             
 # save point            
-write2file(gcm_dict, 'gcm_feb3.txt')
+write2file(gcm_dict, 'gcm_feb5.txt')
 
 
 #%%
