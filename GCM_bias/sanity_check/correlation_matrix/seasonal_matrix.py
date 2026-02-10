@@ -43,12 +43,12 @@ ssp126_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
                  'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
 
-def mk_df(season, ssp):
+def mk_df(variables, season, ssp):
     """
     Create pandas dataframe of data you want displayed in correlation matrix.
     """
     
-    historical = read_file('gcm_feb5.txt')
+    historical = read_file('gcm_feb9.txt')
         # model -> season -> bias/stdev -> variable
     projections = read_file('projections_feb4.txt')
         # ssp -> model -> season -> projection
@@ -68,24 +68,23 @@ def mk_df(season, ssp):
     df_list = []
     for model in model_list:
         per_model = []
-        per_model.append(historical[model][season]['bias']['pr'])
-        per_model.append(historical[model][season]['bias']['tasmin'])
-        per_model.append(historical[model][season]['bias']['tasmax'])
-        per_model.append(historical[model][season]['stdev_ratio']['pr'])
-        per_model.append(historical[model][season]['stdev_ratio']['tasmin'])
-        per_model.append(historical[model][season]['stdev_ratio']['tasmax'])
+        for variable in variables:
+            per_model.append(historical[model][season]['bias'][variable])
+            per_model.append(historical[model][season]['stdev_ratio'][variable])
         per_model.append(projections[ssp][model][season]['precip_ratio'])
         per_model.append(projections[ssp][model][season]['delta_tasmin'])
         per_model.append(projections[ssp][model][season]['delta_tasmax'])
         df_list.append(per_model)
         
     # assign column names to the dataframe
-    df = pd.DataFrame(df_list, columns = ['Precip Bias', 'Tasmin Bias', 'Tasmax Bias', 'Precip Stdev', 
-                                             'Tasmin Stdev', 'Tasmax Stdev', 'Projected Precip', 
-                                             'Projected Tasmin', 'Projected Tasmax'])
+    base_cols = ['Projected Precip', 'Projected Tasmin', 'Projected Tasmax']
+    col_names = ([name for v in variables for name in (f'{v} bias', f'{v} stdev')] + base_cols)
+    df = pd.DataFrame(df_list, columns = col_names)
+    
     return df
 
-dataframe = mk_df('yearly', 'ssp585')
+
+dataframe = mk_df(['pr', 'tasmin', 'tasmax', 'huss', 'rsds', 'uas', 'vas'], 'JJA', 'ssp585')
 
 
 def corr_pvalues(df):

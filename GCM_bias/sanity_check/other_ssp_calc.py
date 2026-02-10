@@ -215,7 +215,7 @@ for variable in ['huss', 'rsds', 'uas', 'vas']:
 write2file(gmet_dict, 'obs_feb3.txt')
 
 #%%
-gcm_dict = read_file('gcm_feb3.txt')
+gcm_dict = read_file('gcm_feb5.txt')
 gmet_dict = read_file('obs_feb3.txt')
 
 def bias(save_variable, model, variable, season, save = True):
@@ -236,7 +236,7 @@ def bias(save_variable, model, variable, season, save = True):
     gmet_avg = float(np.mean(retrived_gmet_data))
     
     # calculate bias
-    if variable == 'pr':
+    if variable == 'pr' or variable == 'huss':
         bias = gcm_avg / gmet_avg
     else:
         bias = gcm_avg - gmet_avg
@@ -254,11 +254,10 @@ def bias(save_variable, model, variable, season, save = True):
     
 for model in models:
     for season in seasons.keys():
-        for variable in variables:
-            bias(gcm_dict, model, variable, season)
+        bias(gcm_dict, model, 'huss', season)
            
 # save point            
-write2file(gcm_dict, 'gcm_feb5.txt')
+write2file(gcm_dict, 'gcm_feb9.txt')
 #%%
 
 
