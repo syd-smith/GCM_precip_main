@@ -335,16 +335,16 @@ def fut_projection(model, emission_scenario, variable, save_variable, season_nam
     
     fut_val = float(np.mean(fut_means))    
         
-    if variable == 'pr':
+    if variable == 'pr' or variable == 'huss':
         projection = (fut_val/ hist_val) * 100
-        calculation = 'precip_ratio'
+        # calculation = 'precip_ratio'
     else:
         # calulate change in temperature
         projection = fut_val - hist_val
-        calculation = f'delta_{variable}'
+        # calculation = f'delta_{variable}'
     
     if save == True:
-        save_variable[emission_scenario][model][season_name][calculation] = projection
+        save_variable[emission_scenario][model][season_name][variable] = projection
         print(f'{projection} saved to {model}/{variable}/{season_name}/{emission_scenario}!')
         
     return save_variable 
@@ -354,7 +354,7 @@ for model in ssp585_models:
         for season_name, season in seasons.items():
             fut_projection(model, 'ssp585', variable, projections_dict, season_name, season)
         
-write2file(projections_dict, 'projections_feb4.txt')
+write2file(projections_dict, 'projections_feb10.txt')
 
 
 

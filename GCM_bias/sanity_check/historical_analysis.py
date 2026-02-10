@@ -18,8 +18,12 @@ import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
 from file_traversing import write2file, read_file
 
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/from_savanna/')
+import nclcmaps as cmap
+
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/')
 from taylor_per_season import data_build
+
 
 
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',
@@ -27,37 +31,57 @@ models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6
           'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 
           'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
+                 'CanESM5', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL',
+                  'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6',
+                   'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
+bias, stdev = data_build('tasmin', 'JJA', models)
 
 
-def model_performance(variable, season, models, add_box = True, percentile = 50, model_to_label = 'SKIP'):
+#%%
+def model_performance(variable, season, models, axs = None, add_box = True, percentile = 50, model_to_label = 'SKIP', coloring = False):
     
+    # extract data from dictionary
     bias, stdev = data_build(variable, season, models)
     
-    fig, axs = plt.subplots(figsize =  (5, 5))
-    axs.scatter(bias, stdev)
-    
+    # allow an axs to be passed to the function to integrate this into building subplots
+    if axs == None:
+        fig, axs = plt.subplots(figsize = (5, 5))
+    else:
+        fig = axs.figure
+        
+    # plot bias and standard deviation data on figure
+    if coloring == False:
+        axs.scatter(bias, stdev)
+        points = []
+    else:
+        data = read_file('projections_feb10.txt')
+        projection = np.array([data['ssp585'][model][season]['precip_ratio'] for model in ssp585_models])
+        levels = np.array([50, 65, 80, 95, 100, 105, 150, 190, 220])
+        norm = mcolors.BoundaryNorm(levels, ncolors = plt.get_cmap(cmap.cmap('MPL_BrBG'), 8).N) 
+        points = axs.scatter(bias, stdev, norm = norm, cmap = cmap.cmap('MPL_BrBG'), c = projection, edgecolor = 'k')
+
+    # set bias of reference data based on variable
     if variable == 'pr' or variable == 'huss':
         ref_bias = 1
     else:
         ref_bias = 0
-        
+    
+    # plot reference point as a black star
     axs.plot(ref_bias, 1, marker =  '*', markeredgecolor = 'black', markersize = 25, markerfacecolor  = 'none')
     
+    # if selected, as a box to show what models perform at the defined percentile
     if add_box == True:
-        adjusted_bias = []
-        adjusted_stdev = []
-        for b, s in zip(bias, stdev):
-            bias_distance = b - ref_bias
-            stdev_distance = s - 1
-            adjusted_bias.append(float(bias_distance))
-            adjusted_stdev.append(float(stdev_distance))
-    
-        bias_percentile = np.percentile(adjusted_bias, percentile)
-        stdev_percentile = np.percentile(adjusted_stdev, percentile)
+        # returns position of that dadta's percentile
+        bias_percentile = np.percentile(abs(bias) - ref_bias, percentile)
+        stdev_percentile = np.percentile(abs(stdev - 1), percentile)
         
+        # creates a box aroound models that perform at the percentile or higher in both datasets
         focus_area = Rectangle((ref_bias-bias_percentile, 1-stdev_percentile), bias_percentile*2, stdev_percentile*2, edgecolor = 'red', facecolor = 'none')
         axs.add_patch(focus_area)
     
+    # highlights specific models on the plot
     if model_to_label != 'SKIP':
         for model, color in zip(model_to_label, ['green', 'yellow', 'red']):
             index = models.index(model)
@@ -66,12 +90,15 @@ def model_performance(variable, season, models, add_box = True, percentile = 50,
         fig.legend(loc = 'upper right', bbox_to_anchor = (1.3, 0.9))
 
     axs.set_yticks([0.5, 1, 1.5, 2, 2.5])
+    # add line to show zero bias
     axs.axvline(x = ref_bias, color = 'black', linewidth = 0.75, linestyle = ':', zorder = 0)
+    # add line to show where standard deviation is equal to reference data
     axs.axhline(y = 1, color = 'black', linewidth = 0.75, linestyle = ':', zorder = 0)
     
-    return fig, axs
+    return fig, axs, points
 
-face, bones = model_performance('huss', 'yearly', models, add_box = False)
+
+face, bones, points = model_performance('tasmax', 'JJA', models)
 
 
 

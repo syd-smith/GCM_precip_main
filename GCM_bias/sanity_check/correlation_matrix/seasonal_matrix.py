@@ -50,7 +50,7 @@ def mk_df(variables, season, ssp):
     
     historical = read_file('gcm_feb9.txt')
         # model -> season -> bias/stdev -> variable
-    projections = read_file('projections_feb4.txt')
+    projections = read_file('projections_feb10.txt')
         # ssp -> model -> season -> projection
         
     if ssp == 'ssp126':
@@ -77,7 +77,7 @@ def mk_df(variables, season, ssp):
         df_list.append(per_model)
         
     # assign column names to the dataframe
-    base_cols = ['Projected Precip', 'Projected Tasmin', 'Projected Tasmax']
+    base_cols = ['projected precip', 'projected tasmin', 'projected tasmax']
     col_names = ([name for v in variables for name in (f'{v} bias', f'{v} stdev')] + base_cols)
     df = pd.DataFrame(df_list, columns = col_names)
     
