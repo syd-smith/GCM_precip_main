@@ -36,10 +36,7 @@ ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
                   'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6',
                    'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
-bias, stdev = data_build('tasmin', 'JJA', models)
 
-
-#%%
 def model_performance(variable, season, models, axs = None, add_box = True, percentile = 50, model_to_label = 'SKIP', coloring = False):
     
     # extract data from dictionary
@@ -54,7 +51,7 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
     # plot bias and standard deviation data on figure
     if coloring == False:
         axs.scatter(bias, stdev)
-        points = []
+        points = ['No coloring shading specified.']
     else:
         data = read_file('projections_feb10.txt')
         projection = np.array([data['ssp585'][model][season]['precip_ratio'] for model in ssp585_models])
@@ -74,7 +71,7 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
     # if selected, as a box to show what models perform at the defined percentile
     if add_box == True:
         # returns position of that dadta's percentile
-        bias_percentile = np.percentile(abs(bias) - ref_bias, percentile)
+        bias_percentile = np.percentile(abs(bias - ref_bias), percentile)
         stdev_percentile = np.percentile(abs(stdev - 1), percentile)
         
         # creates a box aroound models that perform at the percentile or higher in both datasets
@@ -95,11 +92,24 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
     # add line to show where standard deviation is equal to reference data
     axs.axhline(y = 1, color = 'black', linewidth = 0.75, linestyle = ':', zorder = 0)
     
-    return fig, axs, points
+    return axs, points
 
 
-face, bones, points = model_performance('tasmax', 'JJA', models)
+bones, points = model_performance('pr', 'JJA', models)
 
 
+
+#%%
+# extract data from dictionary
+bias, stdev = data_build('pr', 'JJA', models)
+ref_bias = 1
+
+# returns position of that dadta's percentile
+bias_percentile = np.percentile(abs(bias - ref_bias), 50)
+stdev_percentile = np.percentile(abs(stdev - 1), 50)
+
+# creates a box aroound models that perform at the percentile or higher in both datasets
+# focus_area = Rectangle((ref_bias-bias_percentile, 1-stdev_percentile), bias_percentile*2, stdev_percentile*2, edgecolor = 'red', facecolor = 'none')
+# axs.add_patch(focus_area)
 
 
