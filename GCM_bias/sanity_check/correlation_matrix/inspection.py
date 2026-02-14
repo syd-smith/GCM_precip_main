@@ -8,6 +8,8 @@ Created on Thu Feb  5 13:42:47 2026
 
 import matplotlib.pyplot as plt
 import numpy as np
+import statsmodels.api as sm
+from statsmodels.stats.diagnostic import het_breuschpagan
 
 import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
@@ -27,4 +29,15 @@ plt.plot(test[x], m*test[x]+b, '-', color  = 'red')
 
 plt.xlabel(x)
 plt.ylabel(y)
+
+
+#%%
+bias = sm.add_constant(test['pr bias'])
+results = sm.OLS(test['projected precip'], bias).fit()
+# print(results.summary())
+
+residuals = results.resid
+exog = results.model.exog
+
+bp_test = het_breuschpagan(residuals, exog)
 
