@@ -49,17 +49,17 @@ def mixed_model_performance(season, coloring = False, box = False, percentile = 
     b, points = model_performance('pr', season, ssp585_models, axs = axs[0], add_box = box, coloring = coloring, percentile = percentile, model_to_label = model_to_label)
     axs[0].set_ylabel('Precipitation Standard Deviation Ratio')
     axs[0].set_xlabel('Precipitation Bias Ratio')
-    axs[0].text(0.92, 0.92, 'a.', transform = axs[0].transAxes, fontsize = 20)
+    axs[0].text(0.05, 0.92, 'a.', transform = axs[0].transAxes, fontsize = 20)
     
     d, points = model_performance('tasmin', season, ssp585_models, axs = axs[1], add_box = box, coloring = coloring, percentile = percentile, model_to_label = model_to_label)
     axs[1].set_ylabel('Minimum Temperature Standard Deviation Ratio')
     axs[1].set_xlabel('Minimum Temperature Bias (K)')
-    axs[1].text(0.92, 0.92, 'b.', transform = axs[1].transAxes, fontsize = 20)
+    axs[1].text(0.05, 0.92, 'b.', transform = axs[1].transAxes, fontsize = 20)
     
     f, points = model_performance('tasmax', season, ssp585_models, axs = axs[2], add_box = box, coloring = coloring, percentile = percentile, model_to_label = model_to_label)
     axs[2].set_ylabel('Maximum Temperature Standard Deviation Ratio')
     axs[2].set_xlabel('Maximum Temperature Bias (K)')
-    axs[2].text(0.92, 0.92, 'c.', transform = axs[2].transAxes, fontsize = 20)
+    axs[2].text(0.05, 0.92, 'c.', transform = axs[2].transAxes, fontsize = 20)
     
     if coloring == True:
         # create colorbar with shading to indicate percent change in projected precipitation 
@@ -70,9 +70,9 @@ def mixed_model_performance(season, coloring = False, box = False, percentile = 
     
     return fig, axs
 
-# paper_fig = mixed_model_performance('JJA', coloring = True)
+paper_fig = mixed_model_performance('JJA', coloring = True)
 
-test = mixed_model_performance('JJA', box = True, percentile = 50, model_to_label = ['CNRM-ESM2-1', 'KACE-1-0-G'])
+# test = mixed_model_performance('JJA', box = True, percentile = 50, model_to_label = ['CNRM-ESM2-1', 'KACE-1-0-G'])
 
 
     
