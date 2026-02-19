@@ -84,7 +84,7 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
             index = models.index(model)
             axs.plot(float(bias[index]), float(stdev[index]), marker = 'o', markeredgecolor = 'black', 
                      markerfacecolor  = color, markersize = 10, label = model)
-        fig.legend(loc = 'upper right', bbox_to_anchor = (1.3, 0.9))
+        axs.legend(loc = 'upper left', bbox_to_anchor = (0.01, 0.99))
 
     axs.set_yticks([0.5, 1, 1.5, 2, 2.5])
     # add line to show zero bias
@@ -95,7 +95,7 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
     return axs, points
 
 
-bones, points = model_performance('pr', 'JJA', models)
+bones, points = model_performance('pr', 'DJF', models)
 
 
 
