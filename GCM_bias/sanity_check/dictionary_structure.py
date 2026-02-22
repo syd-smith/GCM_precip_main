@@ -47,7 +47,7 @@ ssps = ['ssp126', 'ssp245', 'ssp370', 'ssp585']
 
 #%%
 # create the framework for a gcm dictionary to evaluate model performance in historical period
-gcm_dict = read_file('gcm_hist_jan_27.txt')
+gcm_dict = read_file('gcm_feb9.txt')
 
 
 gcm_hist_dict = {}
@@ -55,16 +55,18 @@ for model in models:
     gcm_hist_dict[model] = {}
     for season in seasons:
         gcm_hist_dict[model][season] = {}
-        for calc in ['bias', 'stdev_ratio']:
-            gcm_hist_dict[model][season][calc] = {}
-            for variable in variables:
-                gcm_hist_dict[model][season][calc][variable] = 'x'
+        gcm_hist_dict[model][season]['bias'] = {}
+        gcm_hist_dict[model][season]['var_ratio'] = {}
+        for variable in variables:
+            gcm_hist_dict[model][season]['bias'][variable] = gcm_dict[model][season]['bias'][variable]
+            print(f'{model}-{season}-bias-{variable}')
+            gcm_hist_dict[model][season]['var_ratio'][variable] = 'x'
         for year in range(1979, 2015):
             gcm_hist_dict[model][season][year] = {}
             for variable in variables:
                 gcm_hist_dict[model][season][year][variable] = gcm_dict[model][season][year][variable]
 
-write2file(gcm_hist_dict, 'gcm_jan_29.txt')
+write2file(gcm_hist_dict, 'gcm_feb19.txt')
 
 #%%
 # create a dictionary framework for future projections of GCM data (change in variables from historical to future period)                
@@ -92,6 +94,20 @@ for season in seasons:
             gmet_dict[season][year][variable] = 'x'
             
             
-# pprint.pprint(projections_dict)
+#%%
+lag_one_dict = {}
+
+for model in models:
+    lag_one_dict[model] = {}
+    for season in seasons:
+        lag_one_dict[model][season] = {}
+        for variable in variables:
+            lag_one_dict[model][season][variable] = {}
+            lag_one_dict[model][season][variable]['lag_one'] = 'x'
+            lag_one_dict[model][season][variable]['pvalue'] = 'x'
+            
+write2file(lag_one_dict, 'lag_one_feb22.txt')
+            
+pprint.pprint(lag_one_dict)
 
 

@@ -60,19 +60,19 @@ def mixed_model_performance(season, models, coloring = False, box = False, perce
         
     # call each individual plot from the model_performance function
     b, points = model_performance('pr', season, models, axs = axs[0], add_box = box, coloring = coloring, percentile = percentile, model_to_label = model_to_label)
-    axs[0].set_ylabel('Precipitation Standard Deviation Ratio')
+    axs[0].set_ylabel('Precipitation Variance Ratio')
     axs[0].set_xlabel('Precipitation Bias Ratio')
-    axs[0].text(0.05, 0.92, 'a.', transform = axs[0].transAxes, fontsize = 20)
+    axs[0].text(0.05, 0.92, 'a.', transform = axs[0].transAxes, fontsize = 15)
     
     d, points = model_performance('tasmin', season, models, axs = axs[1], add_box = box, coloring = coloring, percentile = percentile, model_to_label = model_to_label)
-    axs[1].set_ylabel('Minimum Temperature Standard Deviation Ratio')
+    axs[1].set_ylabel('Minimum Temperature Variance Ratio')
     axs[1].set_xlabel('Minimum Temperature Bias (K)')
-    axs[1].text(0.05, 0.92, 'b.', transform = axs[1].transAxes, fontsize = 20)
+    axs[1].text(0.05, 0.92, 'b.', transform = axs[1].transAxes, fontsize = 15)
     
     f, points = model_performance('tasmax', season, models, axs = axs[2], add_box = box, coloring = coloring, percentile = percentile, model_to_label = model_to_label)
-    axs[2].set_ylabel('Maximum Temperature Standard Deviation Ratio')
+    axs[2].set_ylabel('Maximum Temperature Variance Ratio')
     axs[2].set_xlabel('Maximum Temperature Bias (K)')
-    axs[2].text(0.05, 0.92, 'c.', transform = axs[2].transAxes, fontsize = 20)
+    axs[2].text(0.05, 0.92, 'c.', transform = axs[2].transAxes, fontsize = 15)
     
     # actually adding the color bar based on structure from 
     if coloring == True:
@@ -110,10 +110,10 @@ def mixed_model_performance(season, models, coloring = False, box = False, perce
     return fig, axs
 
 
-# paper_fig = mixed_model_performance('JJA', ssp585_models, coloring = True)
+paper_fig = mixed_model_performance('JJA', ssp585_models, coloring = True)
 
-for season in ['yearly', 'DJF', 'MAM', 'JJA', 'SON']:
-    mixed_model_performance(season, models, box = True, model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
+# for season in ['yearly', 'DJF', 'MAM', 'JJA', 'SON']:
+#     mixed_model_performance(season, models, box = True, model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
 
 # winter = mixed_model_performance('DJF', models, box = True)
     
@@ -121,11 +121,11 @@ for season in ['yearly', 'DJF', 'MAM', 'JJA', 'SON']:
 
 #%%
 
-# Pearson R and P values of correlation between pr bias and stdev
+# Pearson R and P values of correlation between pr bias and var
 check = read_file('gcm_feb9.txt')
 bias = np.array([check[model]['JJA']['bias']['pr'] for model in ssp585_models])
-stdev =  np.array([check[model]['JJA']['stdev_ratio']['pr'] for model in ssp585_models])
-values = pearsonr(bias, stdev)
+var =  np.array([check[model]['JJA']['var_ratio']['pr'] for model in ssp585_models])
+values = pearsonr(bias, var)
 
 #%%
 
@@ -173,6 +173,13 @@ print(f'KACE-1-0-G, ssp585: {fut_value('KACE-1-0-G', 'ssp585', 'pr', 'JJA', [5, 
 
 # print(f'CNRM-ESM2-1, ssp370: {fut_value('CNRM-ESM2-1', 'ssp370', 'tasmax', 'JJA', [5, 6, 7])}')
 # print(f'HadGEM3-GC31-LL, ssp126: {fut_value('HadGEM3-GC31-LL', 'ssp126', 'tasmax', 'JJA', [5, 6, 7])}')
+
+
+#%%
+data = read_file('gcm_feb19.txt')
+for model in ssp585_models:
+    print(model, data[model]['JJA']['var_ratio']['pr'])
+
 
 
 

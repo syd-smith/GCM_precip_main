@@ -29,24 +29,19 @@ ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
 
 
 def data_build(variable, season, model_list):
+    """
+    Compile bias and variance data for each model into a numpy array by reading
+    it from a dictionary.
+    """
     
-    data = read_file('gcm_feb9.txt')
+    data = read_file('gcm_feb19.txt')
     
     bias = np.array([data[model][season]['bias'][variable] for model in model_list])
-    stdev = np.array([data[model][season]['stdev_ratio'][variable] for model in model_list])
+    var = np.array([data[model][season]['var_ratio'][variable] for model in model_list])
     
-    return bias, stdev
+    return bias, var
 
 
-# read out data and format it in an array
-# how can the data be plotted with the grid being equal distance on the radial axis
-# no scaling of data
-# functionality to add colorbars for specific projections
-# base taylor diagram
-# change it to be a quadrant or semi circle (maybe assumed by data points)
-# have subplots or not
-
-#%%
 def simple_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
     # find largest magnitude value in the dataset and normalize data to that value
@@ -126,7 +121,6 @@ def simple_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
 # tasmin = simple_taylor(bias, stdev, 'Fall Minimum Temperature', model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
 
 
-#%%
 def pr_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
     # find largest magnitude value in the dataset and normalize data to that value

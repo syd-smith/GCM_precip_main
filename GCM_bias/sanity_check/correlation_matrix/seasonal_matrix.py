@@ -48,7 +48,7 @@ def mk_df(variables, season, ssp):
     Create pandas dataframe of data you want displayed in correlation matrix.
     """
     
-    historical = read_file('gcm_feb9.txt')
+    historical = read_file('gcm_feb19.txt')
         # model -> season -> bias/stdev -> variable
     projections = read_file('projections_feb10.txt')
         # ssp -> model -> season -> projection
@@ -70,7 +70,7 @@ def mk_df(variables, season, ssp):
         per_model = []
         for variable in variables:
             per_model.append(historical[model][season]['bias'][variable])
-            per_model.append(historical[model][season]['stdev_ratio'][variable])
+            per_model.append(historical[model][season]['var_ratio'][variable])
         per_model.append(projections[ssp][model][season]['precip_ratio'])
         per_model.append(projections[ssp][model][season]['delta_tasmin'])
         per_model.append(projections[ssp][model][season]['delta_tasmax'])
@@ -78,13 +78,59 @@ def mk_df(variables, season, ssp):
         
     # assign column names to the dataframe
     base_cols = ['projected precip', 'projected tasmin', 'projected tasmax']
-    col_names = ([name for v in variables for name in (f'{v} bias', f'{v} stdev')] + base_cols)
+    col_names = ([name for v in variables for name in (f'{v} bias', f'{v} var')] + base_cols)
     df = pd.DataFrame(df_list, columns = col_names)
     
     return df
 
 
 dataframe = mk_df(['pr', 'tasmin', 'tasmax', 'huss', 'rsds', 'uas', 'vas'], 'JJA', 'ssp585')
+
+
+def expanded_df(variables, season, ssp):
+    """
+    Create pandas dataframe of data you want displayed in correlation matrix.
+    """
+    
+    historical = read_file('gcm_feb19.txt')
+        # model -> season -> bias/stdev -> variable
+    projections = read_file('projections_feb10.txt')
+        # ssp -> model -> season -> projection
+    lag_one = read_file('lag_one_feb22.txt')
+        # model -> season -> variable
+        
+    if ssp == 'ssp126':
+        model_list = ssp126_models
+    elif ssp == 'ssp245':
+        model_list = ssp245_models
+    elif ssp == 'ssp370':
+        model_list = ssp370_models
+    elif ssp == 'ssp585':
+        model_list = ssp585_models
+    else:
+        model_list = models
+        print('Projection not defined.')
+    
+    df_list = []
+    for model in model_list:
+        per_model = []
+        for variable in variables:
+            per_model.append(historical[model][season]['bias'][variable])
+            per_model.append(historical[model][season]['var_ratio'][variable])
+            per_model.append(lag_one[model][season][variable]['lag_one'])
+        per_model.append(projections[ssp][model][season]['precip_ratio'])
+        per_model.append(projections[ssp][model][season]['delta_tasmin'])
+        per_model.append(projections[ssp][model][season]['delta_tasmax'])
+        df_list.append(per_model)
+        
+    # assign column names to the dataframe
+    base_cols = ['projected precip', 'projected tasmin', 'projected tasmax']
+    col_names = ([name for v in variables for name in (f'{v} bias', f'{v} var', f'{v} lag-one')] + base_cols)
+    df = pd.DataFrame(df_list, columns = col_names)
+    
+    return df
+
+expanded_df  = expanded_df(['pr', 'tasmin', 'tasmax', 'huss', 'rsds', 'uas', 'vas'], 'JJA', 'ssp585')
 
 
 def corr_pvalues(df):
@@ -157,8 +203,8 @@ def correlation_matrix(df, mask = False, pvals = True, title = 'SKIP'):
     return plt.show()
 
 
-test = correlation_matrix(dataframe)
-
+normal_martix = correlation_matrix(dataframe)
+expanded_matrix = correlation_matrix(expanded_df)
 
 
 

@@ -6,6 +6,23 @@ Created on Sat Sep 13 18:47:40 2025
 @author: Sydney Smith
 """
 
+import sys
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
+from file_traversing import write2file, read_file
+
+ratios = read_file('oct_19.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/scatter_plot/')
+
+ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
+                 'CanESM5', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL',
+                  'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6',
+                   'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
+
+pr_ratio = []
+for model in ssp585_models:
+    pr_ratio.append([model, ratios[model]['ssp585']['precip_ratio']])
+
+
+#%%
 scatter_framework = {
     'ACCESS-CM2' : {
         'ssp119': {'delta_temp' : 0, 'precip_ratio' : 0, 'PC1' : 0, 'PC2' : 0},

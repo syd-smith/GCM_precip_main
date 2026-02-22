@@ -7,11 +7,12 @@ Created on Thu Jan 22 13:24:14 2026
 """
 
 import ast
-import pprint
-import os
-import scipy.io
-import numpy as np
 import glob
+import numpy as np
+import os
+import pprint
+import scipy.io
+import statsmodels.api as sm
 import xarray as xr
 
 import sys
@@ -301,6 +302,48 @@ write2file(gcm_dict, 'gcm_feb5.txt')
 
 
 #%%
+
+gcm_dict = read_file('gcm_feb19.txt')
+gmet_dict = read_file('obs_feb3.txt')
+
+def var_ratio(save_variable, model, variable, season, save = True):
+    
+    # call GCM data from saved dictionary and take the average
+    retrived_gcm_data =  []
+    for year in range(1979, 2015):
+        gcm_dat_point = gcm_dict[model][season][year][variable]
+        retrived_gcm_data.append(float(gcm_dat_point))
+    gcm_var = float(np.var(retrived_gcm_data))
+    print(retrived_gcm_data)
+
+    # call gmet data from function and take the average
+    retrived_gmet_data = []
+    for year in range(1979, 2015):
+        gmet_dat_point = gmet_dict[season][year][variable]
+        retrived_gmet_data.append(float(gmet_dat_point))
+    gmet_var = float(np.var(retrived_gmet_data))
+    print(retrived_gmet_data)
+    
+    var_ratio = gcm_var / gmet_var
+    
+    if save == True:
+        # save data to dictionary
+        save_variable[model][season]['var_ratio'][variable] = var_ratio
+    
+    return var_ratio
+
+# test_stdev = stdev_ratio(gcm_dict, models[0], 'tasmin', 'DJF', save = False)
+
+for model in models:
+    for season in seasons.keys():
+        for variable in variables:
+            var_ratio(gcm_dict, model, variable, season)  
+            
+# save point            
+write2file(gcm_dict, 'gcm_feb19.txt')
+
+
+#%%
 projections_dict = read_file('projections_feb4.txt')
 
 def fut_projection(model, emission_scenario, variable, save_variable, season_name, season, save = True):
@@ -356,6 +399,37 @@ for model in ssp585_models:
         
 write2file(projections_dict, 'projections_feb10.txt')
 
+#%%
+lag_one = read_file('lag_one_feb22.txt')
+gcm_data = read_file('gcm_feb19.txt')
+gmet_data = read_file('obs_feb3.txt')
 
+def lag_one_autocorr(model, season, variable, save_data = True):
+    """
+    Calculate a model's lag one autocorrelation for a specific
+    season and variable based on yearly averages from the historical 
+    period (1979-2014).
+    """
+    
+    averages = []
+    for year in range(1979, 2015):
+        averages.append(gcm_data[model][season][year][variable])
+        
+    lag_one_calc = sm.tsa.stattools.acf(averages, nlags = 1)
+    magnitude = float(lag_one_calc[-1])
+    pvalue_calc = sm.stats.diagnostic.acorr_ljungbox(averages, lags=[1])
+    pvalue = float(pvalue_calc['lb_pvalue'].iloc[0])
+    
+    if save_data == True:
+        lag_one[model][season][variable]['lag_one'] = magnitude
+        lag_one[model][season][variable]['pvalue'] = pvalue
+        
+    return magnitude, pvalue
 
+for model in models:
+    for season in seasons:
+        for variable in variables:
+            lag_one_autocorr(model, season, variable)
+            print(model, season, variable)
 
+write2file(lag_one, 'lag_one_feb22.txt')

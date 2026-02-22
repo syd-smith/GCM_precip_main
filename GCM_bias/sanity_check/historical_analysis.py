@@ -38,9 +38,17 @@ ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
 
 
 def model_performance(variable, season, models, axs = None, add_box = True, percentile = 50, model_to_label = 'SKIP', coloring = False):
+    """
+    Uses bias and temporal variance data to build a Cartesian Taylor Diagram
+    with bias on the x axis and the temporal variance ratio 
+    (GCM variance/Obs variance) on the y axis. Each point on the plot represents
+    a different model. A box can be added to represent the bounds of the 50th 
+    percentile for both axes. Plot points can also be shaded by a model's
+    projected increase in summer precipitation.
+    """
     
     # extract data from dictionary
-    bias, stdev = data_build(variable, season, models)
+    bias, var = data_build(variable, season, models)
     
     # allow an axs to be passed to the function to integrate this into building subplots
     if axs == None:
@@ -50,14 +58,14 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
         
     # plot bias and standard deviation data on figure
     if coloring == False:
-        axs.scatter(bias, stdev)
-        points = ['No coloring shading specified.']
+        axs.scatter(bias, var)
+        points = 'No coloring shading specified.'
     else:
         data = read_file('projections_feb10.txt')
         projection = np.array([data['ssp585'][model][season]['precip_ratio'] for model in ssp585_models])
         levels = np.array([50, 65, 80, 95, 100, 105, 150, 190, 220])
         norm = mcolors.BoundaryNorm(levels, ncolors = plt.get_cmap(cmap.cmap('MPL_BrBG'), 8).N) 
-        points = axs.scatter(bias, stdev, norm = norm, cmap = cmap.cmap('MPL_BrBG'), c = projection, edgecolor = 'k')
+        points = axs.scatter(bias, var, norm = norm, cmap = cmap.cmap('MPL_BrBG'), c = projection, edgecolor = 'k')
 
     # set bias of reference data based on variable
     if variable == 'pr' or variable == 'huss':
@@ -72,21 +80,21 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
     if add_box == True:
         # returns position of that dadta's percentile
         bias_percentile = np.percentile(abs(bias - ref_bias), percentile)
-        stdev_percentile = np.percentile(abs(stdev - 1), percentile)
+        var_percentile = np.percentile(abs(var - 1), percentile)
         
         # creates a box aroound models that perform at the percentile or higher in both datasets
-        focus_area = Rectangle((ref_bias-bias_percentile, 1-stdev_percentile), bias_percentile*2, stdev_percentile*2, edgecolor = 'red', facecolor = 'none')
+        focus_area = Rectangle((ref_bias-bias_percentile, 1-var_percentile), bias_percentile*2, var_percentile*2, edgecolor = 'red', facecolor = 'none')
         axs.add_patch(focus_area)
     
     # highlights specific models on the plot
     if model_to_label != 'SKIP':
         for model, color in zip(model_to_label, ['green', 'yellow', 'red']):
             index = models.index(model)
-            axs.plot(float(bias[index]), float(stdev[index]), marker = 'o', markeredgecolor = 'black', 
+            axs.plot(float(bias[index]), float(var[index]), marker = 'o', markeredgecolor = 'black', 
                      markerfacecolor  = color, markersize = 10, label = model)
         axs.legend(loc = 'upper left', bbox_to_anchor = (0.01, 0.99))
 
-    axs.set_yticks([0.5, 1, 1.5, 2, 2.5])
+    # axs.set_yticks([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
     # add line to show zero bias
     axs.axvline(x = ref_bias, color = 'black', linewidth = 0.75, linestyle = ':', zorder = 0)
     # add line to show where standard deviation is equal to reference data
@@ -95,21 +103,7 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
     return axs, points
 
 
-bones, points = model_performance('pr', 'DJF', models)
+bones, points = model_performance('pr', 'JJA', models)
 
-
-
-#%%
-# extract data from dictionary
-bias, stdev = data_build('pr', 'JJA', models)
-ref_bias = 1
-
-# returns position of that dadta's percentile
-bias_percentile = np.percentile(abs(bias - ref_bias), 50)
-stdev_percentile = np.percentile(abs(stdev - 1), 50)
-
-# creates a box aroound models that perform at the percentile or higher in both datasets
-# focus_area = Rectangle((ref_bias-bias_percentile, 1-stdev_percentile), bias_percentile*2, stdev_percentile*2, edgecolor = 'red', facecolor = 'none')
-# axs.add_patch(focus_area)
 
 
