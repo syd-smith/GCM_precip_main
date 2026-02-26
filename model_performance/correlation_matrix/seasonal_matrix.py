@@ -96,7 +96,7 @@ def expanded_df(variables, season, ssp):
         # model -> season -> bias/stdev -> variable
     projections = read_file('projections_feb10.txt')
         # ssp -> model -> season -> projection
-    lag_one = read_file('lag_one_feb22.txt')
+    lag_one = read_file('lag_one_feb23.txt')
         # model -> season -> variable
         
     if ssp == 'ssp126':

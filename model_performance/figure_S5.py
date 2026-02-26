@@ -19,14 +19,14 @@ import sys
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
 from file_traversing import write2file, read_file
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/')
-from historical_analysis import model_performance
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/moddel_performance')
+from single_variable_analysis import model_performance
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/from_savanna/')
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/from_savanna/')
 import nclcmaps as cmap
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/GCM_bias/sanity_check/')
-from taylor_per_season import data_build
+sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance')
+from seasonal_taylor_diagram import data_build
 
 
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',

@@ -12,18 +12,18 @@ from file_traversing import write2file, read_file
 
 seasons = ['DJF', 'MAM', 'JJA', 'SON', 'yearly']
 
-data = read_file('gcm_feb3.txt')
+data = read_file('gcm_feb19.txt')
 
 def model_review(model):
 
     for season in seasons:
         print(season)
         print(f'Precip bias for {season}: {data[model][season]['bias']['pr']}')
-        print(f'Precip stdev ratio for {season}: {data[model][season]['stdev_ratio']['pr']}')
+        print(f'Precip variance ratio for {season}: {data[model][season]['var_ratio']['pr']}')
         print(f'Tasmin bias for {season}: {data[model][season]['bias']['tasmin']}')
-        print(f'Tasmin stdev ratio for {season}: {data[model][season]['stdev_ratio']['tasmin']}')
+        print(f'Tasmin variance ratio for {season}: {data[model][season]['var_ratio']['tasmin']}')
         print(f'Tasmax bias for {season}: {data[model][season]['bias']['tasmax']}')
-        print(f'Tasmax stdev ratio for {season}: {data[model][season]['stdev_ratio']['tasmax']}')
+        print(f'Tasmax variance ratio for {season}: {data[model][season]['var_ratio']['tasmax']}')
         print('--------------------')
         
     return model
