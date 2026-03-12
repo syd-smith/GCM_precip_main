@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Feb 22 09:16:21 2026
+Created on Wed Mar  4 12:38:31 2026
 
 @author: u1301408
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sys
@@ -26,7 +27,7 @@ data = read_file('gcm_feb19.txt')
 
 def rank_data(data, dict_name, dict_path, save = False):
     
-    storage_dict = read_file(dict_name, dict_path)
+    storage_dict = read_file('rank_mar3.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/')
     
     for variable in variables:
         for season in seasons:
@@ -36,30 +37,24 @@ def rank_data(data, dict_name, dict_path, save = False):
                 obs = 0
     
             bias = np.array([[name, data[name][season]['bias'][variable]] for name in models])
-            var = np.array([[name, data[name][season]['var_ratio'][variable]] for name in models])
             
             # returns position of that data's percentile
             bias_percentile = np.array([[name, abs(float(value) - obs)] for name, value in bias])
-            var_percentile = np.array([[name, abs(float(value) - 1)] for name, value in var])
             
             bias_order = bias_percentile[:, 1].astype(float).argsort()
             sorted_bias = bias_percentile[bias_order]
-            
-            var_order = var_percentile[:, 1].astype(float).argsort()
-            sorted_var = var_percentile[var_order]
 
             for model in models:
-                bias_val = int(np.where(tasmax_bias[:, 0] == model)[0][0])
-                var_val = int(np.where(sorted_var[:, 0] == model)[0][0])
+                bias_val = int(np.where(sorted_bias[:, 0] == model)[0][0])
                 # lag_val = int(np.where(sorted_lag[:, 0] == model)[0][0])
-                storage_dict[model][variable][season] = int(np.sum([bias_val, var_val]))
+                storage_dict[model][variable][season] = int(np.sum(bias_val))
         
         if save == True:
             write2file(storage_dict, dict_name, dict_path)
                 
     return storage_dict
                
-# save_data = rank_data(data, 'rank_mar3.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', save = True)
+save_data = rank_data(data, 'just_bias.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', save = True)
 
 
 def rank_calcs(dict_name, dict_path, variable = 'all'):
@@ -99,9 +94,19 @@ def rank_calcs(dict_name, dict_path, variable = 'all'):
         
     return sorted_final
 
-grand_total = rank_calcs('rank_mar3.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/')
-pr = rank_calcs('rank_mar3.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', variable = 'pr')
-tasmin = rank_calcs('rank_mar3.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', variable = 'tasmin')
-tasmax = rank_calcs('rank_mar3.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', variable = 'tasmax')
+grand_total = rank_calcs('just_bias.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/')
+pr = rank_calcs('just_bias.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', variable = 'pr')
+tasmin = rank_calcs('just_bias.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', variable = 'tasmin')
+tasmax = rank_calcs('just_bias.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', variable = 'tasmax')
 
 df = pd.DataFrame([pr[:, 0], tasmin[:, 0], tasmax[:, 0], grand_total[:, 0]]).T
+df.columns = ['Precipitation', 'Minimum Temperature', 'Maximum Temperature', 'Grand Total']
+
+fig, ax = plt.subplots(figsize = (6, 2)) # Adjust size as needed
+ax.axis('off') # Hide the axes
+
+# Create the table and add it to the plot
+table = ax.table(cellText = df.values, colLabels = df.columns, loc = 'center', cellLoc = 'center')
+for (row, col), cell in table.get_celld().items():
+    if row == 0: # This targets the header row
+        cell.set_text_props(weight = 'bold', fontsize = 16)
