@@ -6,14 +6,13 @@ Created on Tue Mar  3 09:45:29 2026
 @author: u1301408
 """
 
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sys
 
 sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
-from file_traversing import write2file, read_file
+from file_traversing import read_file
 
 
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',
@@ -96,6 +95,7 @@ def rank_data(data, dict_name, dict_path, variable, calc = 'both'):
 def rmse(actual, predicted):
     return np.sqrt(np.mean((predicted - actual) ** 2))
 
+
 def sort_data(variable, calc = 'both'):
     if calc == 'both':
         bias, var = rank_data(data, 'rank_mar3.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance/ranking/', variable = variable, calc = calc)
@@ -121,6 +121,7 @@ def sort_data(variable, calc = 'both'):
 sorted_pr, pr_idx = sort_data('pr', calc = 'both')
 sorted_tasmin, tasmin_idx = sort_data('tasmin', calc = 'both')
 sorted_tasmax, tasmax_idx = sort_data('tasmax', calc = 'both')
+
 
 def combine_variables(pr_data, tasmin_data, tasmax_data):
     grand_total = []
@@ -179,8 +180,6 @@ for (row, col), cell in table.get_celld().items():
     if row == 0: # This targets the header row
         cell.set_text_props(weight = 'bold', fontsize = 5)
         
-        
-#%%
 
 ### RMSE of individual calcs from combined ranking ###
 bias_pr, bias_pr_idx = sort_data('pr', calc = 'bias')
@@ -216,7 +215,6 @@ for (row, col), cell in table.get_celld().items():
     if row == 0: # This targets the header row
         cell.set_text_props(weight = 'bold', fontsize = 5)
 
-#%%
 
 def model_search_table(model):
     search_df = pd.DataFrame([range(1, 28), bias_pr[:, 0], var_pr[:, 0], sorted_pr[:, 0], bias_tasmin[:, 0], var_tasmin[:, 0], sorted_tasmin[:, 0], bias_tasmax[:, 0], var_tasmax[:, 0], sorted_tasmax[:, 0], sorted_total[:, 0]]).T
@@ -244,11 +242,29 @@ def model_search_table(model):
         
     return fig
 
-
+### Climate Scenario #1 ###
 first = model_search_table('CNRM-ESM2-1')
-# second = model_search_table('MRI-ESM2-0')
-third = model_search_table('EC-Earth3')
+second = model_search_table('EC-Earth3')
 
+### Climate Scenario #2 ###
+first = model_search_table('EC-Earth3-CC')
+second = model_search_table('MRI-ESM2-0')
+third = model_search_table('HadGEM3-GC31-LL')
 
-# ranking is a bit arbitray but the grand total seems to be more representative of the center of the spread of uncertainty produced by the individual rankings
+### Climate Scenario #3 ###
+first = model_search_table('KACE-1-0-G')
+seconnd = model_search_table('MIROC-ES2L')
+
+### Climate Scenario #4 ###
+first = model_search_table('EC-Earth3-AerChem')
+second = model_search_table('EC-Earth3')
+third = model_search_table('EC-Earth3-CC')
+
+### Climate Scenario #5 ###
+first = model_search_table('UKESM1-0-LL')
+second = model_search_table('HadGEM3-GC31-LL')
+third = model_search_table('KACE-1-0-G')
+
+# ranking is a bit arbitray but the grand total seems to be more representative 
+# of the center of the spread of uncertainty produced by the individual rankings
 
