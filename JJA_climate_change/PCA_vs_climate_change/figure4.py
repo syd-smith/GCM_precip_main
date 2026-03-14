@@ -11,15 +11,24 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.ticker as ticker
 import numpy as np
-import os
+from pathlib import Path
 import sys
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
+
+current_file_directory = Path(__file__).resolve().parent
+print(f'CURRENT FILE DIRECTORY: {current_file_directory}')
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
+
 from file_traversing import read_file
+
 
 # read in PC data from tabular format in Savanna's .csv file
 df = pd.read_csv('/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/climate_analysis/pca/PCs_zscore_column.csv')
-scatter_framework = read_file('dictionary_structure.txt', '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/JJA_climate_change/')
+scatter_framework = read_file('dictionary_structure.txt', 'JJA_climate_change')
 
 # _ refers to the rows while rows really refers to the columns
 for row, col in df.iterrows():

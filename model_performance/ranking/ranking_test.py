@@ -6,6 +6,7 @@ Created on Tue Mar  3 09:45:29 2026
 @author: u1301408
 """
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -162,8 +163,8 @@ tasmin_error = sorted_RMSE(sorted_tasmin, sorted_total, tasmin_idx)
 tasmax_error = sorted_RMSE(sorted_tasmax, sorted_total, tasmax_idx)
 
 
-df = pd.DataFrame([sorted_pr[:, 0], pr_error[:, 1], sorted_tasmin[:, 0], tasmin_error[:, 1], sorted_tasmax[:, 0], tasmax_error[:, 1], sorted_total[:, 0]]).T
-df.columns = ['Pr', 'Pr RMSE', 'Tasmin', 'Tasmin RMSE', 'Tasmax', 'Tasmax RMSE', 'Grand Total']
+df = pd.DataFrame([range(1, 28), sorted_pr[:, 0], pr_error[:, 1], sorted_tasmin[:, 0], tasmin_error[:, 1], sorted_tasmax[:, 0], tasmax_error[:, 1], sorted_total[:, 0]]).T
+df.columns = ['Rank', 'PR', 'PR RMSE', 'TMIN', 'TMIN RMSE', 'TMAX', 'TMAX RMSE', 'Grand Total']
 
 
 ### Create table to display dataframe ###
@@ -174,13 +175,37 @@ ax.axis('off') # Hide the axes
 table = ax.table(cellText = df.values, colLabels = df.columns, loc = 'center', cellLoc = 'center')
 
 table.auto_set_font_size(False)
-table.set_fontsize(4.5)
+table.set_fontsize(4)
 
 for (row, col), cell in table.get_celld().items():
     if row == 0: # This targets the header row
         cell.set_text_props(weight = 'bold', fontsize = 5)
         
+cs1 = mpatches.Patch(color = 'lightcoral', label = 'Climate Scenario 1')
+cs25 = mpatches.Patch(color = 'palegoldenrod', label = 'Climate Scenarios 2 & 5')
+cs3 = mpatches.Patch(color = 'lightgreen', label = 'Climate Scenario 3')
+cs4 = mpatches.Patch(color = 'lightblue', label = 'Climate Scenario 4')
 
+
+for (i,j), cell in table.get_celld().items():
+    text = str(cell.get_text().get_text()).strip()
+
+    # Only highlight exact matches
+    if text == 'CNRM-ESM2-1':
+        cell.set_facecolor('lightcoral')
+    elif text == 'HadGEM3-GC31-LL':
+        cell.set_facecolor('palegoldenrod')
+    elif text == 'KACE-1-0-G':
+        cell.set_facecolor('lightgreen')
+    elif text == 'EC-Earth3':
+        cell.set_facecolor('lightblue')
+
+ax.legend(handles = [cs1, cs25, cs3, cs4],
+          loc = 'center', 
+          bbox_to_anchor = (0.5, -1.35))
+        
+
+#%%
 ### RMSE of individual calcs from combined ranking ###
 bias_pr, bias_pr_idx = sort_data('pr', calc = 'bias')
 pr_bias_error = sorted_RMSE(bias_pr, sorted_pr)
@@ -214,8 +239,31 @@ table.set_fontsize(4.5)
 for (row, col), cell in table.get_celld().items():
     if row == 0: # This targets the header row
         cell.set_text_props(weight = 'bold', fontsize = 5)
+        
+cs1 = mpatches.Patch(color = 'lightcoral', label = 'Climate Scenario 1')
+cs25 = mpatches.Patch(color = 'palegoldenrod', label = 'Climate Scenarios 2 & 5')
+cs3 = mpatches.Patch(color = 'lightgreen', label = 'Climate Scenario 3')
+cs4 = mpatches.Patch(color = 'lightblue', label = 'Climate Scenario 4')
 
 
+for (i,j), cell in table.get_celld().items():
+    text = str(cell.get_text().get_text()).strip()
+
+    # Only highlight exact matches
+    if text == 'CNRM-ESM2-1':
+        cell.set_facecolor('lightcoral')
+    elif text == 'HadGEM3-GC31-LL':
+        cell.set_facecolor('palegoldenrod')
+    elif text == 'KACE-1-0-G':
+        cell.set_facecolor('lightgreen')
+    elif text == 'EC-Earth3':
+        cell.set_facecolor('lightblue')
+
+ax.legend(handles = [cs1, cs25, cs3, cs4],
+          loc = 'center', 
+          bbox_to_anchor = (0.5, -1.35))
+
+#%%
 def model_search_table(model):
     search_df = pd.DataFrame([range(1, 28), bias_pr[:, 0], var_pr[:, 0], sorted_pr[:, 0], bias_tasmin[:, 0], var_tasmin[:, 0], sorted_tasmin[:, 0], bias_tasmax[:, 0], var_tasmax[:, 0], sorted_tasmax[:, 0], sorted_total[:, 0]]).T
     search_df.columns = ['', 'PR Bias', 'PR Var Ratio', 'PR Combined', 'TMIN Bias', 'TMIN Var Ratio', 'TMIN Combined', 'TMAX Bias', 'TMAX Var Ratio', 'TMAX Combined', 'Grand Total']
