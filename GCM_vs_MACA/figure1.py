@@ -22,7 +22,6 @@ import xarray as xr
 # ==================================
 
 current_file_directory = Path(__file__).resolve().parent
-print(f'CURRENT FILE DIRECTORY: {current_file_directory}')
 parent_directory = current_file_directory.parent
 sys.path.append(str(parent_directory))
 

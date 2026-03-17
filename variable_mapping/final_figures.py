@@ -15,17 +15,32 @@ import matplotlib.ticker as ticker
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy as np
 import os
+from pathlib import Path
 import sys
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/')
-from gcm_var_mapping import region_mean, anomaly, quiver
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/from_savanna/')
-import nclcmaps as cmap
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
+
+import from_savanna.nclcmaps as cmap
+from variable_mapping.gcm_var_mapping import region_mean, anomaly, quiver
+
+
+# ===============
+#  - Constants - 
+# ===============
 
 # representatives of wet/moderate/dry scenarios
 models = ['UKESM1-0-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
+
+# ==============
+# - Functions - 
+# ==============
 
 def color_bar(var_min, var_center, var_max, color, location, axs):
     """
@@ -47,8 +62,7 @@ def color_bar(var_min, var_center, var_max, color, location, axs):
     
     return cbar
 
-
-def future_change_fig(start_month, stop_month, save_name = 'test', save = False):
+def future_change_fig(start_month, stop_month, save_name = 'figure5.png', save = False):
     """
     Function used to create the final maps displaying the expected future change
     in precipitation across the continential US. Note that the selected models
@@ -106,10 +120,10 @@ def future_change_fig(start_month, stop_month, save_name = 'test', save = False)
     
     # PRECIPITATION COLORBAR
     # fine tuning control of colorbar size and placement
-    pr_axins = inset_axes(ax, width = '10%', height = '20%', loc='center right', bbox_to_anchor = (0.935, 0.08, 0.08, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
+    pr_axins = inset_axes(ax, width = '10%', height = '20%', loc = 'center right', bbox_to_anchor = (0.935, 0.08, 0.08, 1.5), bbox_transform = fig.transFigure, borderpad = 0)
 
     # create a scalar mappable as a standin for contour so the colorbar remains standardized across different maps
-    pr_sm = mpl.cm.ScalarMappable(norm = pr_norm, cmap =  cmap.cmap('MPL_BrBG'))
+    pr_sm = mpl.cm.ScalarMappable(norm = pr_norm, cmap = cmap.cmap('MPL_BrBG'))
     pr_sm.set_array([])
     
     #  colorbar function passed using the scalar mappable 
@@ -149,16 +163,12 @@ def future_change_fig(start_month, stop_month, save_name = 'test', save = False)
     
     if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
-        save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/variable_mapping/'
-        save_path = os.path.join(save_path + save_name + '.png')
+        save_path = current_file_directory.joinpath(save_name)
         plt.savefig(save_path, dpi = 400)
         
     plt.show()
-    
-figure5 = future_change_fig(6, 8, save_name = 'figure5')
-      
 
-def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
+def height_wind_fig(start_month, stop_month, save_name = 'figure_S4.png', save = False):
     """
     Geopotential height at 500 hPa with the average over the historical period
     displayed on the top row and anomaly from the historical to the future 
@@ -232,16 +242,12 @@ def height_wind_fig(start_month, stop_month, save_name = 'test', save = False):
     
     if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
-        save_path = '/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/variable_mapping/'
-        save_path = os.path.join(save_path + save_name + '.png')
+        save_path = current_file_directory(save_name)
         plt.savefig(save_path, dpi = 400)
       
     plt.show()
 
-figure_S4 = height_wind_fig(6, 8, save_name = 'figure_S4')
-
-
-def humidity_fig(start_month, stop_month, save_name = 'test', save = False):
+def humidity_fig(start_month, stop_month, save_name = 'test.png', save = False):
     fig, axs = plt.subplots(nrows = 2, ncols = 3, subplot_kw = {'projection': ccrs.PlateCarree()}, figsize = (42, 11.5))
     
     labels_one = ['a.', 'b.', 'c.']
@@ -287,10 +293,23 @@ def humidity_fig(start_month, stop_month, save_name = 'test', save = False):
     
     if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
-        save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/variable_mapping/test_maps'
-        save_path = os.path.join(save_path + save_name + '.png')
+        save_path = current_file_directory(save_name)
         plt.savefig(save_path, dpi = 400)
       
     plt.show()
     
-humidity_fig(6, 8)
+
+# ================
+# - Entry Point - 
+# ================
+
+def main():
+    # CONUS map of precip, temp< and humidity anomalies
+    figure5 = future_change_fig(6, 8)
+    # CONUS map of historical and anomalies of geopotential height and wind 
+    figure_S4 = height_wind_fig(6, 8, save_name = 'figure_S4')
+    
+    # humidity_fig(6, 8)
+    
+if __name__ == '__main__':
+    main()

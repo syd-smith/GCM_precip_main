@@ -11,11 +11,23 @@ import matplotlib.ticker as ticker
 import matplotlib.colors as mcolors 
 from matplotlib.colors import Normalize
 import numpy as np
-
+from pathlib import Path
 import sys
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
-from file_traversing import write2file, read_file
 
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
+
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
+
+from tool_belt.file_traversing import read_file
+
+
+# ===============
+#  - Constants - 
+# ===============
 
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',
           'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4',
@@ -27,6 +39,10 @@ ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
                   'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6',
                    'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+
+# ==============
+# - Functions - 
+# ==============
 
 def data_build(variable, season, model_list):
     """
@@ -40,7 +56,6 @@ def data_build(variable, season, model_list):
     var = np.array([data[model][season]['var_ratio'][variable] for model in model_list])
     
     return bias, var
-
 
 def simple_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
@@ -57,7 +72,7 @@ def simple_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     obs_stdev_ratio = 1
 
     # Setup polar plot: angle = arccos(bias), radius = standard deviation
-    fig, axs = plt.subplots(subplot_kw={'projection': 'polar'}, figsize = (5, 5))
+    fig, axs = plt.subplots(subplot_kw = {'projection': 'polar'}, figsize = (5, 5))
 
     # make the figure a semi-circle 
     axs.set_thetamin(0)
@@ -117,10 +132,6 @@ def simple_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
     return fig
 
-# bias, stdev = data_build('tasmin', 'SON')
-# tasmin = simple_taylor(bias, stdev, 'Fall Minimum Temperature', model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
-
-
 def pr_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     
     # find largest magnitude value in the dataset and normalize data to that value
@@ -136,7 +147,7 @@ def pr_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     obs_stdev_ratio = 1
 
     # Setup polar plot: angle = arccos(bias), radius = standard deviation
-    fig, axs = plt.subplots(subplot_kw={'projection': 'polar'}, figsize = (5, 5))
+    fig, axs = plt.subplots(subplot_kw = {'projection': 'polar'}, figsize = (5, 5))
 
     # make the figure a semi-circle 
     axs.set_thetamin(90)
@@ -176,7 +187,7 @@ def pr_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     for line in bias_lines:
         b_norm = line / bias_max
         angle = np.pi - np.arccos(b_norm)
-        axs.plot([angle, angle], [0, 2.62], '-.', color='black', lw=0.5)
+        axs.plot([angle, angle], [0, 2.62], '-.', color = 'black', lw=0.5)
         tick_angles.append(angle)
         tick_labels.append(f'{line:.2f}')
 
@@ -187,7 +198,4 @@ def pr_taylor(bias, stdev_ratio, title, model_to_label = 'SKIP'):
     axs.set_title(title, fontsize = 16, pad = 10)
     
     return fig
-
-# for season, label in zip(['yearly', 'DJF', 'MAM', 'JJA', 'SON'], ['Annual', 'Winter', 'Spring', 'Summer', 'Fall']):
-#     bias, stdev = data_build('pr', season)
-#     pr = pr_taylor(bias, stdev, f'{label} Precipitation', model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
+ 

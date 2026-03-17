@@ -8,7 +8,6 @@ Created on Thu Jun 26 13:05:53 2025
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import geopandas as gpd
 import glob
 import matplotlib as mpl
 import matplotlib.colors as mcolors
@@ -17,28 +16,25 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import os
+from pathlib import Path
 import sys
 import xarray as xr
 import xesmf as xe
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/variable_mapping/')
-from map_formatting import variable_dict
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
+
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
+
+from variable_mapping.map_formatting import variable_dict
 
 
-# Define the shapefile path (where to find coordinates used by VIC from Maribeth at USBR)
-bdir = '/uufs/chpc.utah.edu/common/home/u0660911/Documents/projects/gslbip/'
-shapefile_path = os.path.join(bdir,'GSLBIP_shpfiles/MF6_VIC_bounding_box/MF6_VIC_bounding_box.shp')
-
-# Load the shapefile for VIC boundaries of Great Salt Lake Basin (not applied for larger maps)
-gdf = gpd.read_file(shapefile_path)
-gdf = gdf.to_crs("EPSG:4326")
-min_lon, min_lat, max_lon, max_lat = gdf.total_bounds
-
-# output of values in VIC shapefile
-# min_lon = -113.69354024533703
-# max_lon = -110.59375
-# min_lat = 39.553038338687124
-# max_lat = 42.84375
+# ===============
+#  - Constants - 
+# ===============
 
 time_dict = {
     range(5, 6) :'May',
@@ -55,6 +51,11 @@ time_dict = {
     range(8, 10): 'AS'
     }
 
+# near surface variables
+variables = ['pr', 'hus', 'psl', 'tas', 'uas', 'vas']
+
+# variables that can be viewed at different levels in the atmosphere
+mid_level_variables = ['zg', 'ua', 'va']
 
 # MODELS USED FOR LATEST GROUPING -> WET, MODERATE, DRY
 # listed in order from highest to lowest
@@ -71,6 +72,10 @@ models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL
 # L_models = ['MPI-ESM1-2-LR', 'CNRM-ESM2-1', 'CNRM-CM6-1-HR', 'INM-CM4-8']
 
 
+# ==============
+# - Functions - 
+# ==============
+
 def region_mean(model_name, variable, start_month, stop_month, level = None, start_year = 1979, stop_year = 2014, zoom_out = False, *kwargs): 
     
     """
@@ -81,7 +86,7 @@ def region_mean(model_name, variable, start_month, stop_month, level = None, sta
     Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
     """
     
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/ERA5/{variable}/{variable}_Amon_'
+    fpath = parent_directory.joinpath('INPUT_DATA', variable, f'{variable}_Amon_')
     
     # lets the function know what file to open for the given model and variable based on date range
     if 1970 <= start_year <= 2014:
@@ -91,7 +96,6 @@ def region_mean(model_name, variable, start_month, stop_month, level = None, sta
     
     fname = fpath + model_name + date
     ds = xr.open_mfdataset(glob.glob(fname), decode_times = True)
-    # print('Files Found:', glob.glob(fname))
     
     # variables that have an extra dimension for what pressure level you want to look at needs to be selected
     # geopotential height should be at the  500 hPa level
@@ -130,7 +134,6 @@ def region_mean(model_name, variable, start_month, stop_month, level = None, sta
 
     return overall_mean
 
-
 def anomaly(model_name, variable, start_month, stop_month, level = None, zoom_out = False, *kwargs):
     
     """
@@ -152,10 +155,6 @@ def anomaly(model_name, variable, start_month, stop_month, level = None, zoom_ou
         anomaly = overall_mean_fut - overall_mean_hist
 
     return anomaly
-
-# example of the anomaly function being used to return a lat and lon xarray.DataArray for the specified variable
-# vas = anomaly('ACCESS-CM2', 'vas')
-
 
 def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, start_year = 1979, stop_year = 2014, zoom_out = False, step = 1, *kwargs):
     
@@ -248,7 +247,6 @@ def quiver(u, v, ax, anomaly_ref, model_name, start_month, stop_month, level, st
         
     return quiv, key
 
-
 def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, level = None, start_year = 1979, stop_year = 2014, add_quiver = None, u = 'uas', v = 'vas', save = False, zoom_out = False):
     
     """
@@ -340,7 +338,7 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     # save path for files
     if save:
         # all PNGs stored to anomaly_maps directory but ignored in Git
-        save_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/anomaly_maps/{model_name}/'
+        save_path = parent_directory.joinpath('variable_mapping', model_name)
         
         # refers to time_dict for the naming files based on the given months
         save_path = os.path.join(save_path, time_dict[range(start_month, stop_month +1)] + save_name)
@@ -350,17 +348,29 @@ def map_anomalies(anomaly_ref, model_name, variable, start_month, stop_month, le
     
     return fig, ax
 
-test = map_anomalies(anomaly, models[2], 'ts', 6, 8)
 
-# for variable in variables:
-#     for model in models:
-#         map_anomalies(region_mean, model, variable, 9, 9, start_year = 1979, stop_year = 2014, save = True)
-#         map_anomalies(region_mean, model, variable, 9, 9, start_year = 2070, stop_year = 2099, save = True)
-#         map_anomalies(anomaly, model, variable, 9, 9, save = True)
+# ================
+# - Entry Point - 
+# ================
 
-# for variable in H_variables:
-#     for model in models:
-#         map_anomalies(region_mean, model, variable, 9, 9, level = 50000, start_year = 1979, stop_year = 2014, save = True)
-#         map_anomalies(region_mean, model, variable, 9, 9, level = 50000, start_year = 2070, stop_year = 2099, save = True)
-#         map_anomalies(anomaly, model, variable, 9, 9, level = 50000, save = True)
-        
+def main():
+    # example of the anomaly function being used to return a lat and lon xarray.DataArray for the specified variable
+    # vas = anomaly('ACCESS-CM2', 'vas')
+    
+    # map CONUS historical, future, and anomalies for JJA averages for all near surface variables
+    for variable in variables:
+        for model in models:
+            map_anomalies(region_mean, model, variable, 6, 8, start_year = 1979, stop_year = 2014, save = True)
+            map_anomalies(region_mean, model, variable, 6, 8, start_year = 2070, stop_year = 2099, save = True)
+            map_anomalies(anomaly, model, variable, 6, 8, save = True)
+    
+    # map CONUS historical, future, and anomalies for JJA averages for all variables to view in the mid atmosphere
+    for variable in mid_level_variables:
+        # variables are chosen to be viewed at theh 500 hPa level (level = 50000)
+        for model in models:
+            map_anomalies(region_mean, model, variable, 6, 8, level = 50000, start_year = 1979, stop_year = 2014, save = True)
+            map_anomalies(region_mean, model, variable, 6, 8, level = 50000, start_year = 2070, stop_year = 2099, save = True)
+            map_anomalies(anomaly, model, variable, 6, 8, level = 50000, save = True)
+            
+# if __name__ == '__main__':
+#     main()

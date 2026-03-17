@@ -6,40 +6,110 @@ Created on Tue Feb 10 12:26:44 2026
 @author: u1301408
 """
 
+from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.colors as mcolors 
-from matplotlib.colors import Normalize
-from matplotlib.cm import ScalarMappable
 import numpy as np
-from scipy.stats import pearsonr
-import xarray as xr
-
+from pathlib import Path
 import sys
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
-from file_traversing import write2file, read_file
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/moddel_performance')
-from single_variable_analysis import model_performance
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/from_savanna/')
-import nclcmaps as cmap
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
 
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/model_performance')
-from seasonal_taylor_diagram import data_build
+import from_savanna.nclcmaps as cmap
+from model_performance.seasonal_taylor_diagram import data_build
+from tool_belt.file_traversing import read_file
 
+
+# ===============
+#  - Constants - 
+# ===============
 
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',
           'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4',
           'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 
           'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
-
 ssp585_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1',
                  'CanESM5', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4', 'HadGEM3-GC31-LL',
                   'HadGEM3-GC31-MM', 'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'KIOST-ESM', 'MIROC-ES2H', 'MIROC6',
                    'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+
+# ==============
+# - Functions - 
+# ==============
+
+def model_performance(variable, season, models, axs = None, add_box = True, percentile = 50, model_to_label = 'SKIP', coloring = False):
+    """
+    Uses bias and temporal variance data to build a Cartesian Taylor Diagram
+    with bias on the x axis and the temporal variance ratio 
+    (GCM variance/Obs variance) on the y axis. Each point on the plot represents
+    a different model. A box can be added to represent the bounds of the 50th 
+    percentile for both axes. Plot points can also be shaded by a model's
+    projected increase in summer precipitation.
+    """
+    
+    # extract data from dictionary
+    bias, var = data_build(variable, season, models)
+    
+    # allow an axs to be passed to the function to integrate this into building subplots
+    if axs == None:
+        fig, axs = plt.subplots(figsize = (5, 5))
+    else:
+        fig = axs.figure
+        
+    # plot bias and standard deviation data on figure
+    if coloring == False:
+        axs.scatter(bias, var)
+        points = 'No coloring shading specified.'
+    else:
+        data = read_file('projections_feb10.txt')
+        projection = np.array([data['ssp585'][model][season]['precip_ratio'] for model in ssp585_models])
+        levels = np.array([50, 65, 80, 95, 100, 105, 150, 190, 220])
+        norm = mcolors.BoundaryNorm(levels, ncolors = plt.get_cmap(cmap.cmap('MPL_BrBG'), 8).N) 
+        points = axs.scatter(bias, var, norm = norm, cmap = cmap.cmap('MPL_BrBG'), c = projection, edgecolor = 'k')
+
+    # set bias of reference data based on variable
+    if variable == 'pr' or variable == 'huss':
+        ref_bias = 1
+    else:
+        ref_bias = 0
+    
+    # plot reference point as a black star
+    axs.plot(ref_bias, 1, marker =  '*', markeredgecolor = 'black', markersize = 25, markerfacecolor  = 'none')
+    
+    # if selected, as a box to show what models perform at the defined percentile
+    if add_box == True:
+        # returns position of that dadta's percentile
+        bias_percentile = np.percentile(abs(bias - ref_bias), percentile)
+        var_percentile = np.percentile(abs(var - 1), percentile)
+        
+        # creates a box aroound models that perform at the percentile or higher in both datasets
+        focus_area = Rectangle((ref_bias-bias_percentile, 1-var_percentile), bias_percentile*2, var_percentile*2, edgecolor = 'red', facecolor = 'none')
+        axs.add_patch(focus_area)
+    
+    # highlights specific models on the plot
+    if model_to_label != 'SKIP':
+        for model, color in zip(model_to_label, ['green', 'yellow', 'red']):
+            index = models.index(model)
+            axs.plot(float(bias[index]), float(var[index]), marker = 'o', markeredgecolor = 'black', 
+                     markerfacecolor  = color, markersize = 10, label = model)
+        axs.legend(loc = 'upper left', bbox_to_anchor = (0.01, 0.99))
+
+    # axs.set_yticks([0.5, 1, 1.5, 2, 2.5, 3, 3.5])
+    # add line to show zero bias
+    axs.axvline(x = ref_bias, color = 'black', linewidth = 0.75, linestyle = ':', zorder = 0)
+    # add line to show where standard deviation is equal to reference data
+    axs.axhline(y = 1, color = 'black', linewidth = 0.75, linestyle = ':', zorder = 0)
+    
+    return axs, points
 
 def mixed_model_performance(season, models, coloring = False, box = False, percentile = 50, model_to_label = 'SKIP'):
     """
@@ -110,75 +180,24 @@ def mixed_model_performance(season, models, coloring = False, box = False, perce
     return fig, axs
 
 
-paper_fig = mixed_model_performance('JJA', ssp585_models, coloring = True)
+# ================
+# - Entry Point - 
+# ================
 
-# for season in ['yearly', 'DJF', 'MAM', 'JJA', 'SON']:
-#     mixed_model_performance(season, models, box = True, model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
-
-# winter = mixed_model_performance('DJF', models, box = True)
+def main():
     
-
-
-#%%
-
-# Pearson R and P values of correlation between pr bias and var
-check = read_file('gcm_feb9.txt')
-bias = np.array([check[model]['JJA']['bias']['pr'] for model in ssp585_models])
-var =  np.array([check[model]['JJA']['var_ratio']['pr'] for model in ssp585_models])
-values = pearsonr(bias, var)
-
-#%%
-
-def fut_value(model, emission_scenario, variable, season_name, season):
+    # shows the historical performance of CMIP6 models to gridMET (obs) for pr, tmin, tmax
+    paper_fig = mixed_model_performance('JJA', ssp585_models, coloring = True)
     
-    """
-    Returns the change in a variable from the historical to future period to a nested 
-    dictionary under the model name and emission scenario. 
-    The average for the variable calculated is across all grid points in the given period.
-    Save_variable should be the framework dictionary imported from dictionary_structure.py.
-    """
-
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_{emission_scenario}_{variable}.nc'
-    open_ds = xr.open_dataset(fpath)
+    # example of model performance plot with box to show 50th percentile
+    # for season in ['yearly', 'DJF', 'MAM', 'JJA', 'SON']:
+    #     mixed_model_performance(season, models, box = True, model_to_label = ['UKESM1-0-LL', 'HadGEM3-GC31-LL', 'KACE-1-0-G'])
     
-    # finds the mean for the future period
-    fut_ds = open_ds[variable].sel(time = open_ds[variable].time.dt.month.isin(season))
-    fut_means = []
-    for year in range(2070, 2099):
-        data_fut = fut_ds.sel(time = fut_ds.time.dt.year == year)
-        fut_mean = data_fut.mean(skipna= True).item()
-        fut_means.append(fut_mean)
-    
-    fut_val = float(np.mean(fut_means))    
-        
-    return fut_val
+if __name__ == '__main__':
+    main()
 
 
-# pr units in mm
 
-# Group 7 
-print(f'UKESM1-0-LL, ssp370: {fut_value('UKESM1-0-LL', 'ssp370', 'pr', 'JJA', [5, 6, 7])}')
-print(f'HadGEM3-GC31-LL, ssp585: {fut_value('HadGEM3-GC31-LL', 'ssp585', 'pr', 'JJA', [5, 6, 7])}')
-print(f'KACE-1-0-G, ssp585: {fut_value('KACE-1-0-G', 'ssp585', 'pr', 'JJA', [5, 6, 7])}')
-
-# Group 6
-# print(f'EC-Earth3-AerChem, ssp370: {fut_value('EC-Earth3-AerChem', 'ssp370', 'pr', 'JJA', [5, 6, 7])}')
-# print(f'EC-Earth3, ssp585: {fut_value('EC-Earth3', 'ssp585', 'pr', 'JJA', [5, 6, 7])}')
-# print(f'EC-Earth3-CC, ssp585: {fut_value('EC-Earth3-CC', 'ssp585', 'pr', 'JJA', [5, 6, 7])}')
-
-# Group 5
-# print(f'KACE-1-0-G, ssp126: {fut_value('KACE-1-0-G', 'ssp126', 'pr', 'JJA', [5, 6, 7])}')
-# print(f'KACE-1-0-G, ssp245: {fut_value('KACE-1-0-G', 'ssp245', 'pr', 'JJA', [5, 6, 7])}')
-# print(f'MIROC-ES2L, ssp126: {fut_value('MIROC-ES2L', 'ssp126', 'pr', 'JJA', [5, 6, 7])}')
-
-# print(f'CNRM-ESM2-1, ssp370: {fut_value('CNRM-ESM2-1', 'ssp370', 'tasmax', 'JJA', [5, 6, 7])}')
-# print(f'HadGEM3-GC31-LL, ssp126: {fut_value('HadGEM3-GC31-LL', 'ssp126', 'tasmax', 'JJA', [5, 6, 7])}')
-
-
-#%%
-data = read_file('gcm_feb19.txt')
-for model in ssp585_models:
-    print(model, data[model]['JJA']['var_ratio']['pr'])
 
 
 

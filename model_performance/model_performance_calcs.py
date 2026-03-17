@@ -6,19 +6,27 @@ Created on Thu Jan 22 13:24:14 2026
 @author: u1301408
 """
 
-import ast
-import glob
 import numpy as np
-import os
-import pprint
+from pathlib import Path
 import scipy.io
 import statsmodels.api as sm
+import sys
 import xarray as xr
 
-import sys
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
-from file_traversing import write2file, read_file
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
 
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
+
+from tool_belt.file_traversing import read_file, write2file
+
+
+# ===============
+#  - Constants - 
+# ===============
 
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',
           'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4',
@@ -43,6 +51,9 @@ ssp126_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
                  'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR',
                  'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+# variables syntax from GCM CMIP6 data
+gcm_variables = ['pr', 2]
+
 # variables used in MACA downscaling process 
 variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 
@@ -51,97 +62,97 @@ seasons = {'DJF':[11, 0, 1], 'MAM':[2, 3, 4], 'JJA':[5, 6, 7], 'SON':[8, 9, 10],
 obs_seasons = {'DJF':[12, 1,2], 'MAM':[3, 4, 5], 'JJA':[6, 7, 8], 'SON':[9, 10, 11], 'yearly':list(range(1, 13))}
 
 
-#%%
-gcm_dict =  read_file('gcm_hist_jan_27.txt')
+# ==============
+# - Functions - 
+# ==============
 
-def model_avg(save_variable, model, variable, season_name, season, save = False, future = False):
+def model_avg(save_variable, model, variable, season_name, season, file_type = 'netcdf', save = False, future = False):
     """
     Open matlab files annd read out daily data. Use this to calculate the average
     of the specified variable over the specified time period. 
     """
-    
-    if future == True:
-        file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_ssp245_{variable}.mat'
-        time_period = range(2015, 2100)
-        
-    else:
-        file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat'
-        time_period  = range(1979, 2015)
-        
+
     # min and max latitudes and longitudes used in the MACA process
     lat_min, lat_max = 36.03, 42.98
     lon_min, lon_max = -115.1, -108.0
-
-    # Load the .mat file
-    mat_contents = scipy.io.loadmat(file_path)  
-
-    # Print the contents of the .mat file
-    # print("Contents of the .mat file:")
-
-    # for key, value in mat_contents.items():
-    #     if not key.startswith('__'):  # Skip metadata entries
-    #         print(f"{key}")
-
-    var = mat_contents['interpolated_data']  
-
-    # convert precipitation from kg m-2 s-1 to mm
-    if variable == 'pr':
-       var *= 86400
-       
-    lat = np.squeeze(mat_contents['lat'])
-    lon = np.squeeze(mat_contents['lon'])
-
-    lat_mask = (lat >= lat_min) & (lat <= lat_max)
-    lon_mask = (lon >= lon_min) & (lon <= lon_max)
-
-    # output of (6, 8, 366, 36) -> (lat, lon, days in year, year)
-    trimmed_var = var[np.ix_(lat_mask, lon_mask)]
-
-    # number of days in each month based on the number of days in the year for that model
-    ndays = trimmed_var.shape[2]
-    if ndays == 366:
-        days_in_month = np.array([31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    elif ndays == 365:
-        days_in_month = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    elif ndays == 360:
-        days_in_month = np.array([30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30])
+    
+    if file_type == 'netcdf':
+        # need to use era5 downloaded data in input ddata to get the same yearly averagge from a netcdf 
+        # clip to season for historical period overr MACA region
+        file_path == parent_directory.joinpath('INPUT_DATA', variable, )
+        
+    elif file_type == 'matlab':
+        if future == True:
+            file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_ssp245_{variable}.mat'
+            time_period = range(2015, 2100)
+            
+        else:
+            file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_historical_{variable}.mat'
+            time_period  = range(1979, 2015)
+    
+        # Load the .mat file
+        mat_contents = scipy.io.loadmat(file_path)  
+    
+        # Print the contents of the .mat file
+        # print("Contents of the .mat file:")
+    
+        # for key, value in mat_contents.items():
+        #     if not key.startswith('__'):  # Skip metadata entries
+        #         print(f"{key}")
+    
+        var = mat_contents['interpolated_data']  
+    
+        # convert precipitation from kg m-2 s-1 to mm
+        if variable == 'pr':
+           var *= 86400
+           
+        lat = np.squeeze(mat_contents['lat'])
+        lon = np.squeeze(mat_contents['lon'])
+    
+        lat_mask = (lat >= lat_min) & (lat <= lat_max)
+        lon_mask = (lon >= lon_min) & (lon <= lon_max)
+    
+        # output of (6, 8, 366, 36) -> (lat, lon, days in year, year)
+        trimmed_var = var[np.ix_(lat_mask, lon_mask)]
+    
+        # number of days in each month based on the number of days in the year for that model
+        ndays = trimmed_var.shape[2]
+        if ndays == 366:
+            days_in_month = np.array([31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+        elif ndays == 365:
+            days_in_month = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+        elif ndays == 360:
+            days_in_month = np.array([30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30])
+        else:
+            print(model)
+            raise ValueError(f"Number of days in the year not found: ndays = {ndays}")
+    
+        # repeat the month number for the number of days in that month
+        month_index = np.repeat(np.arange(1, 13), days_in_month)
+    
+        # define the shape of monthly_mean to be (12, 36) -> (month, year)
+        nmonths = 12
+        nyears = trimmed_var.shape[3]
+        monthly_mean = np.empty((nmonths, nyears))
+    
+        # loop over months and give an average for each month across all of the lat, lon, and years
+        for m in range(1, nmonths + 1):
+            mask = (month_index == m)          # True for days in month m
+            data_m = trimmed_var[:, :, mask, :]
+            monthly_mean[m-1, :] = np.nanmean(data_m, axis = (0, 1, 2))
+    
+        # find the average for the summer months
+        means = []
+        for position, year in enumerate(time_period):  
+            temporal_mean  = float(np.mean([monthly_mean[x, position] for x in season]))
+            means.append(temporal_mean)
+            if save == True:
+                save_variable[model][season_name][year][variable] = temporal_mean
+                print(f"{temporal_mean} successfully saved to {model}, {variable}, {season_name}!")
     else:
-        print(model)
-        raise ValueError(f"Number of days in the year not found: ndays = {ndays}")
-
-    # repeat the month number for the number of days in that month
-    month_index = np.repeat(np.arange(1, 13), days_in_month)
-
-    # define the shape of monthly_mean to be (12, 36) -> (month, year)
-    nmonths = 12
-    nyears = trimmed_var.shape[3]
-    monthly_mean = np.empty((nmonths, nyears))
-
-    # loop over months and give an average for each month across all of the lat, lon, and years
-    for m in range(1, nmonths + 1):
-        mask = (month_index == m)          # True for days in month m
-        data_m = trimmed_var[:, :, mask, :]
-        monthly_mean[m-1, :] = np.nanmean(data_m, axis = (0, 1, 2))
-
-    # find the average for the summer months
-    means = []
-    for position, year in enumerate(time_period):  
-        temporal_mean  = float(np.mean([monthly_mean[x, position] for x in season]))
-        means.append(temporal_mean)
-        if save == True:
-            save_variable[model][season_name][year][variable] = temporal_mean
-            print(f"{temporal_mean} successfully saved to {model}, {variable}, {season_name}!")
+        print('File type not supported.')
             
     return means
-
-for model in models:
-    for variable in variables:
-        for season_name, season in seasons.items():
-            model_avg(gcm_dict, model, variable, season_name, season, save = True)
-    
-# save point
-write2file(gcm_dict, 'gcm_hist_jan_27.txt')
-             
 
 #%%
 gmet_dict = read_file('obs_feb3.txt')
@@ -439,5 +450,20 @@ for model in models:
 write2file(lag_one_data, 'lag_one_feb23.txt')
 
 
+# ================
+# - Entry Point - 
+# ================
 
-
+def main():
+    
+    # calculate a model's yearly average to use in future calculations
+    gcm_dict =  read_file('gcm_feb19.txt')
+    
+    for model in models:
+        for variable in variables:
+            for season_name, season in seasons.items():
+                model_avg(gcm_dict, model, variable, season_name, season, save = True)
+        
+    # save point
+    write2file(gcm_dict, 'gcm_hist_jan_27.txt')
+    

@@ -21,7 +21,6 @@ import xarray as xr
 # ==================================
 
 current_file_directory = Path(__file__).resolve().parent
-print(f'CURRENT FILE DIRECTORY: {current_file_directory}')
 parent_directory = current_file_directory.parent
 sys.path.append(str(parent_directory))
 
@@ -82,7 +81,7 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     ds = ds_slice.rio.write_crs("EPSG:4326")
 
     # clips out the GSLB
-    ds = ds.rio.clip(gslb.geometry.apply(mapping), gslb.crs, drop=False)
+    ds = ds.rio.clip(gslb.geometry.apply(mapping), gslb.crs, drop = False)
     
     # saved masked dataset to directory
     if save:
@@ -90,7 +89,7 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
         output_name = f'MACA_{model_name}_{emission_scenario}_{start_month}-{stop_month}_{start_year}-{stop_year}_{variable}_masked.nc'
         
         ds.to_netcdf(output_path / output_name)
-        print(f'Saved: {output_path}')
+        print(f'{output_name} saved to: {output_path}')
         return ds    
     
     return ds
@@ -124,7 +123,7 @@ def precip_ratio(save_variable, start_month = 6, stop_month = 8):
     for model in models:
         for emission_scenario in emission_scenarios:
             
-            fpath = parent_directory.joinpath('JJA_climate_change', 'masked_MACA/') # data is masked using mask_MACA
+            fpath = parent_directory.joinpath('JJA_climate_change', 'masked_MACA') # data is masked using mask_MACA
             
             hist_path = fpath / f'MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_1979-2014_pr_masked.nc'
             fut_path = fpath / f'MACA_{model}_{emission_scenario}_{start_month}-{stop_month}_2070-2099_pr_masked.nc'
@@ -209,7 +208,7 @@ def delta_temp(save_variable, start_month = 6, stop_month = 8):
                 fut_ds_min = xr.open_dataset(fut_min_path)
                 # calculate the yearly mean min temp for the future perriod
                 fut_means_min = []
-                for year in range(2070, 2099):
+                for year in range(2070, 2100):
                     data_fut_min = fut_ds_min['tasmin'].sel(time = fut_ds_min.time.dt.year == year)
                     fut_mean_min = data_fut_min.mean(skipna= True).item()
                     fut_means_min.append(fut_mean_min)
@@ -217,7 +216,7 @@ def delta_temp(save_variable, start_month = 6, stop_month = 8):
                 fut_ds_max = xr.open_dataset(fut_max_path)
                 # calculate the yearly mean max for the future period
                 fut_means_max = []
-                for year in range(2070, 2099):
+                for year in range(2070, 2100):
                     data_fut_max = fut_ds_max['tasmax'].sel(time = fut_ds_max.time.dt.year == year)
                     fut_mean_max = data_fut_max.mean(skipna = True).item()
                     fut_means_max.append(fut_mean_max)    
@@ -297,7 +296,7 @@ def scatter_plot(data_dict, save_name, save = False):
     ax.text(7.1, 0.55, 'Dry Case', fontsize = 7, bbox = dict(edgecolor = 'white', facecolor = 'white'))
 
     if save:
-        save_path = current_file_directory.joinpath(f'JJA_climate_change', f'{save_name}.png')
+        save_path = current_file_directory.joinpath(f'{save_name}.png')
         fig.savefig(save_path, dpi = 400, bbox_inches = 'tight', pad_inches = 0.1)
     else: 
         plt.show()
@@ -315,32 +314,36 @@ def main(mask_data = False, calculate_precip_ratio = False, calculate_delta_temp
         for model in models:
             for emission_scenario in emission_scenarios:
                 try: 
+                    mask_MACA(model, 'pr', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
+                    mask_MACA(model, 'pr', emission_scenario, start_year = 1979, stop_year = 2014, save = True)
                     mask_MACA(model, 'tasmax', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
                     mask_MACA(model, 'tasmax', emission_scenario, start_year = 1979, stop_year = 2014, save = True)
+                    mask_MACA(model, 'tasmin', emission_scenario, start_year = 2070, stop_year = 2099, save = True)
+                    mask_MACA(model, 'tasmin', emission_scenario, start_year = 1979, stop_year = 2014, save = True)
                 except OSError:
                     print(f'{model}_{emission_scenario} has not been downscaled using MACA.')   
                     continue
     
     # read saved data out of dictionary
-    read_data = read_file('oct_19.txt', 'JJA_climate_change/')
+    read_data = read_file('oct_19.txt', 'JJA_climate_change')
     
     if calculate_precip_ratio:
         # calculate precip ratio and save data to dictionary
         save_pr = precip_ratio(read_data)
-        write2file(save_pr, 'oct_19.txt', 'JJA_climate_change/')
+        write2file(save_pr, 'oct_19.txt', 'JJA_climate_change')
     
     if calculate_delta_temp:
         # calculate the change in temperature and save data to a dictionary
         save_temp = delta_temp(read_data)
-        write2file(save_temp, 'oct_19.txt', 'JJA_climate_change/')
+        write2file(save_temp, 'oct_19.txt', 'JJA_climate_change')
          
     # read saved data from dictionary
-    base_dict = read_file('oct_19.txt', 'JJA_climate_change/')
+    base_dict = read_file('oct_19.txt', 'JJA_climate_change')
     # create scatter plot
     scatter_plot(base_dict, 'figure2')
 
 if __name__ == '__main__':
-    main()
+    main(mask_data = True, calculate_delta_temp = True, calculate_precip_ratio = True)
 
 
 

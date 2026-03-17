@@ -6,10 +6,27 @@ Created on Tue Feb 24 14:17:20 2026
 @author: u1301408
 """
 
+from pathlib import Path
 import sys
 import xarray as xr
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/GSLBIP/from_savanna/')
-import nclcmaps as cmap
+
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
+
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
+
+import from_savanna.nclcmaps as cmap
+
+
+# ===============
+#  - Constants - 
+# ===============
+
+# finding min and max across datasets for each variable to infor variable_dict
+models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
 
 # defines a dictionary that stores formatting information for each variable -> see else: for more information
 variable_dict = {'psl' : {
@@ -175,14 +192,21 @@ variable_dict = {'psl' : {
             }
     
     
-# finding min and max across datasets for each variable to infor variable_dict
-models = ['KACE-1-0-G', 'CanESM5', 'UKESM1-0-LL', 'ACCESS-CM2', 'HadGEM3-GC31-LL', 'HadGEM3-GC31-MM', 'MPI-ESM1-2-LR']
+# ==============
+# - Functions - 
+# ==============    
 
-def min_max (variable):
+def min_max(variable):
+    """
+    Used to define region_mean min and max values in variable_dict by finding 
+    the min and max values out of all models for the given variable.
+    """
+    
     all_mins = []
     all_maxs = []
     for model in models:
-        ds = xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_*.nc')
+        fpath = parent_directory.joinpath('INPUT_DATA', variable, f'{variable}_Amon_{model}*.nc')
+        ds = xr.open_mfdataset(fpath)
         ds = ds[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
         ds = ds.sel(time = ds.time.dt.month.isin([6, 7, 8]))
         years = range(1985, 2099)
@@ -219,38 +243,21 @@ def min_max (variable):
     
     result = f'Min for {variable}: {final_min}\nMax for {variable}: {final_max}'
     return result
-        
-# print(min_max('hus'))
 
-#MIN AND MAX VALUES FOR HIST AND FUT MEANS
-# Min for pr: 0.21196805760707713
-# Max for pr: 783.1986581526485
-
-# Min for psl: 1002.8295312500001
-# Max for psl: 1027.75984375
-
-# Min for huss: 4.40641213208437
-# Max for huss: 27.03595533967018
-
-# Min for ts: 281.8443298339844
-# Max for ts: 318.0555114746094
-
-# Min for zg: 5676.18017578125
-# Max for zg: 5978.65869140625
-
-# Min for vas: -9.491390228271484
-# Max for vas: 6.107685565948486
-
-# Min for uas: -11.079482078552246
-# Max for uas: 5.9408488273620605
-
-#%%
 def anom_min_max(variable):
+    """
+    Used to define anomaly min and max values in variable_dict by first calculating
+    each models anomaly and then finding the min and max values out of all models 
+    for the given variable.
+    """
+    
     all_mins = []
     all_maxs = []
     for model in models:
-        open_hist = xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_hist*.nc')
-        open_fut = xr.open_mfdataset(f'/uufs/chpc.utah.edu/common/home/strong-group7/sydney/data_analysis/ERA5/{variable}/{variable}_Amon_{model}_ssp*.nc')
+        hist_fpath = parent_directory.joinpath('INPUT_DATA', variable, f'{variable}_Amon_{model}_hist*.nc')
+        open_hist = xr.open_mfdataset(hist_fpath)
+        fut_fpath = parent_directory.joinpath('INPUT_DATA', variable, f'{variable}_Amon_{model}_ssp*.nc')
+        open_fut = xr.open_mfdataset(fut_fpath)
      
         open_hist = open_hist[variable].sel(lat = slice(15, 53), lon = slice(215, 295))
         open_hist = open_hist.sel(time = open_hist.time.dt.month.isin([6, 7, 8]))
@@ -306,28 +313,5 @@ def anom_min_max(variable):
         
     return result
 
-# print(anom_min_max('hus'))
-    
-# MIN AND MAX VALUES FOR ANOMALIES 
-# Anom min for pr: -84.02847290039062
-# Anom max for pr: 362.8335266113281
-
-# Anom min for psl: -2.1117968559265137
-# Anom max for psl: 4.881171703338623
-
-# Anom min for huss: -0.7689297199249268
-# Anom max for huss: 7.801617622375488
-
-# Anom min for ts: 0.475433349609375
-# Anom max for ts: 15.549346923828125
-
-# Anom min for uas: -3.5138015747070312
-# Anom max for uas: 2.595974922180176
-
-# Anom min for vas: -1.862033486366272
-# Anom max for vas: 3.81015682220459
-
-# Anom min for zg: 69.8876953125
-# Anom max for zg: 210.7177734375
 
     
