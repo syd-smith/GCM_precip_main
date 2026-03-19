@@ -6,6 +6,7 @@ Created on Thu Jan 22 13:24:14 2026
 @author: u1301408
 """
 
+import glob
 import numpy as np
 from pathlib import Path
 import scipy.io
@@ -61,15 +62,22 @@ variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 seasons = {'DJF':[11, 0, 1], 'MAM':[2, 3, 4], 'JJA':[5, 6, 7], 'SON':[8, 9, 10], 'yearly':list(range(0, 12))}
 obs_seasons = {'DJF':[12, 1,2], 'MAM':[3, 4, 5], 'JJA':[6, 7, 8], 'SON':[9, 10, 11], 'yearly':list(range(1, 13))}
 
+variable = 'pr'
+model = models[0]
+file_name = f'{variable}*{model}_historical*.nc'
+file_path = parent_directory.joinpath('INPUT_DATA', 'GCM', variable, file_name)
+ds = xr.open_mfdataset(glob.glob(str(file_path)))
 
+#%%
 # ==============
 # - Functions - 
 # ==============
 
 def model_avg(save_variable, model, variable, season_name, season, file_type = 'netcdf', save = False, future = False):
     """
-    Open matlab files annd read out daily data. Use this to calculate the average
-    of the specified variable over the specified time period. 
+    Open matlab files (or netcdfd) and read out daily data. Use this to calculate the average
+    of the specified variable over the specified time period. GCM data is used in all 
+    
     """
 
     # min and max latitudes and longitudes used in the MACA process
@@ -77,9 +85,13 @@ def model_avg(save_variable, model, variable, season_name, season, file_type = '
     lon_min, lon_max = -115.1, -108.0
     
     if file_type == 'netcdf':
-        # need to use era5 downloaded data in input ddata to get the same yearly averagge from a netcdf 
+        # need to use era5 downloaded data in input ddata to get the same yearly average from a netcdf 
         # clip to season for historical period overr MACA region
-        file_path == parent_directory.joinpath('INPUT_DATA', variable, )
+        file_name = f'{variable}*{model}_historical*.nc'
+        file_path = parent_directory.joinpath('INPUT_DATA', 'GCM', variable, file_name)
+        ds = xr.open_mfdataset(glob.glob(str(file_path)))
+        
+        
         
     elif file_type == 'matlab':
         if future == True:
