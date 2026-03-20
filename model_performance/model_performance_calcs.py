@@ -22,6 +22,7 @@ current_file_directory = Path(__file__).resolve().parent
 parent_directory = current_file_directory.parent
 sys.path.append(str(parent_directory))
 
+from tool_belt.lon_conversion import convert_lon_to_0_360
 from tool_belt.file_traversing import read_file, write2file
 
 
@@ -62,38 +63,62 @@ variables = ['pr', 'huss', 'tasmin', 'tasmax', 'rsds', 'uas', 'vas']
 seasons = {'DJF':[11, 0, 1], 'MAM':[2, 3, 4], 'JJA':[5, 6, 7], 'SON':[8, 9, 10], 'yearly':list(range(0, 12))}
 obs_seasons = {'DJF':[12, 1,2], 'MAM':[3, 4, 5], 'JJA':[6, 7, 8], 'SON':[9, 10, 11], 'yearly':list(range(1, 13))}
 
-variable = 'pr'
-model = models[0]
-file_name = f'{variable}*{model}_historical*.nc'
-file_path = parent_directory.joinpath('INPUT_DATA', 'GCM', variable, file_name)
-ds = xr.open_mfdataset(glob.glob(str(file_path)))
 
-#%%
 # ==============
 # - Functions - 
 # ==============
 
 def model_avg(save_variable, model, variable, season_name, season, file_type = 'netcdf', save = False, future = False):
-    """
-    Open matlab files (or netcdfd) and read out daily data. Use this to calculate the average
-    of the specified variable over the specified time period. GCM data is used in all 
     
+    """
+    Open netcdf (or matlab) files and read out daily data. Use this to calculate the average
+    of the specified variable over the specified time period. Matlab files were originally
+    used to in the calculations. However, netcdf files are more compatable with largescale
+    online downloads. If using netcdf, data should  be stored in INNPUT_DATA before preceeding. 
+    Note that seasons for matlab files should be 0-11 and for netcdf should be 1-12.
     """
 
     # min and max latitudes and longitudes used in the MACA process
     lat_min, lat_max = 36.03, 42.98
     lon_min, lon_max = -115.1, -108.0
     
-    if file_type == 'netcdf':
-        # need to use era5 downloaded data in input ddata to get the same yearly average from a netcdf 
-        # clip to season for historical period overr MACA region
+    if file_type == 'netcdf': # uses netcdf files saved in INPUT_DATA for calculation
+        # acces downloaded data based on relative file path
         file_name = f'{variable}*{model}_historical*.nc'
         file_path = parent_directory.joinpath('INPUT_DATA', 'GCM', variable, file_name)
         ds = xr.open_mfdataset(glob.glob(str(file_path)))
         
+        # convert precipitation from kg m-2 s-1 to mm
+        if variable == 'pr':
+            ds_open = ds[variable] * 86400
+        else:
+            ds_open = ds[variable]
         
+        # only select grid points that are within the MACA domain
+        MACA_domain = ds_open.sel(lat = slice(lat_min, lat_max), lon = slice(convert_lon_to_0_360(lon_min), convert_lon_to_0_360(lon_max)))
+        # refine data to only the season of interest
+        if 0 in seasons:
+            raise ValueError
+            print('obs_seasons dictionary must be used to traverse netcdf files.')
+            
+        # constrain data to season of interest
+        season_slice = MACA_domain.sel(time = MACA_domain.time.dt.month.isin(season))
+
+        # create a nested list of [year in the historical period, variable's average value for that year]
+        means = []
+        for year in range(1979, 2015): # range of the historical period
+            year_of_interest = season_slice.sel(time = season_slice.time.dt.year == year)
+            yearly_mean = float(year_of_interest.mean(skipna = True))
+            means.append([year, yearly_mean])
+            
+        # save data to the given dictionary
+        if save:
+            for year, temporal_mean in means:
+                save_variable[model][season_name][year][variable] = temporal_mean
+                print(f"{temporal_mean} successfully saved to {model}, {variable}, {season_name}, {year}!")
         
     elif file_type == 'matlab':
+        # matlab file  path only for users with access to directory in CHPC
         if future == True:
             file_path = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/coarse_grid/{model}_ssp245_{variable}.mat'
             time_period = range(2015, 2100)
@@ -158,7 +183,7 @@ def model_avg(save_variable, model, variable, season_name, season, file_type = '
         for position, year in enumerate(time_period):  
             temporal_mean  = float(np.mean([monthly_mean[x, position] for x in season]))
             means.append(temporal_mean)
-            if save == True:
+            if save:
                 save_variable[model][season_name][year][variable] = temporal_mean
                 print(f"{temporal_mean} successfully saved to {model}, {variable}, {season_name}!")
     else:
@@ -166,10 +191,8 @@ def model_avg(save_variable, model, variable, season_name, season, file_type = '
             
     return means
 
-#%%
-gmet_dict = read_file('obs_feb3.txt')
-
 def obs_avg(save_variable, variable, season_name, season, save = True):
+    
     """
     Use Gridmet data to calculate the seasonal average for the specified variable
     to serve as the observational reference data. Averages are calculated as
@@ -192,7 +215,7 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
     else:
          open_variable = variable
 
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/gridmet/gsl_region_{open_variable}_1979-2014.nc'
+    fpath = parent_directory.joinpath('INPUT_DATA', 'gridMET')
     ds_open = xr.open_dataset(fpath)
 
     # convert variable name again for variables saved in the dataset
@@ -221,7 +244,7 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
     annual_means = ds_year.mean(dim = ('lat', 'lon'), skipna = True)
     values = annual_means.values
     
-    if save == True:
+    if save:
         # save data to dictionary
         for year, value in zip(range(1979, 2015), values):
             save_variable[season_name][year][variable] = float(value)
@@ -229,20 +252,13 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
 
     return values
 
-
-for variable in ['huss', 'rsds', 'uas', 'vas']:
-    for season_name, season in obs_seasons.items():
-        obs_avg(gmet_dict, variable, season_name, season, save = True)
-        print(f'{season_name}, {variable} -> done!')
-        
-# save point        
-write2file(gmet_dict, 'obs_feb3.txt')
-
-#%%
-gcm_dict = read_file('gcm_feb5.txt')
-gmet_dict = read_file('obs_feb3.txt')
-
 def bias(save_variable, model, variable, season, save = True):
+    
+    """
+    Calculate a given model's performance as a bias with respect to gridMET data.
+    Most biases are calculated as model - obs, however precipitation is 
+    calculated as a ratio.
+    """
     
     # call GCM data from saved dictionary and take the average
     retrived_gcm_data =  []
@@ -265,53 +281,11 @@ def bias(save_variable, model, variable, season, save = True):
     else:
         bias = gcm_avg - gmet_avg
     
-    if save == True:
+    if save:
         # save data to dictionary
         save_variable[model][season]['bias'][variable] = bias
     
     return bias
-
-# output = []
-# for model in models:
-#     test = bias(gcm_dict, model, 'pr', 'yearly')
-#     output.append([model, test])
-    
-for model in models:
-    for season in seasons.keys():
-        bias(gcm_dict, model, 'huss', season)
-           
-# save point            
-write2file(gcm_dict, 'gcm_feb9.txt')
-#%%
-
-
-gcm_dict = read_file('gcm_feb5.txt')
-
-def stdev_ratio(save_variable, model, variable, season, save = True):
-    
-    # call GCM data from saved dictionary and take the average
-    retrived_gcm_data =  []
-    for year in range(1979, 2015):
-        gcm_dat_point = gcm_dict[model][season][year][variable]
-        retrived_gcm_data.append(float(gcm_dat_point))
-    gcm_stdev = float(np.std(retrived_gcm_data))
-    print(retrived_gcm_data)
-
-    # call gmet data from function and take the average
-    retrived_gmet_data = []
-    for year in range(1979, 2015):
-        gmet_dat_point = gmet_dict[season][year][variable]
-        retrived_gmet_data.append(float(gmet_dat_point))
-    gmet_stdev = float(np.std(retrived_gmet_data))
-    print(retrived_gmet_data)
-    
-    stdev_ratio = gcm_stdev / gmet_stdev
-    
-    if save == True:
-        # save data to dictionary
-        save_variable[model][season]['stdev_ratio'][variable] = stdev_ratio
-    
-    return stdev_ratio
 
 # test_stdev = stdev_ratio(gcm_dict, models[0], 'tasmin', 'DJF', save = False)
 
@@ -329,7 +303,16 @@ write2file(gcm_dict, 'gcm_feb5.txt')
 gcm_dict = read_file('gcm_feb19.txt')
 gmet_dict = read_file('obs_feb3.txt')
 
+
 def var_ratio(save_variable, model, variable, season, save = True):
+    
+    """
+    Individually calculate the temporal variance for a model and observational
+    respectively using yearly averages from the above model_avg function. The
+    variance ratio is then calculated as model variance / obs variance. This 
+    metric thus provides a better comparison of a model's temporal variability
+    with respect to gridMET data. 
+    """
     
     # call GCM data from saved dictionary and take the average
     retrived_gcm_data =  []
@@ -349,27 +332,13 @@ def var_ratio(save_variable, model, variable, season, save = True):
     
     var_ratio = gcm_var / gmet_var
     
-    if save == True:
+    if save:
         # save data to dictionary
         save_variable[model][season]['var_ratio'][variable] = var_ratio
     
     return var_ratio
 
-# test_stdev = stdev_ratio(gcm_dict, models[0], 'tasmin', 'DJF', save = False)
-
-for model in models:
-    for season in seasons.keys():
-        for variable in variables:
-            var_ratio(gcm_dict, model, variable, season)  
-            
-# save point            
-write2file(gcm_dict, 'gcm_feb19.txt')
-
-
-#%%
-projections_dict = read_file('projections_feb4.txt')
-
-def fut_projection(model, emission_scenario, variable, save_variable, season_name, season, save = True):
+def fut_projection(save_variable, model, emission_scenario, variable, season_name, season, save = True):
     
     """
     Returns the change in a variable from the historical to future period to a nested 
@@ -378,56 +347,47 @@ def fut_projection(model, emission_scenario, variable, save_variable, season_nam
     Save_variable should be the framework dictionary imported from dictionary_structure.py.
     """
 
+    # TODO: change to absolute path once data is published
     fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_{emission_scenario}_{variable}.nc'
     open_ds = xr.open_dataset(fpath)
+    # slice data to be only season of interest
+    ds = open_ds[variable].sel(time = open_ds[variable].time.dt.month.isin(season))
     
-    # find the mean for the historical period
-    hist_ds = open_ds[variable].sel(time = open_ds[variable].time.dt.month.isin(season))
+    # calculate individual yearly means and append them to the list
     hist_means = []
     for year in range(1979, 2015):
-        data_hist = hist_ds.sel(time = hist_ds.time.dt.year == year)
+        data_hist = ds.sel(time = ds.time.dt.year == year)
         hist_mean = data_hist.mean(skipna= True).item()
         hist_means.append(hist_mean)
         
+    # find the total mean for the historical period
     hist_val = float(np.mean(hist_means))
     
-    # finds the mean for the future period
-    fut_ds = open_ds[variable].sel(time = open_ds[variable].time.dt.month.isin(season))
+    # calculate individual yearly means and append them to the list
     fut_means = []
     for year in range(2070, 2099):
-        data_fut = fut_ds.sel(time = fut_ds.time.dt.year == year)
+        data_fut = ds.sel(time = ds.time.dt.year == year)
         fut_mean = data_fut.mean(skipna= True).item()
         fut_means.append(fut_mean)
     
+    # finds the total mean for the future period
     fut_val = float(np.mean(fut_means))    
         
     if variable == 'pr' or variable == 'huss':
         projection = (fut_val/ hist_val) * 100
-        # calculation = 'precip_ratio'
     else:
         # calulate change in temperature
         projection = fut_val - hist_val
-        # calculation = f'delta_{variable}'
-    
-    if save == True:
+        
+    if save:
         save_variable[emission_scenario][model][season_name][variable] = projection
         print(f'{projection} saved to {model}/{variable}/{season_name}/{emission_scenario}!')
         
     return save_variable 
 
-for model in ssp585_models:
-    for variable in variables:
-        for season_name, season in seasons.items():
-            fut_projection(model, 'ssp585', variable, projections_dict, season_name, season)
-        
-write2file(projections_dict, 'projections_feb10.txt')
-
-#%%
-lag_one_data = read_file('lag_one_feb22.txt')
-gcm_data = read_file('gcm_feb19.txt')
-gmet_data = read_file('obs_feb3.txt')
-
-def lag_one_autocorr(model, season, variable, save_data = True):
+def lag_one_autocorr(save_variable, model, variable, season, save_data = True,
+                     gmet = read_file('obs_feb3.txt'),
+                     gcm = read_file('gcm_feb19.txt')):
     """
     Calculate a model's lag one autocorrelation for a specific
     season and variable based on yearly averages from the historical 
@@ -437,8 +397,8 @@ def lag_one_autocorr(model, season, variable, save_data = True):
     GCM_averages = []
     Gmet_averages = []
     for year in range(1979, 2015):
-        GCM_averages.append(gcm_data[model][season][year][variable])
-        Gmet_averages.append(gmet_data[season][year][variable])
+        GCM_averages.append(gcm[model][season][year][variable])
+        Gmet_averages.append(gmet[season][year][variable])
         
     GCM_lag_one_calc= sm.tsa.stattools.acf(GCM_averages, nlags = 1)
     GCM_lag_one = float(GCM_lag_one_calc[-1]) + 1
@@ -448,18 +408,10 @@ def lag_one_autocorr(model, season, variable, save_data = True):
 
     lag_one = GCM_lag_one  / Gmet_lag_one
     
-    if save_data == True:
-        lag_one_data[model][season][variable]['lag_one_ratio'] = lag_one
+    if save_data:
+        save_variable[model][season][variable]['lag_one_ratio'] = lag_one
 
     return lag_one
-
-for model in models:
-    for season in seasons:
-        for variable in variables:
-            lag_one_autocorr(model, season, variable)
-            print(model, season, variable)
-
-write2file(lag_one_data, 'lag_one_feb23.txt')
 
 
 # ================
@@ -467,15 +419,51 @@ write2file(lag_one_data, 'lag_one_feb23.txt')
 # ================
 
 def main():
+    # define dictionary structure for data storage (see original structurer in dictionary_structure.py)
+    gcm_dict =  read_file('gcm_feb19.txt')
+    gmet_dict = read_file('obs_feb3.txt')
+    projections_dict = read_file('projections_feb4.txt')
     
     # calculate a model's yearly average to use in future calculations
-    gcm_dict =  read_file('gcm_feb19.txt')
-    
+    # loop through all necessary data to fill out dictionary
     for model in models:
         for variable in variables:
             for season_name, season in seasons.items():
                 model_avg(gcm_dict, model, variable, season_name, season, save = True)
-        
     # save point
-    write2file(gcm_dict, 'gcm_hist_jan_27.txt')
+    write2file(gcm_dict, 'gcm_feb19.txt')
+    
+    # calculate yearly average for observational data
+    for variable in variables:
+        for season_name, season in obs_seasons.items():
+            obs_avg(gmet_dict, variable, season_name, season, save = True)
+            print(f'{season_name}, {variable} -> done!')
+            
+    # save point        
+    write2file(gmet_dict, 'obs_feb3.txt')
+    
+    # compare a model's performance to observational data using previously calculated yearly averages
+    for model in models:
+        for season in seasons.keys():
+            for variable in variables:
+                # bias calculation
+                bias(gcm_dict, model, variable, season)
+                # variance ratio calculation
+                var_ratio(gcm_dict, model, variable, season) 
+
+    # save point            
+    write2file(gcm_dict, 'gcm_feb19.txt')
+    
+    # calculate a variable's change in climate conditions from the historical to the future period
+    for model in ssp585_models:
+        for variable in variables:
+            for season_name, season in seasons.items():
+                fut_projection(projections_dict, model, 'ssp585', variable, season_name, season)
+            
+    # save point
+    write2file(projections_dict, 'projections_feb10.txt')
+    
+if __name__ == '__main__':
+    main()
+
     

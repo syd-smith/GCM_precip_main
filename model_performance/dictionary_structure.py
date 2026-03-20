@@ -61,32 +61,30 @@ ssps = ['ssp126', 'ssp245', 'ssp370', 'ssp585']
 # - Functions - 
 # ==============
 
-def GCM_dict(save_file, save  = True):
+def GCM_dict(file_name, save  = True):
     # create the framework for a gcm dictionary to evaluate model performance in historical period
-    gcm_dict = read_file('gcm_feb9.txt')
-    
-    gcm_hist_dict = {}
+    gcm_dict = {}
     for model in models:
-        gcm_hist_dict[model] = {}
+        gcm_dict[model] = {}
         for season in seasons:
-            gcm_hist_dict[model][season] = {}
-            gcm_hist_dict[model][season]['bias'] = {}
-            gcm_hist_dict[model][season]['var_ratio'] = {}
+            gcm_dict[model][season] = {}
+            gcm_dict[model][season]['bias'] = {}
+            gcm_dict[model][season]['var_ratio'] = {}
             for variable in variables:
-                gcm_hist_dict[model][season]['bias'][variable] = gcm_dict[model][season]['bias'][variable]
+                gcm_dict[model][season]['bias'][variable] = 'x'
                 print(f'{model}-{season}-bias-{variable}')
-                gcm_hist_dict[model][season]['var_ratio'][variable] = 'x'
+                gcm_dict[model][season]['var_ratio'][variable] = 'x'
             for year in range(1979, 2015):
-                gcm_hist_dict[model][season][year] = {}
+                gcm_dict[model][season][year] = {}
                 for variable in variables:
-                    gcm_hist_dict[model][season][year][variable] = gcm_dict[model][season][year][variable]
+                    gcm_dict[model][season][year][variable] = 'x'
     
     if save:
-        write2file(gcm_hist_dict, save_file)
+        write2file(gcm_dict, file_name)
         
-    return gcm_hist_dict
+    return gcm_dict
     
-def PROJECTIONS_dict(save_file, save = True):
+def PROJECTIONS_dict(file_name, save = True):
     # create a dictionary framework for future projections of GCM data (change in variables from historical to future period)                
     projections_dict = {}    
          
@@ -96,14 +94,14 @@ def PROJECTIONS_dict(save_file, save = True):
             projections_dict[ssp][model] = {}
             for season in seasons:
                 projections_dict[ssp][model][season] = {}
-                for calc in ['precip_ratio', 'delta_tasmin', 'delta_tasmax']:
-                    projections_dict[ssp][model][season][calc] = 'x'
+                for variable in variables:
+                    projections_dict[ssp][model][season][variable] = 'x'
     if save:
-        write2file(projections_dict, save_file)
+        write2file(projections_dict, file_name)
     
     return projections_dict
 
-def GMET_dict():
+def GMET_dict(file_name, save = True):
     gmet_dict = {}
     
     for season in seasons:
@@ -112,10 +110,13 @@ def GMET_dict():
             gmet_dict[season][year] = {}
             for variable in variables:
                 gmet_dict[season][year][variable] = 'x'
+                
+    if save:
+        write2file(gmet_dict, file_name)
     
     return gmet_dict
             
-def LAG_ONE_dict(save_file, save  = True):
+def LAG_ONE_dict(file_name, save  = True):
     lag_one_dict = {}
     
     for model in models:
@@ -128,7 +129,7 @@ def LAG_ONE_dict(save_file, save  = True):
                 lag_one_dict[model][season][variable]['pvalue'] = 'x'
             
     if save:
-        write2file(lag_one_dict, save_file, 'lag_one')
+        write2file(lag_one_dict, file_name, 'lag_one')
     
     return lag_one_dict
             
@@ -137,7 +138,7 @@ def LAG_ONE_dict(save_file, save  = True):
 # ================
 
 def main():
-    pprint.pprint(LAG_ONE_dict('lag_one_feb22.txt'))
+    pprint.pprint(GCM_dict('gcm_feb19.txt'))
 
 if __name__ == '__main__':
     main()
