@@ -138,7 +138,7 @@ def LAG_ONE_dict(file_name, save  = True):
 # ================
 
 def main():
-    pprint.pprint(GCM_dict('gcm_feb19.txt'))
+    pprint.pprint(PROJECTIONS_dict('projections_feb10.txt'))
 
 if __name__ == '__main__':
     main()

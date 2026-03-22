@@ -6,16 +6,23 @@ Created on Tue Feb  3 14:00:23 2026
 @author: u1301408
 """
 
+from pathlib import Path
 import sys
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
-from file_traversing import write2file, read_file
+
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent
+sys.path.append(str(parent_directory))
+
+from tool_belt.file_traversing import read_file
 
 seasons = ['DJF', 'MAM', 'JJA', 'SON', 'yearly']
-
 data = read_file('gcm_feb19.txt')
 
 def model_review(model):
-
+    """
+    Easily print all data for a specific model.
+    """
+    
     for season in seasons:
         print(season)
         print(f'Precip bias for {season}: {data[model][season]['bias']['pr']}')

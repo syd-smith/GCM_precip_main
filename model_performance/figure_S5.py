@@ -71,7 +71,7 @@ def model_performance(variable, season, models, axs = None, add_box = True, perc
         points = 'No coloring shading specified.'
     else:
         data = read_file('projections_feb10.txt')
-        projection = np.array([data['ssp585'][model][season]['precip_ratio'] for model in ssp585_models])
+        projection = np.array([data['ssp585'][model][season]['pr'] for model in ssp585_models])
         levels = np.array([50, 65, 80, 95, 100, 105, 150, 190, 220])
         norm = mcolors.BoundaryNorm(levels, ncolors = plt.get_cmap(cmap.cmap('MPL_BrBG'), 8).N) 
         points = axs.scatter(bias, var, norm = norm, cmap = cmap.cmap('MPL_BrBG'), c = projection, edgecolor = 'k')
@@ -124,7 +124,7 @@ def mixed_model_performance(season, models, coloring = False, box = False, perce
         # read out data and create structure for colorbar
         data = read_file('projections_feb10.txt')
         # create structure to color each points
-        projection = np.array([data['ssp585'][model][season]['precip_ratio'] for model in ssp585_models])
+        projection = np.array([data['ssp585'][model][season]['pr'] for model in ssp585_models])
         levels = np.array([50, 65, 80, 95, 100, 105, 150, 190, 220])
         norm = mcolors.BoundaryNorm(levels, ncolors = plt.get_cmap(cmap.cmap('MPL_BrBG'), 8).N)
         

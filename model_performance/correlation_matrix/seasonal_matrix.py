@@ -11,13 +11,25 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from scipy.stats import pearsonr
 import seaborn as sb
-
 import sys
-sys.path.append('/uufs/chpc.utah.edu/common/home/strong-group7/sydney/tool_belt/')
-from file_traversing import write2file, read_file
 
+# ==================================
+# - Establish Relative File Path - 
+# ==================================
+
+current_file_directory = Path(__file__).resolve().parent
+parent_directory = current_file_directory.parent.parent
+sys.path.append(str(parent_directory))
+
+from tool_belt.file_traversing import read_file
+
+
+# ===============
+#  - Constants - 
+# ===============
 
 models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'CNRM-CM6-1', 'CNRM-ESM2-1', 'CanESM5',
           'EC-Earth3-AerChem', 'EC-Earth3-CC', 'EC-Earth3-Veg-LR', 'EC-Earth3', 'GFDL-CM4', 'GFDL-ESM4',
@@ -42,6 +54,10 @@ ssp126_models = ['ACCESS-CM2', 'ACCESS-ESM1-5', 'CMCC-ESM2', 'CNRM-CM6-1-HR', 'C
                  'INM-CM4-8', 'INM-CM5-0', 'KACE-1-0-G', 'MIROC-ES2H', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR',
                  'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'UKESM1-0-LL']
 
+
+# ==============
+# - Functions - 
+# ==============
 
 def mk_df(variables, season, ssp):
     """
@@ -71,9 +87,9 @@ def mk_df(variables, season, ssp):
         for variable in variables:
             per_model.append(historical[model][season]['bias'][variable])
             per_model.append(historical[model][season]['var_ratio'][variable])
-        per_model.append(projections[ssp][model][season]['precip_ratio'])
-        per_model.append(projections[ssp][model][season]['delta_tasmin'])
-        per_model.append(projections[ssp][model][season]['delta_tasmax'])
+        per_model.append(projections[ssp][model][season]['pr'])
+        per_model.append(projections[ssp][model][season]['tasmin'])
+        per_model.append(projections[ssp][model][season]['tasmax'])
         df_list.append(per_model)
         
     # assign column names to the dataframe
@@ -82,10 +98,6 @@ def mk_df(variables, season, ssp):
     df = pd.DataFrame(df_list, columns = col_names)
     
     return df
-
-
-dataframe = mk_df(['pr', 'tasmin', 'tasmax', 'huss', 'rsds', 'uas', 'vas'], 'JJA', 'ssp585')
-
 
 def expanded_df(variables, season, ssp):
     """
@@ -130,9 +142,6 @@ def expanded_df(variables, season, ssp):
     
     return df
 
-expanded_df  = expanded_df(['pr', 'tasmin', 'tasmax', 'huss', 'rsds', 'uas', 'vas'], 'JJA', 'ssp585')
-
-
 def corr_pvalues(df):
     cols = df.columns
     pvals = np.zeros((len(cols), len(cols)))
@@ -143,7 +152,6 @@ def corr_pvalues(df):
             pvals[i, j] = p
 
     return pd.DataFrame(pvals, index = cols, columns = cols)
-
 
 def correlation_matrix(df, mask = False, pvals = True, title = 'SKIP'):
     
@@ -203,8 +211,21 @@ def correlation_matrix(df, mask = False, pvals = True, title = 'SKIP'):
     return plt.show()
 
 
-normal_martix = correlation_matrix(dataframe)
-expanded_matrix = correlation_matrix(expanded_df)
+# ================
+# - Entry Point - 
+# ================
 
+def main():
+    # creates a pandas dataframe that organizes specific GCMM data read out of a dictionary
+    dataframe = mk_df(['pr', 'tasmin', 'tasmax', 'huss', 'rsds', 'uas', 'vas'], 'JJA', 'ssp585')
+    
+    # creates another dataframe that includes more calculations
+    expanded_dataframe  = expanded_df(['pr', 'tasmin', 'tasmax', 'huss', 'rsds', 'uas', 'vas'], 'JJA', 'ssp585')
 
+    # plot above dataframes into correlation matrixes
+    normal_martix = correlation_matrix(dataframe)
+    expanded_matrix = correlation_matrix(expanded_dataframe)
+
+# if __name__ == '__main__':
+#     main()
 

@@ -252,7 +252,9 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
 
     return values
 
-def bias(save_variable, model, variable, season, save = True):
+def bias(save_variable, model, variable, season, save = True,
+         gcm_dict = read_file('gcm_feb19.txt'), 
+         gmet_dict = read_file('obs_feb3.txt')):
     
     """
     Calculate a given model's performance as a bias with respect to gridMET data.
@@ -287,24 +289,9 @@ def bias(save_variable, model, variable, season, save = True):
     
     return bias
 
-# test_stdev = stdev_ratio(gcm_dict, models[0], 'tasmin', 'DJF', save = False)
-
-for model in models:
-    for season in seasons.keys():
-        for variable in variables:
-            stdev_ratio(gcm_dict, model, variable, season)  
-            
-# save point            
-write2file(gcm_dict, 'gcm_feb5.txt')
-
-
-#%%
-
-gcm_dict = read_file('gcm_feb19.txt')
-gmet_dict = read_file('obs_feb3.txt')
-
-
-def var_ratio(save_variable, model, variable, season, save = True):
+def var_ratio(save_variable, model, variable, season, save = True,
+              gcm_dict = read_file('gcm_feb19.txt'), 
+              gmet_dict = read_file('obs_feb3.txt')):
     
     """
     Individually calculate the temporal variance for a model and observational
@@ -365,7 +352,7 @@ def fut_projection(save_variable, model, emission_scenario, variable, season_nam
     
     # calculate individual yearly means and append them to the list
     fut_means = []
-    for year in range(2070, 2099):
+    for year in range(2070, 2100):
         data_fut = ds.sel(time = ds.time.dt.year == year)
         fut_mean = data_fut.mean(skipna= True).item()
         fut_means.append(fut_mean)
@@ -422,37 +409,37 @@ def main():
     # define dictionary structure for data storage (see original structurer in dictionary_structure.py)
     gcm_dict =  read_file('gcm_feb19.txt')
     gmet_dict = read_file('obs_feb3.txt')
-    projections_dict = read_file('projections_feb4.txt')
+    projections_dict = read_file('projections_feb10.txt')
     
-    # calculate a model's yearly average to use in future calculations
-    # loop through all necessary data to fill out dictionary
-    for model in models:
-        for variable in variables:
-            for season_name, season in seasons.items():
-                model_avg(gcm_dict, model, variable, season_name, season, save = True)
-    # save point
-    write2file(gcm_dict, 'gcm_feb19.txt')
+    # # calculate a model's yearly average to use in future calculations
+    # # loop through all necessary data to fill out dictionary
+    # for model in models:
+    #     for variable in variables:
+    #         for season_name, season in seasons.items():
+    #             model_avg(gcm_dict, model, variable, season_name, season, save = True)
+    # # save point
+    # write2file(gcm_dict, 'gcm_feb19.txt')
     
-    # calculate yearly average for observational data
-    for variable in variables:
-        for season_name, season in obs_seasons.items():
-            obs_avg(gmet_dict, variable, season_name, season, save = True)
-            print(f'{season_name}, {variable} -> done!')
+    # # calculate yearly average for observational data
+    # for variable in variables:
+    #     for season_name, season in obs_seasons.items():
+    #         obs_avg(gmet_dict, variable, season_name, season, save = True)
+    #         print(f'{season_name}, {variable} -> done!')
             
-    # save point        
-    write2file(gmet_dict, 'obs_feb3.txt')
+    # # save point        
+    # write2file(gmet_dict, 'obs_feb3.txt')
     
-    # compare a model's performance to observational data using previously calculated yearly averages
-    for model in models:
-        for season in seasons.keys():
-            for variable in variables:
-                # bias calculation
-                bias(gcm_dict, model, variable, season)
-                # variance ratio calculation
-                var_ratio(gcm_dict, model, variable, season) 
+    # # compare a model's performance to observational data using previously calculated yearly averages
+    # for model in models:
+    #     for season in seasons.keys():
+    #         for variable in variables:
+    #             # bias calculation
+    #             bias(gcm_dict, model, variable, season)
+    #             # variance ratio calculation
+    #             var_ratio(gcm_dict, model, variable, season) 
 
-    # save point            
-    write2file(gcm_dict, 'gcm_feb19.txt')
+    # # save point            
+    # write2file(gcm_dict, 'gcm_feb19.txt')
     
     # calculate a variable's change in climate conditions from the historical to the future period
     for model in ssp585_models:
