@@ -1,7 +1,32 @@
-## Expected Future Precipitation Changes from the North American Monsoon
+#Divergent Trajectories for Summer Precipitation in the Great Salt Lake Basin
 
-### Introduction
-The Great Salt Lake Basin Integrated Plan (GSLBIP) is used to determine water allocation across the Salt Lake Region. To build a plan for the future, a greater understanding of water entering the system through precipitation must be met through analysis of climatological variables. Global climate models (GCMs) are comprised of assumptions based on an initial condition and indication of change in future greenhouse gas emissions. They return predicted future variables, such as precipitation. Variables that might contribute to a change in monsoon patterns were downloaded as NetCDF files. Variables for our initial anlysis included precipitation, northward near surface wind, eastward near surface wind, geopotential height, sea level pressure, and near surface air temperature (see ERA5/era5_download.py for more information on the download process). Changes in mean summer precipitation from the historical (1979-2014) to the future (2070-2099) period were graphed for each GCM as a ratio (monthly_mean_scatter.py). However, different models varied greatly in expected change of precipitation values through the end of the century. A large range in expected outcomes is likely due to the way a particular GCM simulates changes in the North American Monsoon (NAM). Clear and logical patterns appeared across the wet models that explain a future increase in precipitation.
+##Project Description
+The Great Salt Lake Basin Integrated Plan (GSLBIP) is used to determine water allocation across the Salt Lake Region. To build a plan for the future, a greater understanding of water entering the system through precipitation must be met through analysis of climatological variables. While the majority of the water budget in the Great Salt Lake Basin (GSLB) is from snowpack, understanding changes in summer precipitation due to climate change is necesary in informing resilient water management strategies. This study focuses on exploring possible future summer hydroclimates over the Great Salt Lake Basin using 27 CMIP6 model ensembles. Data were statistically downscaled to 4km resolution using [Multivariate Adaptive Constructed Analogs version 2](https://zenodo.org/records/16747912) (MACAv2). While models across this dataset project substaintial warming across all models and emission scenarios, changes in precipitation remain uncertain. Outcomes can vary as much as projecting future precipitation doubling or being cut in half. Differences in precipitation outcomes largely reflect how individual models represent summer convection, cloud processes, and circulation dynamics. However, a models historical performance in simulating precipitation remains uncorrelated to its projected changes in precipitation. Rather a heteroskedastic relationship emerged showing that models with a dry precipitation bias and less temporal variation in precipitation across the historical period produce a wider range in projected precipitation outcomes. Thus model performance cannot be used to inform substantial model culling. Such findings hightlight the importance that stakeholders consider a wide range in precipitation outcomes in their water management strategies as uncertainty in future precipitation remains. This repository contains the code used to produce numerous figures analyzed in this study. 
 
-### Methods
-Greater analysis of monsoon patterns is focused on the models in the divergence of mean summer precipitation ratios from monthly_mean_scatter.py. Wet models consist of the four models with the highest precipitation ratio for SSP 5.85 (UKESM1-0-LL, ACCESS-CM2, CanESM5, KACE-1-0-G). Dry models consist of the four lowest (MPI-ESM1-2-LR, CNRM-ESM2-1, CNRM-CM6-1-HR, INM-CM4-8). Data from wet and dry models were individually mapped as means across the future and historical period and anomalies (anomaly_maps/gcm_var_mapping.py). The variables precipitation, geopotential height, sea level pressure, and wind vectors were analyzed in their groups for common patterns. Mapped areas extended over the continental US as well as parts of the Pacific Ocean using GCM data to capture climatological impacts of the North American Mosoon on the study region (study region defined by VIC boundary in anomaly_maps/GCM_vs_MACA_location.py). These analyses were meant to investigate future climatological patterns.
+##Folder Structure
+```
+.
+├──CMIP6                # GCM data downloaded with intake_esgf scripts is initally stored here but should be moved to INPUT_DATA
+├──GCM_vs_MACA          # Defines GSLB and MACA domains, plots coarse GCM data next to downscaled MACA data
+├──INPUT_DATA           # Where all inputs must be housed to run code
+├──JJA_climate_change   # Figures showing projected changes in summer temperature and precipitation
+├──from_court           # Scripts from Court
+├──from_savanna         # Scripts from Savanna
+├──model_performance    # Evaluation of the historical performance of GCMs
+├──tool_belt            # Scripts of frequently used functions
+├──variable_mapping     # Maps used to analyze models difference in precipitation outcomes at a synoptic scale
+├──.gitignore           # Note that all .png and .nc files are ignored
+└──README.md
+```
+
+##Repository Outputs
+
+
+##Repository Inputs
+###Observational Data - gridMet 
+
+
+###CMIP6 GCM Data
+
+
+###Downscaled Data - MACAv2
