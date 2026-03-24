@@ -52,10 +52,10 @@ time_dict = {
     }
 
 # near surface variables
-variables = ['pr', 'hus', 'psl', 'tas', 'uas', 'vas']
+variables = ['pr', 'huss', 'psl', 'tas', 'uas', 'vas']
 
 # variables that can be viewed at different levels in the atmosphere
-mid_level_variables = ['zg', 'ua', 'va']
+mid_level_variables = ['zg', 'ua', 'va', 'hus']
 
 # MODELS USED FOR LATEST GROUPING -> WET, MODERATE, DRY
 # listed in order from highest to lowest
@@ -86,16 +86,17 @@ def region_mean(model_name, variable, start_month, stop_month, level = None, sta
     Note that the level (plev) is selected in Pa not hPa so 500 hPa = 50000.
     """
     
-    fpath = parent_directory.joinpath('INPUT_DATA', variable, f'{variable}_Amon_')
-    
     # lets the function know what file to open for the given model and variable based on date range
     if 1970 <= start_year <= 2014:
-        date = '_hist*.nc'
+        date = 'historical'
     else:
-        date = '_ssp585*.nc'
+        date = 'ssp585'
     
-    fname = fpath + model_name + date
-    ds = xr.open_mfdataset(glob.glob(fname), decode_times = True)
+    fname = f'{variable}*{model_name}*{date}*'
+    fpath = str(parent_directory.joinpath('INPUT_DATA', 'GCM', fname))
+    print(fpath)
+    print(glob.glob(fpath))
+    ds = xr.open_mfdataset(glob.glob(fpath), decode_times = True)
     
     # variables that have an extra dimension for what pressure level you want to look at needs to be selected
     # geopotential height should be at the  500 hPa level
@@ -362,7 +363,7 @@ def main():
         for model in models:
             map_anomalies(region_mean, model, variable, 6, 8, start_year = 1979, stop_year = 2014, save = True)
             map_anomalies(region_mean, model, variable, 6, 8, start_year = 2070, stop_year = 2099, save = True)
-            map_anomalies(anomaly, model, variable, 6, 8, save = True)
+            map_anomalies(anomaly, model, variable, 6, 8, save = False)
     
     # map CONUS historical, future, and anomalies for JJA averages for all variables to view in the mid atmosphere
     for variable in mid_level_variables:

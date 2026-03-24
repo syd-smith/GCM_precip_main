@@ -7,6 +7,7 @@ Created on Mon Jun 23 18:06:49 2025
 """
 
 import geopandas as gpd
+import glob
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,13 +66,14 @@ def mask_MACA(model_name, variable, emission_scenario, start_month = 6, stop_mon
     time_coder = xr.coders.CFDatetimeCoder(use_cftime = True)
     
     # load file path for data
-    # TODO: change file path once data is published
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model_name}_{emission_scenario}_{variable}.nc'
-    if not os.path.exists(fpath):
+    fname = f'macav2metdata_GSLBIP_{model_name}_{emission_scenario}_{variable}.nc'
+    fpath = str(parent_directory.joinpath('INPUT_DATA', 'MACA', fname))
+
+    if not os.path.exists(glob.glob(fpath)[0]):
         raise OSError(f'{fpath} was not downscaled in the MACA process.')
         
     # open data for specified model and raise error for requests that are not within the scope of the dataset
-    ds_open = xr.open_mfdataset(fpath, engine = "netcdf4", decode_times = time_coder)
+    ds_open = xr.open_mfdataset(glob.glob(fpath), engine = "netcdf4", decode_times = time_coder)
     
     # slice to focus on specified months and years
     ds_years = ds_open[variable].sel(time = ds_open.time.dt.year.isin(range(start_year, stop_year + 1)))

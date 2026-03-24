@@ -85,8 +85,8 @@ def model_avg(save_variable, model, variable, season_name, season, file_type = '
     if file_type == 'netcdf': # uses netcdf files saved in INPUT_DATA for calculation
         # acces downloaded data based on relative file path
         file_name = f'{variable}*{model}_historical*.nc'
-        file_path = parent_directory.joinpath('INPUT_DATA', 'GCM', variable, file_name)
-        ds = xr.open_mfdataset(glob.glob(str(file_path)))
+        file_path = str(parent_directory.joinpath('INPUT_DATA', 'GCM', file_name))
+        ds = xr.open_mfdataset(glob.glob(file_path))
         
         # convert precipitation from kg m-2 s-1 to mm
         if variable == 'pr':
@@ -214,9 +214,10 @@ def obs_avg(save_variable, variable, season_name, season, save = True):
          
     else:
          open_variable = variable
-
-    fpath = parent_directory.joinpath('INPUT_DATA', 'gridMET')
-    ds_open = xr.open_dataset(fpath)
+    
+    fname = f'gsl_region_{open_variable}_1979-2014.nc'
+    fpath = str(parent_directory.joinpath('INPUT_DATA', 'gridMET', fname))
+    ds_open = xr.open_dataset(glob.glob(fpath))
 
     # convert variable name again for variables saved in the dataset
     if open_variable == 'pr':
@@ -334,9 +335,11 @@ def fut_projection(save_variable, model, emission_scenario, variable, season_nam
     Save_variable should be the framework dictionary imported from dictionary_structure.py.
     """
 
-    # TODO: change to absolute path once data is published
-    fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_{emission_scenario}_{variable}.nc'
-    open_ds = xr.open_dataset(fpath)
+    # Open MACA data from INPUT_DATA
+    fname = f'macav2metdata_GSLBIP_{model}_{emission_scenario}_{variable}.nc'
+    fpath = str(parent_directory.joinpath('INPUT_DATA', 'MACA', fname))
+    # fpath = f'/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_{model}_{emission_scenario}_{variable}.nc'
+    open_ds = xr.open_dataset(glob.glob(fpath))
     # slice data to be only season of interest
     ds = open_ds[variable].sel(time = open_ds[variable].time.dt.month.isin(season))
     
@@ -411,35 +414,35 @@ def main():
     gmet_dict = read_file('obs_feb3.txt')
     projections_dict = read_file('projections_feb10.txt')
     
-    # # calculate a model's yearly average to use in future calculations
-    # # loop through all necessary data to fill out dictionary
-    # for model in models:
-    #     for variable in variables:
-    #         for season_name, season in seasons.items():
-    #             model_avg(gcm_dict, model, variable, season_name, season, save = True)
-    # # save point
-    # write2file(gcm_dict, 'gcm_feb19.txt')
+    # calculate a model's yearly average to use in future calculations
+    # loop through all necessary data to fill out dictionary
+    for model in models:
+        for variable in variables:
+            for season_name, season in seasons.items():
+                model_avg(gcm_dict, model, variable, season_name, season, save = True)
+    # save point
+    write2file(gcm_dict, 'gcm_feb19.txt')
     
-    # # calculate yearly average for observational data
-    # for variable in variables:
-    #     for season_name, season in obs_seasons.items():
-    #         obs_avg(gmet_dict, variable, season_name, season, save = True)
-    #         print(f'{season_name}, {variable} -> done!')
+    # calculate yearly average for observational data
+    for variable in variables:
+        for season_name, season in obs_seasons.items():
+            obs_avg(gmet_dict, variable, season_name, season, save = True)
+            print(f'{season_name}, {variable} -> done!')
             
-    # # save point        
-    # write2file(gmet_dict, 'obs_feb3.txt')
+    # save point        
+    write2file(gmet_dict, 'obs_feb3.txt')
     
-    # # compare a model's performance to observational data using previously calculated yearly averages
-    # for model in models:
-    #     for season in seasons.keys():
-    #         for variable in variables:
-    #             # bias calculation
-    #             bias(gcm_dict, model, variable, season)
-    #             # variance ratio calculation
-    #             var_ratio(gcm_dict, model, variable, season) 
+    # compare a model's performance to observational data using previously calculated yearly averages
+    for model in models:
+        for season in seasons.keys():
+            for variable in variables:
+                # bias calculation
+                bias(gcm_dict, model, variable, season)
+                # variance ratio calculation
+                var_ratio(gcm_dict, model, variable, season) 
 
-    # # save point            
-    # write2file(gcm_dict, 'gcm_feb19.txt')
+    # save point            
+    write2file(gcm_dict, 'gcm_feb19.txt')
     
     # calculate a variable's change in climate conditions from the historical to the future period
     for model in ssp585_models:

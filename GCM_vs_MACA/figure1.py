@@ -50,7 +50,8 @@ def MACA_data():
     """
     
     # TODO: change file path to be relative (or explain input) once data is published with the paper
-    MACA_fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_KACE-1-0-G_ssp585_pr.nc'
+    MACA_fpath = parent_directory.joinpath('INPUT_DATA', 'MACA', 'macav2metdata_GSLBIP_KACE-1-0-G_ssp585_pr.nc')
+    # MACA_fpath = '/uufs/chpc.utah.edu/common/home/strong-group7/savanna/maca/output/netcdf/macav2metdata_GSLBIP_KACE-1-0-G_ssp585_pr.nc'
     MACA_open = xr.open_dataset(MACA_fpath)
     
     # mean calculation for MACA using same method as GCM data
@@ -74,7 +75,7 @@ def GCM_data():
     """
     
     # open GCM dataset 
-    GCM_fpath = parent_directory.joinpath('INPUT_DATA/pr/pr_Amon_KACE-1-0-G_historical_r1i1p1f1_gr_19500116-20141216.nc')
+    GCM_fpath = parent_directory.joinpath('INPUT_DATA', 'pr_Amon_KACE-1-0-G_historical_r1i1p1f1_gr_19500116-20141216.nc')
     GCM_open = xr.open_dataset(GCM_fpath)
     
     # GCM data is pr flux -> needs conversion
