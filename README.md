@@ -6,16 +6,24 @@ The Great Salt Lake Basin Integrated Plan (GSLBIP) is used to determine water al
 ## Folder Structure
 ```
 .
-├──CMIP6                #GCM data downloaded with intake_esgf scripts is initally stored here but should be moved to INPUT_DATA
-├──GCM_vs_MACA          #Defines GSLB and MACA domains, plots coarse GCM data next to downscaled MACA data
-├──INPUT_DATA           #Where all inputs must be housed to run code
-├──JJA_climate_change   #Figures showing projected changes in summer temperature and precipitation
-├──from_court           #Scripts from Court
-├──from_savanna         #Scripts from Savanna
-├──model_performance    #Evaluation of the historical performance of GCMs
-├──tool_belt            #Scripts of frequently used functions
-├──variable_mapping     #Maps used to analyze models difference in precipitation outcomes at a synoptic scale
-├──.gitignore           #Note that all .png and .nc files are ignored
+├──CMIP6                      #GCM data downloaded with intake_esgf scripts is initally stored here but should be moved to INPUT_DATA
+├──GCM_vs_MACA                #Defines GSLB and MACA domains, plots coarse GCM data next to downscaled MACA data
+│   └── figure1.py
+├──INPUT_DATA                 #Where all inputs must be housed to run code
+├──JJA_climate_change         #Figures showing projected changes in summer temperature and precipitation
+|   ├── figure2.py
+│   └── PCA_vs_climate_change
+│       └── figure4.py
+├──from_court                 #Scripts from Court
+├──from_savanna               #Scripts from Savanna
+├──model_performance          #Evaluation of the historical performance of GCMs
+|   ├── figure_S5.py
+│   └── correlation_matrix
+│       └── figure_S6.py
+├──tool_belt                  #Scripts of frequently used functions
+├──variable_mapping           #Maps used to analyze models difference in precipitation outcomes at a synoptic scale
+│   └── final_figures.py      #Contains both figure5 and figure_S4
+├──.gitignore                 #Note that all .png and .nc files are ignored
 └──README.md
 ```
 
@@ -76,11 +84,35 @@ as the bias increases.
 
 
 ## Repository Inputs
-All input data must be stored INPUT_DATA.
-### Observational Data - gridMet 
+All input data must be stored under the directory [INPUT_DATA](https://github.com/syd-smith/GCM_precip_main/tree/main/INPUT_DATA). Note that sub-directories titled "gridMET", "GCM", and "MACA" must be created if not rendered properly when downloading the respository following the structure outlined below.
+```
+.
+├── INPUT_DATA
+|   ├── gridMET   
+|   ├── GCM
+│   └── MACA
+```
 
+### Observational Data - gridMet 
+gridMET data are high resolution data (~4km) that covers the contiguous US dating from 1979-yesterday. This observational data was used in the MACA downscaling process but also provides reference data for [model_performance](https://github.com/syd-smith/GCM_precip_main/tree/main/model_performance) calculations. To download data, navigate to the "Download" on [this website](https://www.climatologylab.org/gridmet.html) and follow instructions. Regardless of where data initially download, it must be moved to INPUT_DATA/gridMET for figures requiring the data to be run properly. All data should be stored as a single netcdf file containing data from 1979-2014 and titled using the structure as follows: **gsl_region_pr_1979-2014.nc**. Only gridMET variable abbbreviations should be used to title the netcdf files. See table below for required variables and abbreviations. 
+| **griMET Variable Name** | **gridMET Variable Abbreviation** | **MACA Variable Equivalent** | **Units** |
+| :----------------------: | :-------------------------------: | :--------------------------: | :-------: |
+| precipitation_amount | pr | pr | mm |
+| air_temperature | tmmn | tasmin | K |
+| air_temperature | tmmx | tasmax | K |
+| specific_humidity | sph | huss | kg/kg |
+| surface_downwelling_shortwave_flux_in_air | srad | rsds | W/m^-2^ |
+| uas | uas | uas | m/s^-1^ |
+| vas | vas | vas | m/s^-1^ |
 
 ### CMIP6 GCM Data
+MACA data were downscaled from coarse CMIP6 data. Data were used to inspect climatological, synpotic-scale conditions of the contiguous US and surrounding areas to better understand spatial patterns that might cause greater increases in precipitation by the end of the century (see figure 5 and supplemental figure 4). In addition, data were used to evaluate a models historical performance over the MACA domain. Daily data were used for historical model performance calculations [(model_performance)](https://github.com/syd-smith/GCM_precip_main/tree/main/model_performance) while monthly resolution data were used in to produce maps of the contiguous US [(variable_mapping)](https://github.com/syd-smith/GCM_precip_main/tree/main/variable_mapping). It is recommended that the repective temporal resolutions are used as outlined above to prevent an errors from occuring. However, favoring daily resolution data is recommended to prevent downloading dulicate datasets. See tables below for guidelines on 
+**Monthly Data**
 
 
 ### Downscaled Data - MACAv2
+
+
+
+
+
