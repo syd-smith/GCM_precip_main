@@ -3,6 +3,24 @@
 ## Project Description
 The Great Salt Lake Basin Integrated Plan (GSLBIP) is used to determine water allocation across the Salt Lake Region. To build a plan for the future, a greater understanding of water entering the system through precipitation must be met through analysis of climatological variables. While the majority of the water budget in the Great Salt Lake Basin is from snowpack, understanding changes in summer precipitation due to climate change is necessary in informing resilient water management strategies. This study focuses on exploring possible future summer hydroclimates over the Great Salt Lake Basin using 27 CMIP6 model ensembles. Data were statistically downscaled to 4km resolution using [Multivariate Adaptive Constructed Analogs version 2](https://zenodo.org/records/16747912) (MACAv2). While models across this dataset project substantial warming across all models and emission scenarios, changes in precipitation remain uncertain. Outcomes can vary as much as projecting future precipitation doubling or being cut in half. Differences in precipitation outcomes largely reflect how individual models represent summer convection, cloud processes, and circulation dynamics. However, a model's historical performance in simulating precipitation remains uncorrelated to its projected changes in precipitation. Rather a heteroskedastic relationship emerged showing that models with a dry precipitation bias and less temporal variation in precipitation across the historical period produce a wider range in projected precipitation outcomes. Thus model performance cannot be used to inform substantial model culling. Such findings highlight the importance that stakeholders consider a wide range in precipitation outcomes in their water management strategies as uncertainty in future precipitation remains. This repository contains the code used to produce numerous figures analyzed in this study. 
 
+## Installation
+#### 1. Clone Repository
+```tcsh
+git clone https://github.com/syd-smith/GCM_precip_main.git
+```
+#### 2. Open New Directory
+```tcsh
+cd GCM_precip_main
+```
+#### 3. Create Environment
+```tcsh
+mamba env create -f environment.yml
+```
+#### 4. Activate Environment
+```tcsh
+conda activate intake_esgf
+```
+
 ## Folder Structure
 ```
 .
@@ -24,7 +42,8 @@ The Great Salt Lake Basin Integrated Plan (GSLBIP) is used to determine water al
 ├──variable_mapping           #Maps used to analyze models difference in precipitation outcomes at a synoptic scale
 │   └── final_figures.py      #Contains both figure5 and figure_S4
 ├──.gitignore                 #Note that all .png and .nc files are ignored
-└──README.md
+├──README.md
+└──environment.yml            #All packages and dependencies to recreate environment
 ```
 
 ## Repository Output Descriptions
